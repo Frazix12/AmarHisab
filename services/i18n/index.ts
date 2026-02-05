@@ -1,0 +1,813 @@
+/**
+ * Internationalization (i18n) system
+ * Currently supports English only, but structured for easy language additions
+ *
+ * To add a new language:
+ * 1. Create a new language object following the 'en' structure
+ * 2. Add it to the 'translations' object with the language code as key
+ * 3. Update the UserSettings language type to include the new code
+ */
+
+export const translations = {
+  en: {
+    // Tab names
+    tabs: {
+      expenses: "Expenses",
+      grocery: "Grocery",
+      statistics: "Statistics",
+      settings: "Settings",
+    },
+
+    // Expense screen
+    expenses: {
+      title: "Amar Hisab",
+      addExpense: "Add Expense",
+      totalExpenses: "Total Expenses",
+      todayExpenses: "Today's Expenses",
+      monthExpenses: "This Month",
+      noExpenses: "No expenses yet",
+      noExpensesToday: "No expenses today",
+      addFirst: "Add your first expense to get started",
+      addFirstToday: "Tap + to add your first expense today",
+      editExpense: "Edit Expense",
+      deleteExpense: "Delete Expense",
+      confirmDelete: "Are you sure you want to delete this expense?",
+      expenseUpdated: "Expense updated ✓",
+      expenseDeleted: "Expense deleted",
+      todayTotal: "Today's Total",
+      itemCount: "expenses",
+    },
+
+    // Statistics screen
+    statistics: {
+      title: "Statistics",
+      allTime: "All Time",
+      thisWeek: "This Week",
+      thisMonth: "This Month",
+      avgDaily: "Daily Avg",
+      byCategory: "By Category",
+      spendingTrend: "Spending Trend",
+      history: "History",
+      noStats: "No expenses yet",
+      startTracking: "Start tracking to see your statistics",
+    },
+
+    // Grocery screen
+    grocery: {
+      title: "Grocery List",
+      addItem: "Add Item",
+      noItems: "No items in your list",
+      addFirst: "Add your first grocery item",
+      clearCompleted: "Clear Completed",
+      editItem: "Edit Item",
+      deleteItem: "Delete Item",
+      itemUpdated: "Item updated ✓",
+      itemDeleted: "Item deleted",
+      priceNotSet: "Price not set",
+      needsPrice: "Needs price",
+      completeItem: "Complete Item",
+      completeAndCheck: "Complete",
+      priceRequired: "Price is required to complete this item",
+      pricePositive: "Price must be positive",
+    },
+
+    voice: {
+      title: "AI Voice",
+      subtitle: "Speak naturally to add expenses and groceries",
+      ready: "Ready",
+      language: "Transcription Language",
+      languageAuto: "Auto",
+      languageEnglish: "English",
+      languageBangla: "Bangla",
+      startListening: "Start Listening",
+      stopListening: "Stop & Process",
+      listening: "Listening...",
+      processing: "Processing...",
+      transcript: "Transcription",
+      review: "Review Items",
+      reviewHint: "Tap any item to edit",
+      expenses: "Expenses",
+      groceries: "Groceries",
+      emptyExpenses: "No expenses detected",
+      emptyGroceries: "No groceries detected",
+      confirmAdd: "Confirm & Add",
+      tryAgain: "Try Again",
+      noSpeechDetected: "No speech detected",
+      parseFailed: "Couldn't parse the transcript",
+      micPermission: "Microphone permission required",
+      missingApiKey: "ElevenLabs API key not configured",
+      missingRecorder: "Voice recording module not available",
+      webNotSupported: "Voice input isn't supported on web yet",
+      itemsAdded: "Items added",
+      detectedLanguage: "Detected",
+    },
+
+    // Form fields
+    form: {
+      amount: "Amount",
+      category: "Category",
+      description: "Description",
+      name: "Name",
+      quantity: "Quantity",
+      price: "Price",
+      save: "Save",
+      cancel: "Cancel",
+      permission: "Permission Required",
+      attachment: "Attachment",
+      takePhoto: "Take Photo",
+      choosePhoto: "Choose Photo",
+      edit: "Edit",
+      updateTemplate: "📝 Update template with these values",
+      item: "Item",
+    },
+
+    // Modal actions
+    modal: {
+      delete: "Delete",
+      edit: "Edit",
+    },
+
+    // Categories
+    categories: {
+      food: "Food & Dining",
+      transport: "Transport",
+      shopping: "Shopping",
+      entertainment: "Entertainment",
+      healthcare: "Healthcare",
+      bills: "Bills & Utilities",
+      education: "Education",
+      other: "Other",
+      // Grocery categories
+      fruits: "Fruits",
+      vegetables: "Vegetables",
+      dairy: "Dairy",
+      meat: "Meat & Fish",
+      snacks: "Snacks",
+      beverages: "Beverages",
+      household: "Household",
+    },
+
+    // Common
+    common: {
+      search: "Search",
+      filter: "Filter",
+      sort: "Sort",
+      today: "Today",
+      yesterday: "Yesterday",
+      thisWeek: "This Week",
+      thisMonth: "This Month",
+      older: "Older",
+    },
+
+    // Placeholders
+    placeholders: {
+      expenseAmount: "0.00",
+      expenseDescription: "Optional description...",
+      groceryName: "e.g., Milk, Bread, Eggs...",
+      groceryQuantity: "e.g., 2L, 500g",
+      groceryPrice: "0.00",
+      templateName: "e.g., Eggs, Milk, Bread...",
+      templateQuantity: "e.g., 12 pcs, 1 ltr, 500g...",
+      templatePrice: "0.00",
+    },
+
+    // Helper text
+    helpers: {
+      optionalDescription: "Optional - add notes about this expense",
+      templateQuantityHint: "Optional - helps you remember typical quantity",
+      aiAutofillHint: "AI Autofill",
+      templateInfo:
+        "💡 Templates help you quickly add grocery items with pre-filled values. You can also edit or delete them anytime.",
+      usingTemplate: "✨ Using template",
+    },
+
+    // Tips
+    tips: {
+      longPressTip: "💡 Tip: Long-press any item to edit or delete",
+    },
+
+    // Settings
+    settings: {
+      title: "Settings",
+      currency: "Currency",
+      theme: "Theme",
+      language: "Language",
+      about: "About",
+      version: "Version",
+      themeLight: "Light",
+      themeDark: "Dark",
+      themeSystem: "System",
+      preferences: "Preferences",
+      smartTemplates: "Smart Templates",
+      smartTemplatesDesc:
+        "AI-powered suggestions based on your shopping patterns",
+      enableLearning: "Smart Suggestions",
+      enableLearningDesc: "Enable AI-powered template suggestions",
+      manageTemplates: "Manage Templates",
+      selectCurrency: "Select your preferred currency",
+      selectTheme: "Select your preferred theme",
+      selectLanguage: "Select your preferred language",
+      smartSuggestionsTitle: "Smart Suggestions",
+      enableSmartSuggestions:
+        "Enable AI-powered template suggestions based on your shopping patterns?",
+      disableSmartSuggestions: "Disable AI-powered template suggestions?",
+      enable: "Enable",
+      disable: "Disable",
+      on: "On",
+      off: "Off",
+      geminiApiKey: "Gemini API Key",
+      geminiApiKeyDesc: "Custom AI Key",
+      enterApiKey: "Enter API Key",
+      apiKeySaved: "API Key saved",
+      invalidApiKey: "Invalid API Key",
+      aiAndSmartFeatures: "AI & Smart Features",
+    },
+
+    // Alerts
+    alerts: {
+      deleteExpenseTitle: "Delete Expense",
+      deleteExpenseMessage: "Are you sure you want to delete this expense?",
+      deleteItemTitle: "Delete Item",
+      deleteItemMessage: "Are you sure you want to delete this item?",
+      deleteTemplateTitle: "Delete Template?",
+      deleteTemplateMessage:
+        "This won't affect past grocery items, but you'll need to recreate the template if you want it back.",
+      invalidAmount: "Please enter a valid amount",
+      invalidPrice: "Please enter a valid price",
+      requiredName: "Please enter an item name",
+      requiredProductName: "Product name is required",
+      requiredValidPrice: "Valid price is required",
+      errorTitle: "Error",
+      successTitle: "Success",
+      failedToCreate: "Failed to create template",
+      failedToUpdate: "Failed to update template",
+      sampleDataAdded: "Sample data added successfully!",
+    },
+
+    // Templates
+    templates: {
+      title: "Templates",
+      newTemplate: "New Template",
+      editTemplate: "Edit Template",
+      all: "All",
+      manual: "Manual",
+      learned: "Learned",
+      noTemplates: "No templates yet. Tap + to create one!",
+      noManualTemplates: "No manual templates yet.",
+      noLearnedTemplates: "No learned templates yet.",
+      aiLearned: "🧠 AI Learned",
+      manualTag: "✋ Manual",
+      usedCount: "Used",
+      usedTimes: "times",
+      lastUsed: "Last used:",
+      productName: "Product Name",
+      defaultQuantity: "Default Quantity",
+      defaultPrice: "Default Price",
+      required: "*",
+      category: "Category",
+      selectTemplate: "Select Template",
+      matches: "matches",
+      back: "Back",
+      templateNotFound: "Template not found",
+      goBack: "Go Back",
+    },
+  },
+
+  // Bangla (Bengali) translations
+  // bn: {
+  //   // Tab names
+  //   tabs: {
+  //     expenses: "খরচ",
+  //     grocery: "মুদি",
+  //     statistics: "পরিসংখ্যান",
+  //     settings: "সেটিংস",
+  //   },
+
+  //   // Expense screen
+  //   expenses: {
+  //     title: "আমার হিসাব",
+  //     addExpense: "খরচ যোগ করুন",
+  //     totalExpenses: "মোট খরচ",
+  //     todayExpenses: "আজকের খরচ",
+  //     monthExpenses: "এই মাসে",
+  //     noExpenses: "এখনও কোনো খরচ নেই",
+  //     noExpensesToday: "আজ কোনো খরচ নেই",
+  //     addFirst: "শুরু করতে আপনার প্রথম খরচ যোগ করুন",
+  //     addFirstToday: "আজকের প্রথম খরচ যোগ করতে + চাপুন",
+  //     editExpense: "খরচ সম্পাদনা করুন",
+  //     deleteExpense: "খরচ মুছুন",
+  //     confirmDelete: "আপনি কি নিশ্চিত যে আপনি এই খরচটি মুছতে চান?",
+  //     expenseUpdated: "খরচ আপডেট হয়েছে ✓",
+  //     expenseDeleted: "খরচ মুছে ফেলা হয়েছে",
+  //     todayTotal: "আজকের মোট",
+  //     itemCount: "টি খরচ",
+  //   },
+
+  //   // Statistics screen
+  //   statistics: {
+  //     title: "পরিসংখ্যান",
+  //     allTime: "সবসময়",
+  //     thisWeek: "এই সপ্তাহ",
+  //     thisMonth: "এই মাস",
+  //     avgDaily: "দৈনিক গড়",
+  //     byCategory: "শ্রেণী অনুযায়ী",
+  //     spendingTrend: "খরচের ধরন",
+  //     history: "ইতিহাস",
+  //     noStats: "এখনও কোনো খরচ নেই",
+  //     startTracking: "আপনার পরিসংখ্যান দেখতে ট্র্যাকিং শুরু করুন",
+  //   },
+
+  //   // Grocery screen
+  //   grocery: {
+  //     title: "মুদির তালিকা",
+  //     addItem: "আইটেম যোগ করুন",
+  //     noItems: "আপনার তালিকায় কোনো আইটেম নেই",
+  //     addFirst: "আপনার প্রথম আইটেম যোগ করুন",
+  //     clearCompleted: "মুছুন",
+  //     editItem: "আইটেম সম্পাদনা করুন",
+  //     deleteItem: "আইটেম মুছুন",
+  //     itemUpdated: "আইটেম আপডেট হয়েছে ✓",
+  //     itemDeleted: "আইটেম মুছে ফেলা হয়েছে",
+  //     priceNotSet: "দাম সেট করা হয়নি",
+  //     needsPrice: "দাম প্রয়োজন",
+  //     completeItem: "আইটেম সম্পন্ন করুন",
+  //     completeAndCheck: "সম্পন্ন করুন এবং চেক করুন",
+  //     priceRequired: "এই আইটেমটি সম্পন্ন করতে দাম প্রয়োজন",
+  //     pricePositive: "দাম অবশ্যই ধনাত্মক হতে হবে",
+  //   },
+
+  //   voice: {
+  //     title: "এআই ভয়েস",
+  //     subtitle: "স্বাভাবিকভাবে বলুন, খরচ ও বাজার যোগ করুন",
+  //     ready: "প্রস্তুত",
+  //     language: "ট্রান্সক্রিপশন ভাষা",
+  //     languageAuto: "স্বয়ংক্রিয়",
+  //     languageEnglish: "ইংরেজি",
+  //     languageBangla: "বাংলা",
+  //     startListening: "শোনা শুরু করুন",
+  //     stopListening: "থামান ও প্রসেস করুন",
+  //     listening: "শোনা হচ্ছে...",
+  //     processing: "প্রসেস হচ্ছে...",
+  //     transcript: "ট্রান্সক্রিপশন",
+  //     review: "আইটেম যাচাই করুন",
+  //     reviewHint: "এডিট করতে আইটেমে ট্যাপ করুন",
+  //     expenses: "খরচ",
+  //     groceries: "বাজার",
+  //     emptyExpenses: "কোনো খরচ পাওয়া যায়নি",
+  //     emptyGroceries: "কোনো বাজার আইটেম পাওয়া যায়নি",
+  //     confirmAdd: "নিশ্চিত করে যোগ করুন",
+  //     tryAgain: "আবার চেষ্টা করুন",
+  //     noSpeechDetected: "কোনো বক্তব্য পাওয়া যায়নি",
+  //     parseFailed: "ট্রান্সক্রিপ্ট পার্স করা যায়নি",
+  //     micPermission: "মাইক্রোফোন পারমিশন প্রয়োজন",
+  //     missingApiKey: "ElevenLabs API কী সেট করা নেই",
+  //     missingRecorder: "ভয়েস রেকর্ডিং মডিউল নেই",
+  //     webNotSupported: "ওয়েবে ভয়েস ইনপুট সাপোর্টেড নয়",
+  //     itemsAdded: "আইটেম যোগ হয়েছে",
+  //     detectedLanguage: "সনাক্ত ভাষা",
+  //   },
+
+  //   // Form fields
+  //   form: {
+  //     amount: "পরিমাণ",
+  //     category: "শ্রেণী",
+  //     description: "বিবরণ",
+  //     name: "নাম",
+  //     quantity: "পরিমাণ",
+  //     price: "দাম",
+  //     save: "সংরক্ষণ",
+  //     cancel: "না",
+  //     permission: "অনুমতি প্রয়োজন",
+  //     attachment: "সংযুক্তি",
+  //     takePhoto: "ছবি তুলুন",
+  //     choosePhoto: "ছবি নির্বাচন করুন",
+  //     edit: "সম্পাদনা",
+  //     updateTemplate: "📝 এই মানগুলি দিয়ে টেমপ্লেট আপডেট করুন",
+  //     item: "আইটেম",
+  //   },
+
+  //   // Modal actions
+  //   modal: {
+  //     delete: "মুছুন",
+  //     edit: "সম্পাদনা",
+  //   },
+
+  //   // Categories
+  //   categories: {
+  //     food: "খাবার ও ডাইনিং",
+  //     transport: "পরিবহন",
+  //     shopping: "কেনাকাটা",
+  //     entertainment: "বিনোদন",
+  //     healthcare: "স্বাস্থ্যসেবা",
+  //     bills: "বিল ও ইউটিলিটি",
+  //     education: "শিক্ষা",
+  //     other: "অন্যান্য",
+  //     // Grocery categories
+  //     fruits: "ফল",
+  //     vegetables: "সবজি",
+  //     dairy: "দুগ্ধজাত",
+  //     meat: "মাংস ও মাছ",
+  //     snacks: "স্ন্যাকস",
+  //     beverages: "পানীয়",
+  //     household: "গৃহস্থালী",
+  //   },
+
+  //   // Common
+  //   common: {
+  //     search: "খুঁজুন",
+  //     filter: "ফিল্টার",
+  //     sort: "সাজান",
+  //     today: "আজ",
+  //     yesterday: "গতকাল",
+  //     thisWeek: "এই সপ্তাহ",
+  //     thisMonth: "এই মাস",
+  //     older: "পুরানো",
+  //   },
+
+  //   // Placeholders
+  //   placeholders: {
+  //     expenseAmount: "০.০০",
+  //     expenseDescription: "ঐচ্ছিক বিবরণ...",
+  //     groceryName: "যেমন, দুধ, রুটি, ডিম...",
+  //     groceryQuantity: "যেমন, ২ লিটার, ৫০০ গ্রাম",
+  //     groceryPrice: "০.০০",
+  //     templateName: "যেমন, ডিম, দুধ, রুটি...",
+  //     templateQuantity: "যেমন, ১২ পিস, ১ লিটার, ৫০০ গ্রাম...",
+  //     templatePrice: "০.০০",
+  //   },
+
+  //   // Helper text
+  //   helpers: {
+  //     optionalDescription: "ঐচ্ছিক - এই খরচ সম্পর্কে নোট যোগ করুন",
+  //     templateQuantityHint: "ঐচ্ছিক - সাধারণ পরিমাণ মনে রাখতে সাহায্য করে",
+  //     aiAutofillHint: "AI অটোফিল",
+  //     templateInfo:
+  //       "💡 টেমপ্লেট আপনাকে দ্রুত পূর্ব-পূরণকৃত মানসহ মুদির আইটেম যোগ করতে সাহায্য করে। আপনি যেকোনো সময় সেগুলি সম্পাদনা বা মুছতে পারেন।",
+  //     usingTemplate: "✨ টেমপ্লেট ব্যবহার করছেন",
+  //   },
+
+  //   // Tips
+  //   tips: {
+  //     longPressTip: "💡 পরামর্শ: যেকোনো আইটেম সম্পাদনা বা মুছতে লং-প্রেস করুন",
+  //   },
+
+  //   // Settings
+  //   settings: {
+  //     title: "সেটিংস",
+  //     currency: "মুদ্রা",
+  //     theme: "থিম",
+  //     language: "ভাষা",
+  //     about: "সম্পর্কে",
+  //     version: "সংস্করণ",
+  //     themeLight: "হালকা",
+  //     themeDark: "গাঢ়",
+  //     themeSystem: "সিস্টেম",
+  //     preferences: "পছন্দসমূহ",
+  //     smartTemplates: "স্মার্ট টেমপ্লেট",
+  //     smartTemplatesDesc:
+  //       "আপনার কেনাকাটার ধরণের উপর ভিত্তি করে এআই-চালিত পরামর্শ",
+  //     enableLearning: "স্মার্ট পরামর্শ",
+  //     enableLearningDesc: "এআই-চালিত টেমপ্লেট পরামর্শ সক্রিয় করুন",
+  //     manageTemplates: "টেমপ্লেট পরিচালনা করুন",
+  //     selectCurrency: "আপনার পছন্দের মুদ্রা নির্বাচন করুন",
+  //     selectTheme: "আপনার পছন্দের থিম নির্বাচন করুন",
+  //     selectLanguage: "আপনার পছন্দের ভাষা নির্বাচন করুন",
+  //     smartSuggestionsTitle: "স্মার্ট পরামর্শ",
+  //     enableSmartSuggestions:
+  //       "আপনার কেনাকাটার ধরণের উপর ভিত্তি করে এআই-চালিত টেমপ্লেট পরামর্শ সক্রিয় করবেন?",
+  //     disableSmartSuggestions: "এআই-চালিত টেমপ্লেট পরামর্শ নিষ্ক্রিয় করবেন?",
+  //     enable: "সক্রিয় করুন",
+  //     disable: "নিষ্ক্রিয় করুন",
+  //     on: "চালু",
+  //     off: "বন্ধ",
+  //     geminiApiKey: "জেমিনি API কী",
+  //     geminiApiKeyDesc: "কাস্টম AI কী",
+  //     enterApiKey: "API কী দিন",
+  //     apiKeySaved: "এপিআই কি সংরক্ষিত হয়েছে",
+  //     invalidApiKey: "অকার্যকর এপিআই কি",
+  //     aiAndSmartFeatures: "এআই এবং স্মার্ট ফিচার",
+  //   },
+
+  //   // Alerts
+  //   alerts: {
+  //     deleteExpenseTitle: "খরচ মুছুন",
+  //     deleteExpenseMessage: "আপনি কি নিশ্চিত যে আপনি এই খরচটি মুছতে চান?",
+  //     deleteItemTitle: "আইটেম মুছুন",
+  //     deleteItemMessage: "আপনি কি নিশ্চিত যে আপনি এই আইটেমটি মুছতে চান?",
+  //     deleteTemplateTitle: "টেমপ্লেট মুছবেন?",
+  //     deleteTemplateMessage:
+  //       "এটি পূর্ববর্তী মুদির আইটেমগুলিকে প্রভাবিত করবে না, তবে আপনি যদি এটি ফিরে চান তাহলে টেমপ্লেটটি পুনরায় তৈরি করতে হবে।",
+  //     invalidAmount: "অনুগ্রহ করে একটি বৈধ পরিমাণ লিখুন",
+  //     invalidPrice: "অনুগ্রহ করে একটি বৈধ মূল্য লিখুন",
+  //     requiredName: "অনুগ্রহ করে একটি আইটেমের নাম লিখুন",
+  //     requiredProductName: "পণ্যের নাম আবশ্যক",
+  //     requiredValidPrice: "বৈধ মূল্য আবশ্যক",
+  //     errorTitle: "ত্রুটি",
+  //     successTitle: "সফল",
+  //     failedToCreate: "টেমপ্লেট তৈরি করতে ব্যর্থ",
+  //     failedToUpdate: "টেমপ্লেট আপডেট করতে ব্যর্থ",
+  //     sampleDataAdded: "নমুনা ডেটা সফলভাবে যোগ করা হয়েছে!",
+  //   },
+
+  //   // Templates
+  //   templates: {
+  //     title: "টেমপ্লেট",
+  //     newTemplate: "নতুন টেমপ্লেট",
+  //     editTemplate: "টেমপ্লেট সম্পাদনা করুন",
+  //     all: "সব",
+  //     manual: "ম্যানুয়াল",
+  //     learned: "শেখা",
+  //     noTemplates: "এখনও কোনো টেমপ্লেট নেই। তৈরি করতে + চাপুন!",
+  //     noManualTemplates: "এখনও কোনো ম্যানুয়াল টেমপ্লেট নেই।",
+  //     noLearnedTemplates: "এখনও কোনো শেখা টেমপ্লেট নেই।",
+  //     aiLearned: "🧠 AI শিখেছে",
+  //     manualTag: "✋ ম্যানুয়াল",
+  //     usedCount: "ব্যবহৃত",
+  //     usedTimes: "বার",
+  //     lastUsed: "শেষ ব্যবহার:",
+  //     productName: "পণ্যের নাম",
+  //     defaultQuantity: "ডিফল্ট পরিমাণ",
+  //     defaultPrice: "ডিফল্ট মূল্য",
+  //     required: "*",
+  //     category: "শ্রেণী",
+  //     selectTemplate: "টেমপ্লেট নির্বাচন করুন",
+  //     matches: "মিল",
+  //     back: "ফিরে যান",
+  //     templateNotFound: "টেমপ্লেট পাওয়া যায়নি",
+  //     goBack: "ফিরে যান",
+  //   },
+  // },
+  // Bangla (Bengali) translations - Natural & Concise
+  bn: {
+    // Tab names
+    tabs: {
+      expenses: "খরচ",
+      grocery: "বাজার",
+      statistics: "হিসাব",
+      settings: "সেটিং",
+    },
+
+    // Expense screen
+    expenses: {
+      title: "আমার খরচ",
+      addExpense: "নতুন খরচ",
+      totalExpenses: "মোট খরচ",
+      todayExpenses: "আজকের খরচ",
+      monthExpenses: "এই মাসে",
+      noExpenses: "কোনো খরচ নেই",
+      noExpensesToday: "আজ খরচ হয়নি",
+      addFirst: "শুরু করতে যোগ করুন",
+      addFirstToday: "+ চাপুন প্রথম খরচ যোগ করতে",
+      editExpense: "খরচ স.Edit",
+      deleteExpense: "মুছে ফেলুন",
+      confirmDelete: "এই খরচ মুছে ফেলবেন?",
+      expenseUpdated: "আপডেট হয়েছে ✓",
+      expenseDeleted: "মুছে ফেলা হয়েছে",
+      todayTotal: "আজকের মোট",
+      itemCount: "টি",
+    },
+
+    // Statistics screen
+    statistics: {
+      title: "হিসাব নিকাশ",
+      allTime: "সব মিলিয়ে",
+      thisWeek: "এই সপ্তাহ",
+      thisMonth: "এই মাস",
+      avgDaily: "প্রতিদিন গড়",
+      byCategory: "ক্যাটাগরি অনুযায়ী",
+      spendingTrend: "খরচের গতি",
+      history: "ইতিহাস",
+      noStats: "খরচ নেই এখনো",
+      startTracking: "ট্র্যাক শুরু করুন পরিসংখ্যান দেখতে",
+    },
+
+    // Grocery screen
+    grocery: {
+      title: "বাজারের তালিকা",
+      addItem: "আইটেম যোগ",
+      noItems: "তালিকা ফাঁকা",
+      addFirst: "প্রথম আইটেম যোগ করুন",
+      clearCompleted: "সম্পন্ন মুছুন",
+      editItem: "এডিট",
+      deleteItem: "মুছুন",
+      itemUpdated: "হয়ে গেছে ✓",
+      itemDeleted: "মুছে ফেলা হয়েছে",
+      priceNotSet: "দাম নেই",
+      needsPrice: "দাম দিতে হবে",
+      completeItem: "কিনেছি",
+      completeAndCheck: "কিনেছি",
+      priceRequired: "দাম দিন আগে",
+      pricePositive: "দাম শূন্যের বেশি হতে হবে",
+    },
+
+    voice: {
+      title: "কণ্ঠস্বর",
+      subtitle: "বলুন, খরচ আর বাজার যোগ করুন",
+      ready: "তৈরি",
+      language: "ভাষা",
+      languageAuto: "স্বয়ংক্রিয়",
+      languageEnglish: "ইংরেজি",
+      languageBangla: "বাংলা",
+      startListening: "শোনা শুরু",
+      stopListening: "থামান",
+      listening: "শুনছি...",
+      processing: "ভাবছি...",
+      transcript: "লিখেছে",
+      review: "দেখে নিন",
+      reviewHint: "আইটেমে ট্যাপ করে এডিট করুন",
+      expenses: "খরচ",
+      groceries: "বাজার",
+      emptyExpenses: "খরচ পাইনি",
+      emptyGroceries: "বাজার পাইনি",
+      confirmAdd: "যোগ করুন",
+      tryAgain: "আবার চেষ্টা",
+      noSpeechDetected: "কিছু শুনিনি",
+      parseFailed: "বুঝতে পারিনি",
+      micPermission: "মাইক অনুমতি দিন",
+      missingApiKey: "API কী নেই",
+      missingRecorder: "রেকর্ডার নেই",
+      webNotSupported: "ওয়েবে কাজ করে না",
+      itemsAdded: "যোগ হয়েছে",
+      detectedLanguage: "ভাষা",
+    },
+
+    // Form fields
+    form: {
+      amount: "টাকা",
+      category: "ধরন",
+      description: "বিবরণ",
+      name: "নাম",
+      quantity: "পরিমাণ",
+      price: "দাম",
+      save: "সেভ",
+      cancel: "বাদ",
+      permission: "অনুমতি লাগবে",
+      attachment: "ছবি",
+      takePhoto: "ক্যামেরা",
+      choosePhoto: "গ্যালারি",
+      edit: "এডিট",
+      updateTemplate: "📝 টেমপ্লেট আপডেট",
+      item: "জিনিস",
+    },
+
+    // Modal actions
+    modal: {
+      delete: "মুছুন",
+      edit: "এডিট",
+    },
+
+    // Categories
+    categories: {
+      food: "খাবার",
+      transport: "যাতায়াত",
+      shopping: "কেনাকাটা",
+      entertainment: "আড্ডা",
+      healthcare: "ডাক্তার",
+      bills: "বিল",
+      education: "লেখাপড়া",
+      other: "অন্যান্য",
+      // Grocery categories
+      fruits: "ফল",
+      vegetables: "সবজি",
+      dairy: "দুধজাত",
+      meat: "মাংস",
+      snacks: "নাশতা",
+      beverages: "পানীয়",
+      household: "গৃহস্থালি",
+    },
+
+    // Common
+    common: {
+      search: "খুঁজুন",
+      filter: "ফিল্টার",
+      sort: "সাজান",
+      today: "আজ",
+      yesterday: "গতকাল",
+      thisWeek: "এই সপ্তাহ",
+      thisMonth: "এই মাস",
+      older: "আগের",
+    },
+
+    // Placeholders
+    placeholders: {
+      expenseAmount: "০.০০",
+      expenseDescription: "কিছু লিখুন...",
+      groceryName: "যেমন: দুধ, রুটি, ডিম...",
+      groceryQuantity: "যেমন: ২ লিটার, ১ কেজি",
+      groceryPrice: "০.০০",
+      templateName: "যেমন: ডিম, দুধ...",
+      templateQuantity: "যেমন: ১২ পিস, ১ লিটার",
+      templatePrice: "০.০০",
+    },
+
+    // Helper text
+    helpers: {
+      optionalDescription: "মনে রাখার জন্য...",
+      templateQuantityHint: "স্বয়ংক্রিয়ভাবে পরিমাণ দেখাবে",
+      aiAutofillHint: "স্বয়ংক্রিয়",
+      templateInfo:
+        "💡 টেমপ্লেট দিয়ে দ্রুত বাজার যোগ করুন। পরে এডিট বা ডিলিট করতে পারবেন।",
+      usingTemplate: "✓ টেমপ্লেট ব্যবহার",
+    },
+
+    // Tips
+    tips: {
+      longPressTip: "💡 টিপ: চেপে ধরে এডিট বা ডিলিট",
+    },
+
+    // Settings
+    settings: {
+      title: "সেটিং",
+      currency: "মুদ্রা",
+      theme: "থিম",
+      language: "ভাষা",
+      about: "সম্পর্কে",
+      version: "ভার্সন",
+      themeLight: "উজ্জ্বল",
+      themeDark: "গাঢ়",
+      themeSystem: "সিস্টেম",
+      preferences: "পছন্দ",
+      smartTemplates: "বুদ্ধিমান টেমপ্লেট",
+      smartTemplatesDesc: "শopping pattern বুঝে AI suggestion",
+      enableLearning: "স্মার্ট সাজেশন",
+      enableLearningDesc: "AI টেমপ্লেট সাজেশন চালু",
+      manageTemplates: "টেমপ্লেট ম্যানেজ",
+      selectCurrency: "মুদ্রা বেছে নিন",
+      selectTheme: "থিম বেছে নিন",
+      selectLanguage: "ভাষা বেছে নিন",
+      smartSuggestionsTitle: "স্মার্ট সাজেশন",
+      enableSmartSuggestions: "AI টেমপ্লেট সাজেশন চালু করবেন?",
+      disableSmartSuggestions: "AI সাজেশন বন্ধ করবেন?",
+      enable: "চালু",
+      disable: "বন্ধ",
+      on: "চালু",
+      off: "বন্ধ",
+      geminiApiKey: "Gemini API কী",
+      geminiApiKeyDesc: "নিজের API কী",
+      enterApiKey: "API কী দিন",
+      apiKeySaved: "সেভ হয়েছে",
+      invalidApiKey: "ভুল API কী",
+      aiAndSmartFeatures: "AI ফিচার",
+    },
+
+    // Alerts
+    alerts: {
+      deleteExpenseTitle: "খরচ মুছুন",
+      deleteExpenseMessage: "মুছে ফেলবেন?",
+      deleteItemTitle: "আইটেম মুছুন",
+      deleteItemMessage: "মুছে ফেলবেন?",
+      deleteTemplateTitle: "টেমপ্লেট মুছবেন?",
+      deleteTemplateMessage:
+        "পুরনো বাজার আইটেম থাকবে, কিন্তু টেমপ্লেট আবার বানাতে হবে।",
+      invalidAmount: "সঠিক টাকা দিন",
+      invalidPrice: "সঠিক দাম দিন",
+      requiredName: "নাম দিন",
+      requiredProductName: "পণ্যের নাম দিন",
+      requiredValidPrice: "দাম দিন",
+      errorTitle: "ভুল হয়েছে",
+      successTitle: "হয়ে গেছে",
+      failedToCreate: "বানাতে পারিনি",
+      failedToUpdate: "আপডেট করতে পারিনি",
+      sampleDataAdded: "নমুনা যোগ হয়েছে!",
+    },
+
+    // Templates
+    templates: {
+      title: "টেমপ্লেট",
+      newTemplate: "নতুন",
+      editTemplate: "এডিট",
+      all: "সব",
+      manual: "হাতে",
+      learned: "শিখেছে",
+      noTemplates: "টেমপ্লেট নেই। + চাপুন বানাতে!",
+      noManualTemplates: "হাতে বানানো নেই।",
+      noLearnedTemplates: "AI শেখানো নেই।",
+      aiLearned: "🧠 AI",
+      manualTag: "✋ হাতে",
+      usedCount: "ব্যবহার",
+      usedTimes: "বার",
+      lastUsed: "শেষ:",
+      productName: "পণ্য",
+      defaultQuantity: "পরিমাণ",
+      defaultPrice: "দাম",
+      required: "*",
+      category: "ধরন",
+      selectTemplate: "টেমপ্লেট বেছে নিন",
+      matches: "মিল",
+      back: "ফেরত",
+      templateNotFound: "টেমপ্লেট নেই",
+      goBack: "ফেরত যান",
+    },
+  },
+
+  // Add more languages here following the same structure
+  // Example:
+  // es: { ... } // Spanish
+};
+
+export type TranslationKey = typeof translations.en;
+export type SupportedLanguage = keyof typeof translations;
+
+export const getTranslation = (lang: string = "en"): TranslationKey => {
+  return translations[lang as SupportedLanguage] || translations.en;
+};

@@ -1,0 +1,499 @@
+import { Colors } from "@/constants/theme";
+import { useApp } from "@/contexts/app-context";
+import { GroceryItem } from "@/types";
+import { useModalAnimation } from "@/utils/animations";
+import { parseBanglaNumber } from "@/utils/format";
+import {
+    Camera01Icon,
+    Cancel01Icon,
+    Image02Icon,
+    Tick02Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react-native";
+import * as ImagePicker from "expo-image-picker";
+import React, { useEffect, useState } from "react";
+import {
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
+} from "react-native";
+import Animated from "react-native-reanimated";
+
+interface CompleteGroceryModalProps {
+  visible: boolean;
+  item: GroceryItem | null;
+  onClose: () => void;
+  onComplete: (price: number, imageUri?: string) => void;
+}
+
+export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
+  visible,
+  item,
+  onClose,
+  onComplete,
+}) => {
+  const { colorScheme, t, settings, formatNumber } = useApp();
+  const colors = Colors[colorScheme];
+  const { animatedStyle, backdropStyle } = useModalAnimation(visible);
+
+  const [price, setPrice] = useState("");
+  const [imageUri, setImageUri] = useState<string | undefined>(undefined);
+  const [error, setError] = useState("");
+
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (visible && item) {
+      setPrice(item.price > 0 ? item.price.toString() : "");
+      setImageUri(item.imageUri);
+      setError("");
+    } else {
+      setPrice("");
+      setImageUri(undefined);
+      setError("");
+    }
+  }, [visible, item]);
+
+  const pickImageFromGallery = async () => {
+    try {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== "granted") {
+        Alert.alert(
+          t.form.permission || "Permission Required",
+          "Please grant photo library access to attach images.",
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setImageUri(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
+      Alert.alert("Error", "Failed to pick image. Please try again.");
+    }
+  };
+
+  const captureImageFromCamera = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+
+      if (status !== "granted") {
+        Alert.alert(
+          t.form.permission || "Permission Required",
+          "Please grant camera access to capture photos.",
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setImageUri(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Error capturing image:", error);
+      Alert.alert("Error", "Failed to capture image. Please try again.");
+    }
+  };
+
+  const removeImage = () => {
+    setImageUri(undefined);
+  };
+
+  const handleComplete = () => {
+    const numPrice = parseFloat(price);
+
+    if (!price.trim() || isNaN(numPrice) || numPrice <= 0) {
+      setError(
+        t.grocery?.priceRequired || "Price is required to complete this item",
+      );
+      return;
+    }
+
+    onComplete(numPrice, imageUri);
+  };
+
+  if (!item) return null;
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      onRequestClose={onClose}
+    >
+      <Animated.View style={[styles.modalOverlay, backdropStyle]}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.keyboardAvoid}
+        >
+          <Animated.View
+            style={[
+              styles.modalContent,
+              { backgroundColor: colors.surface },
+              animatedStyle,
+            ]}
+          >
+            {/* Header */}
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                {t.grocery?.completeItem || "Complete Item"}
+              </Text>
+              <Pressable onPress={onClose}>
+                <HugeiconsIcon
+                  icon={Cancel01Icon}
+                  size={24}
+                  color={colors.text}
+                  strokeWidth={2}
+                />
+              </Pressable>
+            </View>
+
+            <ScrollView style={styles.formContainer}>
+              {/* Item Details (Read-only) */}
+              <View style={styles.infoGroup}>
+                <Text
+                  style={[styles.infoLabel, { color: colors.textSecondary }]}
+                >
+                  {t.form.item || "Item"}
+                </Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>
+                  {item.name}
+                </Text>
+              </View>
+
+              {item.quantity && (
+                <View style={styles.infoGroup}>
+                  <Text
+                    style={[styles.infoLabel, { color: colors.textSecondary }]}
+                  >
+                    {t.form.quantity}
+                  </Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>
+                    {formatNumber(item.quantity)}
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.infoGroup}>
+                <Text
+                  style={[styles.infoLabel, { color: colors.textSecondary }]}
+                >
+                  {t.form.category}
+                </Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>
+                  {t.categories[item.category as keyof typeof t.categories]}
+                </Text>
+              </View>
+
+              {/* Price Input (Required) */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>
+                  {t.form.price}{" "}
+                  <Text style={{ color: colors.error || "#DC2626" }}>*</Text>
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colors.surfaceVariant,
+                      color: colors.text,
+                      borderColor: error
+                        ? colors.error || "#DC2626"
+                        : colors.outline,
+                      borderWidth: error ? 2 : 1,
+                    },
+                  ]}
+                  value={formatNumber(price)}
+                  onChangeText={(text) => {
+                    setPrice(parseBanglaNumber(text));
+                    setError("");
+                  }}
+                  keyboardType="decimal-pad"
+                  placeholder={`0.00 ${settings.currency.symbol}`}
+                  placeholderTextColor={colors.textSecondary}
+                />
+                {error && (
+                  <Text
+                    style={[
+                      styles.errorText,
+                      { color: colors.error || "#DC2626" },
+                    ]}
+                  >
+                    {error}
+                  </Text>
+                )}
+              </View>
+
+              {/* Image Attachment (Optional) */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>
+                  {t.form.attachment || "Receipt Photo"}{" "}
+                  <Text
+                    style={{ color: colors.textSecondary, fontWeight: "400" }}
+                  >
+                    (optional)
+                  </Text>
+                </Text>
+
+                {imageUri ? (
+                  <View style={styles.imagePreviewContainer}>
+                    <Image
+                      source={{ uri: imageUri }}
+                      style={styles.imagePreview}
+                      resizeMode="cover"
+                    />
+                    <Pressable
+                      onPress={removeImage}
+                      style={[
+                        styles.removeImageButton,
+                        { backgroundColor: colors.error || "#DC2626" },
+                      ]}
+                    >
+                      <HugeiconsIcon
+                        icon={Cancel01Icon}
+                        size={20}
+                        color="#FFFFFF"
+                        strokeWidth={2}
+                      />
+                    </Pressable>
+                  </View>
+                ) : (
+                  <View style={styles.imageButtonsContainer}>
+                    <Pressable
+                      onPress={captureImageFromCamera}
+                      style={[
+                        styles.imageButton,
+                        {
+                          backgroundColor: colors.surfaceVariant,
+                          borderColor: colors.outline,
+                        },
+                      ]}
+                    >
+                      <HugeiconsIcon
+                        icon={Camera01Icon}
+                        size={24}
+                        color={colors.primary}
+                        strokeWidth={2}
+                      />
+                      <Text
+                        style={[styles.imageButtonText, { color: colors.text }]}
+                      >
+                        {t.form.takePhoto || "Camera"}
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      onPress={pickImageFromGallery}
+                      style={[
+                        styles.imageButton,
+                        {
+                          backgroundColor: colors.surfaceVariant,
+                          borderColor: colors.outline,
+                        },
+                      ]}
+                    >
+                      <HugeiconsIcon
+                        icon={Image02Icon}
+                        size={24}
+                        color={colors.primary}
+                        strokeWidth={2}
+                      />
+                      <Text
+                        style={[styles.imageButtonText, { color: colors.text }]}
+                      >
+                        {t.form.choosePhoto || "Gallery"}
+                      </Text>
+                    </Pressable>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+
+            {/* Footer Buttons */}
+            <View style={styles.modalFooter}>
+              <Pressable
+                onPress={onClose}
+                style={[
+                  styles.button,
+                  styles.cancelButton,
+                  { backgroundColor: colors.surfaceVariant },
+                ]}
+              >
+                <Text style={[styles.buttonText, { color: colors.text }]}>
+                  {t.form.cancel}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={handleComplete}
+                style={[
+                  styles.button,
+                  styles.completeButton,
+                  { backgroundColor: colors.primary },
+                ]}
+              >
+                <HugeiconsIcon
+                  icon={Tick02Icon}
+                  size={20}
+                  color={colors.onPrimary}
+                  strokeWidth={2.5}
+                />
+                <Text style={[styles.buttonText, { color: colors.onPrimary }]}>
+                  {t.grocery?.completeAndCheck || "Complete & Check"}
+                </Text>
+              </Pressable>
+            </View>
+          </Animated.View>
+        </KeyboardAvoidingView>
+      </Animated.View>
+    </Modal>
+  );
+};
+
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  keyboardAvoid: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: "90%",
+    paddingBottom: Platform.OS === "ios" ? 30 : 20,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  formContainer: {
+    padding: 20,
+  },
+  infoGroup: {
+    marginBottom: 12,
+  },
+  infoLabel: {
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  infoValue: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  inputGroup: {
+    marginTop: 20,
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+  },
+  errorText: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+  imageButtonsContainer: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  imageButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
+  },
+  imageButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  imagePreviewContainer: {
+    position: "relative",
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  imagePreview: {
+    width: "100%",
+    height: 200,
+    borderRadius: 12,
+  },
+  removeImageButton: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalFooter: {
+    flexDirection: "row",
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  button: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  cancelButton: {},
+  completeButton: {},
+  buttonText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+});

@@ -1,0 +1,149 @@
+import { AnimatedTabButton } from "@/components/navigation/animated-tab-button";
+import { VoiceAssistantModal } from "@/features/ai/components/voice-assistant-modal";
+import { Colors } from "@/constants/theme";
+import { useApp } from "@/contexts/app-context";
+import {
+  Analytics01Icon,
+  Mic01Icon,
+  Settings02Icon,
+  ShoppingBasket01Icon,
+  Wallet03Icon,
+} from "@hugeicons/core-free-icons";
+import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import React, { useState } from "react";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
+import { HugeiconsIcon } from "@hugeicons/react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+const TAB_ICONS: Record<string, typeof Settings02Icon> = {
+  index: Wallet03Icon,
+  list: ShoppingBasket01Icon,
+  statistics: Analytics01Icon,
+  settings: Settings02Icon,
+};
+
+const TAB_LABELS = {
+  index: "Expenses",
+  list: "Grocery",
+  statistics: "Statistics",
+  settings: "Settings",
+};
+
+export const CustomTabBar: React.FC<BottomTabBarProps> = ({
+  state,
+  navigation,
+}) => {
+  const { colorScheme } = useApp();
+  const colors = Colors[colorScheme];
+  const insets = useSafeAreaInsets();
+  const [voiceModalVisible, setVoiceModalVisible] = useState(false);
+  const middleIndex = Math.floor(state.routes.length / 2);
+
+  return (
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background,
+          borderTopColor: colors.outline,
+          paddingBottom: Platform.OS === "ios" ? insets.bottom : 8,
+        },
+      ]}
+    >
+      {state.routes.map((route, index) => {
+        const isFocused = state.index === index;
+
+        const icon = TAB_ICONS[route.name as keyof typeof TAB_ICONS];
+        const label =
+          TAB_LABELS[route.name as keyof typeof TAB_LABELS] || route.name;
+
+        const color = isFocused ? colors.tint : colors.textSecondary;
+
+        const onPress = () => {
+          const event = navigation.emit({
+            type: "tabPress",
+            target: route.key,
+            canPreventDefault: true,
+          });
+
+          if (!isFocused && !event.defaultPrevented) {
+            navigation.navigate(route.name, route.params);
+          }
+        };
+
+        return (
+          <React.Fragment key={route.key}>
+            {index === middleIndex && (
+              <View style={styles.voiceButtonWrapper}>
+                <Pressable
+                  onPress={() => setVoiceModalVisible(true)}
+                  style={({ pressed }) => [
+                    styles.voiceButton,
+                    {
+                      backgroundColor: colors.primary,
+                      borderColor: colors.outline,
+                      opacity: pressed ? 0.9 : 1,
+                    },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="AI Voice"
+                >
+                  <HugeiconsIcon
+                    icon={Mic01Icon}
+                    size={26}
+                    color={colors.onPrimary}
+                    strokeWidth={2}
+                  />
+                </Pressable>
+              </View>
+            )}
+            <AnimatedTabButton
+              isActive={isFocused}
+              icon={icon}
+              label={label}
+              color={color}
+              onPress={onPress}
+            />
+          </React.Fragment>
+        );
+      })}
+      <VoiceAssistantModal
+        visible={voiceModalVisible}
+        onClose={() => setVoiceModalVisible(false)}
+      />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    paddingTop: 8,
+  },
+  voiceButtonWrapper: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  voiceButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: -18,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+});

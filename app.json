@@ -1,0 +1,86 @@
+{
+  "expo": {
+    "name": "Amar Hisab",
+    "slug": "amarhisab",
+    "version": "1.2.0",
+    "orientation": "portrait",
+    "icon": "./assets/icons/adaptive-icon.png",
+    "scheme": "amarhisab",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.frazix.amarhisab",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSMicrophoneUsageDescription": "Allow Amar Hisab to access your microphone for voice input."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/icons/adaptive-icon.png",
+        "monochromeImage": "./assets/icons/adaptive-icon.png"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.frazix.amarisab",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA"
+      ]
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/icons/adaptive-icon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app needs access to your photos to attach receipts to expenses.",
+          "cameraPermission": "The app needs access to your camera to take photos of receipts."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to capture expense receipts",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icons/splash-icon-dark.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "image": "./assets/icons/splash-icon-light.png",
+            "backgroundColor": "#000000"
+          }
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/dfc803ea-0230-4998-b6a6-45f2041bd090"
+    },
+    "owner": "frazix",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2ce841f2-fa83-44d0-abf2-e356f89aa8dc"
+      }
+    }
+  }
+}
