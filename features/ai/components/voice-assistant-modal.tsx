@@ -762,7 +762,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
                     onPress={handleConfirm}
                     style={[
                       styles.primaryButton,
-                      { backgroundColor: colors.primary, flex: 1 },
+                      { backgroundColor: colors.primary, flex: 1, marginTop: 0 },
                     ]}
                   >
                     <HugeiconsIcon
@@ -1000,6 +1000,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                   {
                     backgroundColor: colors.primary,
                     flex: 1,
+                    marginTop: 0,
                     opacity: isSaveDisabled ? 0.6 : 1,
                   },
                 ]}
@@ -1228,7 +1229,7 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                 }}
                 style={[
                   styles.primaryButton,
-                  { backgroundColor: colors.primary, flex: 1 },
+                  { backgroundColor: colors.primary, flex: 1, marginTop: 0 },
                 ]}
               >
                 <Text
@@ -1296,11 +1297,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginTop: 16,
+    flexWrap: "wrap",
+    rowGap: 8,
+    columnGap: 8,
   },
   statusLeft: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    flexShrink: 1,
+    minWidth: 0,
   },
   statusPill: {
     paddingHorizontal: 12,
@@ -1310,6 +1316,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    flexShrink: 1,
   },
   readyIndicator: {
     width: 10,
@@ -1324,6 +1331,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     lineHeight: 16,
+    flexShrink: 1,
   },
   languageText: {
     fontSize: 12,
@@ -1331,6 +1339,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     flexShrink: 1,
     textAlign: "right",
+    minWidth: 0,
   },
   languageSelector: {
     marginTop: 16,
@@ -1343,12 +1352,15 @@ const styles = StyleSheet.create({
   selectorRow: {
     flexDirection: "row",
     gap: 8,
+    flexWrap: "wrap",
+    rowGap: 8,
   },
   selectorOption: {
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 16,
     borderWidth: 1,
+    alignSelf: "flex-start",
   },
   selectorOptionText: {
     fontSize: 12,

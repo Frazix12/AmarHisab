@@ -1,20 +1,28 @@
 import {
-    DarkTheme,
-    DefaultTheme,
-    ThemeProvider,
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
+import React from "react";
 
 import { AppProvider, useApp } from "@/contexts/app-context";
+import {
+  ensureTextMetricsPatched,
+  setTextMetricsLanguage,
+} from "@/utils/text-metrics";
 
 export const unstable_settings = {
   anchor: "(tabs)",
 };
 
 const RootLayoutContent = () => {
-  const { colorScheme } = useApp();
+  const { colorScheme, settings } = useApp();
+
+  ensureTextMetricsPatched();
+  setTextMetricsLanguage(settings.language);
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>

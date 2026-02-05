@@ -297,6 +297,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
+    flexGrow: 1,
   },
   summarySection: {
     marginBottom: 24,
@@ -312,11 +313,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     lineHeight: 22,
+    textAlign: "center",
   },
   emptyState: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 60,
+    paddingVertical: 40,
   },
   emptyTitle: {
     fontSize: 20,
