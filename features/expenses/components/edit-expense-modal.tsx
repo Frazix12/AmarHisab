@@ -67,7 +67,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
       if (status !== "granted") {
         Alert.alert(
           t.form.permission || "Permission Required",
-          "Please grant photo library access to attach images to expenses.",
+          t.alerts.photoLibraryPermission,
         );
         return;
       }
@@ -84,7 +84,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
       }
     } catch (error) {
       console.error("Error picking image:", error);
-      Alert.alert("Error", "Failed to pick image. Please try again.");
+      Alert.alert(t.alerts.errorTitle, t.alerts.pickImageFailed);
     }
   };
 
@@ -95,7 +95,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
       if (status !== "granted") {
         Alert.alert(
           t.form.permission || "Permission Required",
-          "Please grant camera access to capture photos of expenses.",
+          t.alerts.cameraPermission,
         );
         return;
       }
@@ -111,7 +111,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
       }
     } catch (error) {
       console.error("Error capturing image:", error);
-      Alert.alert("Error", "Failed to capture image. Please try again.");
+      Alert.alert(t.alerts.errorTitle, t.alerts.captureImageFailed);
     }
   };
 
@@ -122,7 +122,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
   const handleSave = () => {
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
-      alert("Please enter a valid amount");
+      Alert.alert(t.alerts.errorTitle, t.alerts.invalidAmount);
       return;
     }
 
@@ -407,6 +407,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: "700",
+    lineHeight: 26,
   },
   formContainer: {
     padding: 20,
@@ -418,12 +419,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 8,
+    lineHeight: 22,
   },
   input: {
     borderWidth: 1,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
+    lineHeight: 22,
   },
   textArea: {
     minHeight: 80,
@@ -443,6 +446,7 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 14,
     fontWeight: "500",
+    lineHeight: 18,
   },
   modalFooter: {
     flexDirection: "row",
@@ -464,6 +468,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: "600",
+    lineHeight: 20,
   },
   imageButtonsContainer: {
     flexDirection: "row",
@@ -482,6 +487,7 @@ const styles = StyleSheet.create({
   imageButtonText: {
     fontSize: 14,
     fontWeight: "600",
+    lineHeight: 18,
   },
   imagePreviewContainer: {
     position: "relative",

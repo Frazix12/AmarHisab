@@ -146,6 +146,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: "500",
-    height: 16, // Reserve space to prevent layout shift
+    lineHeight: 18,
+    minHeight: 18,
   },
 });

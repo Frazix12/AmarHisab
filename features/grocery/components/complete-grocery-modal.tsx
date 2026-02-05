@@ -69,7 +69,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
       if (status !== "granted") {
         Alert.alert(
           t.form.permission || "Permission Required",
-          "Please grant photo library access to attach images.",
+          t.alerts.photoLibraryPermission,
         );
         return;
       }
@@ -86,7 +86,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
       }
     } catch (error) {
       console.error("Error picking image:", error);
-      Alert.alert("Error", "Failed to pick image. Please try again.");
+      Alert.alert(t.alerts.errorTitle, t.alerts.pickImageFailed);
     }
   };
 
@@ -97,7 +97,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
       if (status !== "granted") {
         Alert.alert(
           t.form.permission || "Permission Required",
-          "Please grant camera access to capture photos.",
+          t.alerts.cameraPermission,
         );
         return;
       }
@@ -113,7 +113,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
       }
     } catch (error) {
       console.error("Error capturing image:", error);
-      Alert.alert("Error", "Failed to capture image. Please try again.");
+      Alert.alert(t.alerts.errorTitle, t.alerts.captureImageFailed);
     }
   };
 
@@ -249,11 +249,11 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
               {/* Image Attachment (Optional) */}
               <View style={styles.inputGroup}>
                 <Text style={[styles.label, { color: colors.text }]}>
-                  {t.form.attachment || "Receipt Photo"}{" "}
+                  {t.form.attachment}{" "}
                   <Text
                     style={{ color: colors.textSecondary, fontWeight: "400" }}
                   >
-                    (optional)
+                    ({t.common.optional})
                   </Text>
                 </Text>
 
@@ -300,7 +300,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
                       <Text
                         style={[styles.imageButtonText, { color: colors.text }]}
                       >
-                        {t.form.takePhoto || "Camera"}
+                        {t.form.takePhoto}
                       </Text>
                     </Pressable>
 
@@ -323,7 +323,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
                       <Text
                         style={[styles.imageButtonText, { color: colors.text }]}
                       >
-                        {t.form.choosePhoto || "Gallery"}
+                        {t.form.choosePhoto}
                       </Text>
                     </Pressable>
                   </View>
@@ -398,6 +398,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: "700",
+    lineHeight: 26,
   },
   formContainer: {
     padding: 20,
@@ -408,10 +409,12 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 12,
     marginBottom: 4,
+    lineHeight: 16,
   },
   infoValue: {
     fontSize: 16,
     fontWeight: "600",
+    lineHeight: 22,
   },
   inputGroup: {
     marginTop: 20,
@@ -421,16 +424,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 8,
+    lineHeight: 22,
   },
   input: {
     borderWidth: 1,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
+    lineHeight: 22,
   },
   errorText: {
     fontSize: 12,
     marginTop: 4,
+    lineHeight: 16,
   },
   imageButtonsContainer: {
     flexDirection: "row",
@@ -449,6 +455,7 @@ const styles = StyleSheet.create({
   imageButtonText: {
     fontSize: 14,
     fontWeight: "600",
+    lineHeight: 18,
   },
   imagePreviewContainer: {
     position: "relative",
@@ -495,5 +502,6 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: "600",
+    lineHeight: 20,
   },
 });

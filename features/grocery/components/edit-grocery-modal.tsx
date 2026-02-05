@@ -7,6 +7,7 @@ import { Cancel01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import React, { useEffect, useState } from "react";
 import {
+    Alert,
     Modal,
     Platform,
     Pressable,
@@ -61,13 +62,13 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
 
   const handleSave = async () => {
     if (!name.trim()) {
-      alert("Please enter an item name");
+      Alert.alert(t.alerts.errorTitle, t.alerts.requiredName);
       return;
     }
 
     const numPrice = parseFloat(price);
     if (isNaN(numPrice) || numPrice < 0) {
-      alert("Please enter a valid price");
+      Alert.alert(t.alerts.errorTitle, t.alerts.invalidPrice);
       return;
     }
 
@@ -168,7 +169,7 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
 
               <View style={[styles.inputGroup, { flex: 1 }]}>
                 <Text style={[styles.label, { color: colors.text }]}>
-                  Price ({settings.currency.symbol})
+                  {t.form.price} ({settings.currency.symbol})
                 </Text>
                 <TextInput
                   style={[
@@ -337,6 +338,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: "700",
+    lineHeight: 26,
   },
   formContainer: {
     padding: 20,
@@ -352,12 +354,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 8,
+    lineHeight: 22,
   },
   input: {
     borderWidth: 1,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
+    lineHeight: 22,
   },
   categoryGrid: {
     flexDirection: "row",
@@ -373,6 +377,7 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 14,
     fontWeight: "500",
+    lineHeight: 18,
   },
   checkboxRow: {
     flexDirection: "row",
@@ -390,6 +395,7 @@ const styles = StyleSheet.create({
   checkboxLabel: {
     fontSize: 15,
     flex: 1,
+    lineHeight: 20,
   },
   modalFooter: {
     flexDirection: "row",
@@ -411,5 +417,6 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: "600",
+    lineHeight: 20,
   },
 });

@@ -36,12 +36,12 @@ export default function AddTemplateScreen() {
     const newErrors: typeof errors = {};
 
     if (!productName.trim()) {
-      newErrors.productName = "Product name is required";
+      newErrors.productName = t.alerts.requiredProductName;
     }
 
     const priceNum = parseFloat(price);
     if (!price || isNaN(priceNum) || priceNum < 0) {
-      newErrors.price = "Valid price is required";
+      newErrors.price = t.alerts.requiredValidPrice;
     }
 
     setErrors(newErrors);
@@ -64,7 +64,7 @@ export default function AddTemplateScreen() {
 
       router.back();
     } catch {
-      Alert.alert("Error", "Failed to create template");
+      Alert.alert(t.alerts.errorTitle, t.alerts.failedToCreate);
     }
   };
 
@@ -240,6 +240,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     flex: 1,
     textAlign: "center",
+    lineHeight: 26,
   },
   form: {
     flex: 1,
@@ -252,6 +253,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     marginBottom: 8,
+    lineHeight: 22,
   },
   input: {
     borderWidth: 1,
@@ -259,14 +261,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
+    lineHeight: 22,
   },
   hint: {
     fontSize: 12,
     marginTop: 4,
+    lineHeight: 16,
   },
   errorText: {
     fontSize: 12,
     marginTop: 4,
+    lineHeight: 16,
   },
   priceContainer: {
     flexDirection: "row",
@@ -284,6 +289,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
+    lineHeight: 22,
   },
   categoryGrid: {
     flexDirection: "row",
@@ -299,6 +305,7 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 14,
     fontWeight: "500",
+    lineHeight: 18,
   },
   infoBox: {
     padding: 16,

@@ -170,6 +170,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "600",
     flexShrink: 1,
+    lineHeight: 22,
   },
   bottomSpacer: {
     height: Platform.OS === "ios" ? 30 : 20,

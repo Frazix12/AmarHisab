@@ -152,6 +152,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
     marginRight: 12,
+    lineHeight: 18,
   },
   closeButton: {
     padding: 4,

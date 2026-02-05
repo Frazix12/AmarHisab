@@ -163,23 +163,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     marginBottom: 4,
+    lineHeight: 20,
   },
   metaContainer: {
     flexDirection: "row",
     gap: 8,
+    flexWrap: "wrap",
+    rowGap: 4,
+    alignItems: "center",
   },
   quantity: {
     fontSize: 14,
+    lineHeight: 18,
   },
   price: {
     fontSize: 14,
+    lineHeight: 18,
   },
   category: {
     fontSize: 14,
+    lineHeight: 18,
   },
   priceNotSet: {
     fontSize: 12,
     fontStyle: "italic",
+    lineHeight: 16,
   },
   badge: {
     paddingHorizontal: 6,
@@ -190,5 +198,6 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 10,
     fontWeight: "600",
+    lineHeight: 14,
   },
 });

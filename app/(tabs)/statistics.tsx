@@ -33,11 +33,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const DATE_GROUP_ORDER: DateGroup[] = [
-  "Today",
-  "Yesterday",
-  "This Week",
-  "This Month",
-  "Older",
+  "today",
+  "yesterday",
+  "thisWeek",
+  "thisMonth",
+  "older",
 ];
 
 export default function StatisticsScreen() {
@@ -54,6 +54,7 @@ export default function StatisticsScreen() {
     settings,
   } = useApp();
   const colors = Colors[colorScheme];
+  const isBangla = settings.language === "bn";
   const [refreshing, setRefreshing] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [showActionMenu, setShowActionMenu] = useState(false);
@@ -100,7 +101,7 @@ export default function StatisticsScreen() {
 
     Alert.alert(
       t.expenses.deleteExpense,
-      `Are you sure you want to delete "${selectedExpense.description || "this expense"}"?`,
+      t.alerts.deleteExpenseMessage,
       [
         { text: t.form.cancel, style: "cancel" },
         {
@@ -163,11 +164,17 @@ export default function StatisticsScreen() {
 
   const renderSectionHeader = useCallback(
     ({ section }: { section: { title: DateGroup } }) => (
-      <Text style={[styles.dateGroupTitle, { color: colors.textSecondary }]}>
-        {section.title}
+      <Text
+        style={[
+          styles.dateGroupTitle,
+          { color: colors.textSecondary },
+          isBangla && styles.dateGroupTitleBangla,
+        ]}
+      >
+        {t.common[section.title]}
       </Text>
     ),
-    [colors],
+    [colors, isBangla, t],
   );
 
   const renderSectionFooter = useCallback(
@@ -252,8 +259,8 @@ export default function StatisticsScreen() {
                       { color: colors.textSecondary },
                     ]}
                   >
-                    {item.count} {item.count === 1 ? "item" : "items"} •{" "}
-                    {item.percentage.toFixed(0)}%
+                    {formatNumber(item.count)} {item.count === 1 ? t.common.item : t.common.items} •{" "}
+                    {formatNumber(item.percentage.toFixed(0))}%
                   </Text>
                 </View>
                 <View style={styles.categoryAmountContainer}>
@@ -375,6 +382,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: "700",
+    lineHeight: 34,
   },
   scrollView: {
     flex: 1,
@@ -392,6 +400,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     marginBottom: 16,
+    lineHeight: 24,
   },
   categoryItem: {
     marginBottom: 12,
@@ -406,9 +415,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 4,
+    lineHeight: 22,
   },
   categoryDetails: {
     fontSize: 14,
+    lineHeight: 18,
   },
   categoryAmountContainer: {
     flexDirection: "row",
@@ -432,6 +443,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     minWidth: 80,
     textAlign: "right",
+    lineHeight: 22,
   },
   historySection: {
     marginBottom: 24,
@@ -442,6 +454,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textTransform: "uppercase",
     letterSpacing: 0.5,
+    lineHeight: 18,
+  },
+  dateGroupTitleBangla: {
+    textTransform: "none",
+    letterSpacing: 0,
+    lineHeight: 18,
   },
   sectionFooter: {
     height: 24,
@@ -456,10 +474,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 16,
     marginBottom: 8,
+    lineHeight: 26,
   },
   emptyDescription: {
     fontSize: 16,
     textAlign: "center",
+    lineHeight: 22,
   },
   bottomSpacer: {
     height: 40,

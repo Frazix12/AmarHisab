@@ -1,6 +1,5 @@
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
-import { GROCERY_CATEGORIES } from "@/types";
 import {
   Add01Icon,
   Delete02Icon,
@@ -55,10 +54,11 @@ export default function TemplatesScreen() {
     [deleteTemplate],
   );
 
-  const getCategoryLabel = useCallback((category: string) => {
-    const cat = GROCERY_CATEGORIES.find((c) => c.value === category);
-    return cat?.label || category;
-  }, []);
+  const getCategoryLabel = useCallback(
+    (category: string) =>
+      t.categories[category as keyof typeof t.categories] || category,
+    [t],
+  );
 
   const formatDate = useCallback(
     (date: Date) => {
@@ -129,9 +129,9 @@ export default function TemplatesScreen() {
                     : t.templates.manualTag}
                 </Text>
               </View>
-              <Text style={[styles.metaText, { color: colors.textSecondary }]}>
-                {t.templates.usedCount} {formatNumber(template.usageCount || 0)}x
-              </Text>
+                <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                  {t.templates.usedCount} {formatNumber(template.usageCount || 0)} {t.templates.usedTimes}
+                </Text>
             </View>
           </View>
           <View style={styles.actions}>
@@ -356,6 +356,7 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 16,
+    lineHeight: 22,
   },
   title: {
     fontSize: 20,
@@ -363,6 +364,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: "center",
     marginHorizontal: 8,
+    lineHeight: 26,
   },
   addButton: {
     width: 40,
@@ -387,6 +389,7 @@ const styles = StyleSheet.create({
   filterText: {
     fontSize: 14,
     fontWeight: "500",
+    lineHeight: 18,
   },
   list: {
     flex: 1,
@@ -403,6 +406,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     textAlign: "center",
+    lineHeight: 22,
   },
   templateCard: {
     borderRadius: 12,
@@ -422,6 +426,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     marginBottom: 6,
+    lineHeight: 24,
   },
   templateMeta: {
     flexDirection: "row",
@@ -436,9 +441,11 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 12,
     fontWeight: "500",
+    lineHeight: 16,
   },
   metaText: {
     fontSize: 12,
+    lineHeight: 16,
   },
   actions: {
     flexDirection: "row",
@@ -453,13 +460,21 @@ const styles = StyleSheet.create({
   detailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    flexWrap: "wrap",
+    columnGap: 8,
+    rowGap: 4,
   },
   detailLabel: {
     fontSize: 14,
+    lineHeight: 18,
+    flexShrink: 1,
   },
   detailValue: {
     fontSize: 14,
     fontWeight: "500",
+    lineHeight: 18,
+    flexShrink: 1,
+    textAlign: "right",
   },
   modalOverlay: {
     flex: 1,
@@ -478,6 +493,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "600",
     marginBottom: 12,
+    lineHeight: 26,
   },
   modalText: {
     fontSize: 14,
@@ -497,5 +513,6 @@ const styles = StyleSheet.create({
   modalButtonText: {
     fontSize: 16,
     fontWeight: "600",
+    lineHeight: 20,
   },
 });

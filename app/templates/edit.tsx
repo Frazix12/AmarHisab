@@ -71,12 +71,12 @@ export default function EditTemplateScreen() {
     const newErrors: typeof errors = {};
 
     if (!productName.trim()) {
-      newErrors.productName = "Product name is required";
+      newErrors.productName = t.alerts.requiredProductName;
     }
 
     const priceNum = parseFloat(price);
     if (!price || isNaN(priceNum) || priceNum < 0) {
-      newErrors.price = "Valid price is required";
+      newErrors.price = t.alerts.requiredValidPrice;
     }
 
     setErrors(newErrors);
@@ -98,7 +98,7 @@ export default function EditTemplateScreen() {
 
       router.back();
     } catch {
-      Alert.alert("Error", "Failed to update template");
+      Alert.alert(t.alerts.errorTitle, t.alerts.failedToUpdate);
     } finally {
       setLoading(false);
     }
@@ -310,6 +310,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     flex: 1,
     textAlign: "center",
+    lineHeight: 26,
   },
   form: {
     flex: 1,
@@ -320,6 +321,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     marginBottom: 24,
+    flexWrap: "wrap",
+    rowGap: 8,
   },
   sourceBadge: {
     paddingHorizontal: 12,
@@ -329,9 +332,11 @@ const styles = StyleSheet.create({
   sourceBadgeText: {
     fontSize: 14,
     fontWeight: "500",
+    lineHeight: 18,
   },
   usageText: {
     fontSize: 14,
+    lineHeight: 18,
   },
   field: {
     marginBottom: 24,
@@ -340,6 +345,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     marginBottom: 8,
+    lineHeight: 22,
   },
   input: {
     borderWidth: 1,
@@ -347,10 +353,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
+    lineHeight: 22,
   },
   errorText: {
     fontSize: 12,
     marginTop: 4,
+    lineHeight: 16,
   },
   priceContainer: {
     flexDirection: "row",
@@ -368,6 +376,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
+    lineHeight: 22,
   },
   categoryGrid: {
     flexDirection: "row",
@@ -383,6 +392,7 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 14,
     fontWeight: "500",
+    lineHeight: 18,
   },
   errorContainer: {
     flex: 1,
@@ -393,6 +403,7 @@ const styles = StyleSheet.create({
   errorMessage: {
     fontSize: 16,
     marginBottom: 20,
+    lineHeight: 22,
   },
   button: {
     paddingHorizontal: 24,
@@ -403,5 +414,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+    lineHeight: 20,
   },
 });

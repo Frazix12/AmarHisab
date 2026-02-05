@@ -40,6 +40,7 @@ export default function ExpensesScreen() {
     todayExpenses,
     todaysExpensesList,
     settings,
+    formatNumber,
   } = useApp();
   const colors = Colors[colorScheme];
   const [refreshing, setRefreshing] = useState(false);
@@ -90,7 +91,7 @@ export default function ExpensesScreen() {
 
     Alert.alert(
       t.expenses.deleteExpense,
-      `Are you sure you want to delete "${selectedExpense.description || "this expense"}"?`,
+      t.alerts.deleteExpenseMessage,
       [
         { text: t.form.cancel, style: "cancel" },
         {
@@ -179,12 +180,12 @@ export default function ExpensesScreen() {
           ]}
         >
           <Text style={[styles.itemCountText, { color: colors.textSecondary }]}>
-            {sortedExpenses.length} {t.expenses.itemCount}
+            {formatNumber(sortedExpenses.length)} {t.expenses.itemCount}
           </Text>
         </View>
       </View>
     ),
-    [colors, sortedExpenses.length, t, todayExpenses],
+    [colors, formatNumber, sortedExpenses.length, t, todayExpenses],
   );
 
   return (
@@ -289,6 +290,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: "700",
+    lineHeight: 34,
   },
   scrollView: {
     flex: 1,
@@ -309,6 +311,7 @@ const styles = StyleSheet.create({
   itemCountText: {
     fontSize: 16,
     fontWeight: "600",
+    lineHeight: 22,
   },
   emptyState: {
     alignItems: "center",
@@ -320,10 +323,13 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 16,
     marginBottom: 8,
+    lineHeight: 26,
+    textAlign: "center",
   },
   emptyDescription: {
     fontSize: 16,
     textAlign: "center",
+    lineHeight: 22,
   },
   dateGroup: {
     marginBottom: 24,
@@ -334,6 +340,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textTransform: "uppercase",
     letterSpacing: 0.5,
+    lineHeight: 18,
   },
   bottomSpacer: {
     height: 80,

@@ -13,6 +13,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import React, { useEffect, useState } from "react";
 import {
+    Alert,
     Modal,
     Platform,
     Pressable,
@@ -125,14 +126,14 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
 
   const handleSave = () => {
     if (!name.trim()) {
-      alert("Please enter an item name");
+      Alert.alert(t.alerts.errorTitle, t.alerts.requiredName);
       return;
     }
 
     // Allow price to be 0 (no price set) or any positive number
     const numPrice = price.trim() ? parseFloat(price) : 0;
     if (isNaN(numPrice) || numPrice < 0) {
-      alert("Price cannot be negative");
+      Alert.alert(t.alerts.errorTitle, t.alerts.priceNegative);
       return;
     }
 
@@ -242,12 +243,14 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                 >
                   💡 {matchingTemplates[0].template.productNameDisplay} •{" "}
                   {settings.currency.symbol}
-                  {matchingTemplates[0].template.defaultPrice.toFixed(2)}
+                  {formatNumber(
+                    matchingTemplates[0].template.defaultPrice.toFixed(2),
+                  )}
                 </Text>
               )}
               {appliedTemplateId && (
                 <Text style={[styles.appliedHint, { color: colors.primary }]}>
-                  ✨ Using template
+                  {t.helpers.usingTemplate}
                 </Text>
               )}
             </View>
@@ -276,7 +279,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
 
               <View style={[styles.inputGroup, { flex: 1 }]}>
                 <Text style={[styles.label, { color: colors.text }]}>
-                  Price ({settings.currency.symbol})
+                  {t.form.price} ({settings.currency.symbol})
                 </Text>
                 <TextInput
                   style={[
@@ -317,7 +320,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                     <Text
                       style={[styles.aiButtonText, { color: colors.primary }]}
                     >
-                      AI detecting...
+                      {t.helpers.aiDetecting}
                     </Text>
                   </View>
                 )}
@@ -336,7 +339,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                     <Text
                       style={[styles.aiButtonText, { color: colors.primary }]}
                     >
-                      AI suggested
+                      {t.helpers.aiSuggested}
                     </Text>
                   </View>
                 )}
@@ -431,7 +434,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
               onStartShouldSetResponder={() => true}
             >
               <Text style={[styles.pickerTitle, { color: colors.text }]}>
-                Select Template ({matchingTemplates.length} matches)
+                {t.templates.selectTemplate} ({formatNumber(matchingTemplates.length)} {t.templates.matches})
               </Text>
               <ScrollView style={styles.pickerList}>
                 {matchingTemplates.map((match) => (
@@ -470,7 +473,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                           style={[styles.templatePrice, { color: colors.text }]}
                         >
                           {settings.currency.symbol}
-                          {match.template.defaultPrice.toFixed(2)}
+                          {formatNumber(match.template.defaultPrice.toFixed(2))}
                         </Text>
                       </View>
                     </View>
@@ -481,7 +484,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                           { color: colors.primary },
                         ]}
                       >
-                        {Math.round(match.confidence * 100)}% match
+                        {Math.round(match.confidence * 100)}% {t.templates.match}
                       </Text>
                       <Text
                         style={[
@@ -489,7 +492,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                           { color: colors.textSecondary },
                         ]}
                       >
-                        Used {match.template.usageCount}x
+                        {t.templates.usedCount} {formatNumber(match.template.usageCount)} {t.templates.usedTimes}
                       </Text>
                     </View>
                   </Pressable>
@@ -526,6 +529,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: "700",
+    lineHeight: 26,
   },
   formContainer: {
     padding: 20,
@@ -542,13 +546,15 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: 8,
     flex: 1,
-    flexShrink: 0,
+    flexShrink: 1,
+    lineHeight: 22,
   },
   input: {
     borderWidth: 1,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
+    lineHeight: 22,
   },
   categoryGrid: {
     flexDirection: "row",
@@ -564,6 +570,7 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 14,
     fontWeight: "500",
+    lineHeight: 18,
   },
   modalFooter: {
     flexDirection: "row",
@@ -585,12 +592,15 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: "600",
+    lineHeight: 20,
   },
   labelRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 8,
+    flexWrap: "wrap",
+    rowGap: 8,
   },
   aiButton: {
     flexDirection: "row",
@@ -603,15 +613,18 @@ const styles = StyleSheet.create({
   aiButtonText: {
     fontSize: 12,
     fontWeight: "600",
+    lineHeight: 16,
   },
   templateHint: {
     fontSize: 12,
     marginTop: 4,
+    lineHeight: 16,
   },
   appliedHint: {
     fontSize: 12,
     marginTop: 4,
     fontWeight: "600",
+    lineHeight: 16,
   },
   pickerOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -639,14 +652,19 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
+    flexWrap: "wrap",
+    rowGap: 8,
   },
   templateOptionMain: {
     flex: 1,
+    minWidth: 0,
   },
   templateName: {
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 4,
+    lineHeight: 20,
+    flexShrink: 1,
   },
   templateMeta: {
     flexDirection: "row",
@@ -655,23 +673,29 @@ const styles = StyleSheet.create({
   },
   templateDetail: {
     fontSize: 13,
+    lineHeight: 18,
   },
   templateDetailDot: {
     fontSize: 13,
+    lineHeight: 18,
   },
   templatePrice: {
     fontSize: 13,
     fontWeight: "500",
+    lineHeight: 18,
   },
   templateOptionRight: {
     alignItems: "flex-end",
+    flexShrink: 1,
   },
   confidenceText: {
     fontSize: 12,
     fontWeight: "600",
     marginBottom: 2,
+    lineHeight: 16,
   },
   usageText: {
     fontSize: 11,
+    lineHeight: 15,
   },
 });

@@ -23,7 +23,7 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
   onDismiss,
   visible,
 }) => {
-  const { colorScheme, settings } = useApp();
+  const { colorScheme, settings, t, formatNumber } = useApp();
   const colors = Colors[colorScheme];
 
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -99,11 +99,11 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
       >
         <View style={styles.undoContent}>
           <Text style={[styles.undoText, { color: colors.onPrimaryContainer }]}>
-            ✅ Template saved!
+            ✅ {t.templates.templateSaved}
           </Text>
           <Pressable onPress={handleUndo} style={styles.undoButton}>
             <Text style={[styles.undoButtonText, { color: colors.primary }]}>
-              Undo
+              {t.templates.undo}
             </Text>
           </Pressable>
         </View>
@@ -132,10 +132,13 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
         </View>
         <View style={styles.headerText}>
           <Text style={[styles.title, { color: colors.text }]}>
-            Save as Template?
+            {t.templates.saveAsTemplateTitle}
           </Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            You buy &quot;{suggestion.productName}&quot; often
+            {t.templates.saveAsTemplateSubtitle.replace(
+              "{name}",
+              suggestion.productName,
+            )}
           </Text>
         </View>
       </View>
@@ -144,7 +147,7 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
       <View style={styles.details}>
         <View style={styles.detailRow}>
           <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-            Typical quantity:
+            {t.templates.typicalQuantity}:
           </Text>
           <Text style={[styles.detailValue, { color: colors.text }]}>
             {suggestion.defaultQuantity}
@@ -152,19 +155,19 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
         </View>
         <View style={styles.detailRow}>
           <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-            Avg price:
+            {t.templates.avgPrice}:
           </Text>
           <Text style={[styles.detailValue, { color: colors.text }]}>
             {settings.currency.symbol}
-            {suggestion.defaultPrice.toFixed(2)}
+            {formatNumber(suggestion.defaultPrice.toFixed(2))}
           </Text>
         </View>
         <View style={styles.detailRow}>
           <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-            Purchased:
+            {t.templates.purchased}:
           </Text>
           <Text style={[styles.detailValue, { color: colors.text }]}>
-            {suggestion.occurrences} times
+            {formatNumber(suggestion.occurrences)} {t.templates.usedTimes}
           </Text>
         </View>
       </View>
@@ -181,7 +184,7 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
         >
           <HugeiconsIcon icon={Delete02Icon} size={16} color={colors.error} />
           <Text style={[styles.actionButtonText, { color: colors.error }]}>
-            Never
+            {t.templates.never}
           </Text>
         </Pressable>
 
@@ -195,7 +198,7 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
         >
           <HugeiconsIcon icon={Cancel01Icon} size={16} color={colors.text} />
           <Text style={[styles.actionButtonText, { color: colors.text }]}>
-            Not now
+            {t.templates.notNow}
           </Text>
         </Pressable>
 
@@ -208,7 +211,9 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
           ]}
         >
           <HugeiconsIcon icon={Tick02Icon} size={16} color="#fff" />
-          <Text style={[styles.actionButtonText, { color: "#fff" }]}>Save</Text>
+          <Text style={[styles.actionButtonText, { color: "#fff" }]}>
+            {t.form.save}
+          </Text>
         </Pressable>
       </View>
     </Animated.View>
@@ -251,9 +256,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 2,
+    lineHeight: 20,
   },
   subtitle: {
     fontSize: 13,
+    lineHeight: 18,
   },
   details: {
     backgroundColor: "rgba(0,0,0,0.02)",
@@ -265,13 +272,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 6,
+    flexWrap: "wrap",
+    columnGap: 8,
+    rowGap: 4,
   },
   detailLabel: {
     fontSize: 14,
+    lineHeight: 18,
+    flexShrink: 1,
   },
   detailValue: {
     fontSize: 14,
     fontWeight: "600",
+    lineHeight: 18,
+    flexShrink: 1,
+    textAlign: "right",
   },
   actions: {
     flexDirection: "row",
@@ -298,6 +313,7 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 14,
     fontWeight: "600",
+    lineHeight: 18,
   },
   undoContent: {
     flexDirection: "row",
@@ -307,6 +323,7 @@ const styles = StyleSheet.create({
   undoText: {
     fontSize: 16,
     fontWeight: "600",
+    lineHeight: 20,
   },
   undoButton: {
     paddingVertical: 8,
@@ -315,5 +332,6 @@ const styles = StyleSheet.create({
   undoButtonText: {
     fontSize: 14,
     fontWeight: "600",
+    lineHeight: 18,
   },
 });

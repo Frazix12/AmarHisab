@@ -99,9 +99,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
     marginBottom: 4,
+    lineHeight: 18,
   },
   amount: {
     fontSize: 24,
     fontWeight: "700",
+    lineHeight: 30,
   },
 });

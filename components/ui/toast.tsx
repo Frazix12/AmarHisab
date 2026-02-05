@@ -176,5 +176,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     flex: 1,
+    lineHeight: 20,
   },
 });

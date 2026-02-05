@@ -149,13 +149,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 2,
+    lineHeight: 20,
   },
   description: {
     fontSize: 14,
     marginBottom: 2,
+    lineHeight: 18,
   },
   date: {
     fontSize: 12,
+    lineHeight: 16,
   },
   amountContainer: {
     alignItems: "flex-end",
@@ -163,6 +166,7 @@ const styles = StyleSheet.create({
   amount: {
     fontSize: 18,
     fontWeight: "700",
+    lineHeight: 22,
   },
   thumbnailImage: {
     width: 48,

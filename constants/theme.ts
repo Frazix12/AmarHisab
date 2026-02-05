@@ -1,141 +1,188 @@
 /**
- * Material Design 3 Color System
- * Vibrant, modern color palette for Amar Hisab expense tracker
+ * Material Design 3-ish Color System (Refined)
+ * Friendlier contrast, softer neutrals, more complete roles for real UI usage.
  */
 
 import { Platform } from "react-native";
 
 export const Colors = {
   light: {
-    // Primary colors (Teal/Blue)
+    // Primary (Teal)
     primary: "#00796B",
-    primaryContainer: "#B2DFDB",
     onPrimary: "#FFFFFF",
-    onPrimaryContainer: "#004D40",
+    primaryContainer: "#B2DFDB",
+    onPrimaryContainer: "#00352F",
 
-    // Secondary colors (Amber/Orange)
-    secondary: "#FF6F00",
+    // Secondary (Amber)
+    secondary: "#FF8F00",
+    onSecondary: "#1F1400",
     secondaryContainer: "#FFE0B2",
-    onSecondary: "#FFFFFF",
-    onSecondaryContainer: "#E65100",
+    onSecondaryContainer: "#3A2500",
 
-    // Tertiary colors
+    // Tertiary (Indigo)
     tertiary: "#5E35B1",
-    tertiaryContainer: "#D1C4E9",
     onTertiary: "#FFFFFF",
-    onTertiaryContainer: "#311B92",
+    tertiaryContainer: "#D1C4E9",
+    onTertiaryContainer: "#24124F",
 
-    // Surface colors
+    // Background & surfaces
     background: "#FAFAFA",
-    surface: "#FFFFFF",
-    surfaceVariant: "#F5F5F5",
     onBackground: "#1A1C18",
+
+    surface: "#FFFFFF",
     onSurface: "#1A1C18",
-    onSurfaceVariant: "#44483D",
+    surfaceVariant: "#F1F3F4",
+    onSurfaceVariant: "#3F4448",
 
-    // Semantic colors
-    error: "#D32F2F",
-    errorContainer: "#FFCDD2",
-    onError: "#FFFFFF",
-    success: "#388E3C",
-    successContainer: "#C8E6C9",
-    warning: "#F57C00",
-    warningContainer: "#FFE0B2",
-    info: "#1976D2",
-    infoContainer: "#BBDEFB",
+    // Extra surface roles (handy for MD3-ish elevation & overlays)
+    surfaceTint: "#00796B",
+    inverseSurface: "#2F3133",
+    inverseOnSurface: "#F1F3F4",
 
-    // Outline and borders
-    outline: "#E0E0E0",
-    outlineVariant: "#C8C8C8",
+    // App-friendly aliases
+    card: "#FFFFFF",
+    cardMuted: "#F6F7F8",
+    divider: "#E6E8EB",
+    scrim: "rgba(0,0,0,0.32)",
+    placeholder: "#8A9096",
 
-    // Text colors
+    // Outlines (softer)
+    outline: "#DADCE0",
+    outlineVariant: "#C9CDD2",
+
+    // Text
     text: "#1A1C18",
     textSecondary: "#5F6368",
+    textTertiary: "#7A8086",
 
-    // Tab bar
+    // Semantic colors (add proper on* pairs)
+    error: "#B3261E",
+    onError: "#FFFFFF",
+    errorContainer: "#F9DEDC",
+    onErrorContainer: "#410E0B",
+
+    success: "#2E7D32",
+    onSuccess: "#FFFFFF",
+    successContainer: "#C8E6C9",
+    onSuccessContainer: "#0F2B12",
+
+    warning: "#B15D00",
+    onWarning: "#FFFFFF",
+    warningContainer: "#FFE0B2",
+    onWarningContainer: "#3A2500",
+
+    info: "#1565C0",
+    onInfo: "#FFFFFF",
+    infoContainer: "#D6E4FF",
+    onInfoContainer: "#0B1B3A",
+
+    // Navigation / icons
     tint: "#00796B",
-    tabIconDefault: "#78909C",
+    tabIconDefault: "#7C8A93",
     tabIconSelected: "#00796B",
     icon: "#5F6368",
 
-    // Card shadows and elevation
+    // Elevation tokens (light theme = subtle grays)
     shadow: "#000000",
-    elevation1: "#FAFAFA",
-    elevation2: "#F5F5F5",
-    elevation3: "#EEEEEE",
+    elevation1: "#FFFFFF",
+    elevation2: "#F7F8F9",
+    elevation3: "#F1F3F4",
   },
+
   dark: {
-    // Primary colors (Teal/Blue)
+    // Primary (Teal)
     primary: "#4DB6AC",
-    primaryContainer: "#00695C",
-    onPrimary: "#003D33",
+    onPrimary: "#00322B",
+    primaryContainer: "#005047",
     onPrimaryContainer: "#A7FFEB",
 
-    // Secondary colors (Amber/Orange)
-    secondary: "#FFB74D",
-    secondaryContainer: "#E65100",
-    onSecondary: "#4E2D00",
-    onSecondaryContainer: "#FFCC80",
+    // Secondary (Amber)
+    secondary: "#FFC46B",
+    onSecondary: "#2A1A00",
+    secondaryContainer: "#5A3A00",
+    onSecondaryContainer: "#FFE1B6",
 
-    // Tertiary colors
-    tertiary: "#B39DDB",
-    tertiaryContainer: "#4527A0",
-    onTertiary: "#2C1A52",
-    onTertiaryContainer: "#D1C4E9",
+    // Tertiary (Indigo)
+    tertiary: "#C7B7F5",
+    onTertiary: "#2A184C",
+    tertiaryContainer: "#4A2AA3",
+    onTertiaryContainer: "#E8DDFF",
 
-    // Surface colors
+    // Background & surfaces
     background: "#121212",
-    surface: "#1E1E1E",
-    surfaceVariant: "#2C2C2C",
     onBackground: "#E6E1E5",
+
+    surface: "#1A1A1A",
     onSurface: "#E6E1E5",
-    onSurfaceVariant: "#C7C5CA",
+    surfaceVariant: "#262A2E",
+    onSurfaceVariant: "#C7C9CC",
+
+    // Extra surface roles
+    surfaceTint: "#4DB6AC",
+    inverseSurface: "#E6E1E5",
+    inverseOnSurface: "#1A1A1A",
+
+    // App-friendly aliases
+    card: "#1E1E1E",
+    cardMuted: "#232323",
+    divider: "#2F3337",
+    scrim: "rgba(0,0,0,0.55)",
+    placeholder: "#9AA0A6",
+
+    // Outlines (not too contrasty)
+    outline: "#3A3F44",
+    outlineVariant: "#2B2F33",
+
+    // Text
+    text: "#E6E1E5",
+    textSecondary: "#C7C9CC",
+    textTertiary: "#AEB3B7",
 
     // Semantic colors
-    error: "#EF5350",
-    errorContainer: "#B71C1C",
-    onError: "#FFFFFF",
-    success: "#66BB6A",
-    successContainer: "#1B5E20",
-    warning: "#FFA726",
-    warningContainer: "#E65100",
-    info: "#42A5F5",
-    infoContainer: "#0D47A1",
+    error: "#F2B8B5",
+    onError: "#601410",
+    errorContainer: "#8C1D18",
+    onErrorContainer: "#F9DEDC",
 
-    // Outline and borders
-    outline: "#3E3E3E",
-    outlineVariant: "#2C2C2C",
+    success: "#7CE081",
+    onSuccess: "#0F2B12",
+    successContainer: "#1F4A23",
+    onSuccessContainer: "#C8E6C9",
 
-    // Text colors
-    text: "#E6E1E5",
-    textSecondary: "#C7C5CA",
+    warning: "#FFB55A",
+    onWarning: "#2A1A00",
+    warningContainer: "#5A3A00",
+    onWarningContainer: "#FFE0B2",
 
-    // Tab bar
+    info: "#9FC2FF",
+    onInfo: "#0B1B3A",
+    infoContainer: "#103A76",
+    onInfoContainer: "#D6E4FF",
+
+    // Navigation / icons
     tint: "#4DB6AC",
-    tabIconDefault: "#90A4AE",
+    tabIconDefault: "#95A3AD",
     tabIconSelected: "#4DB6AC",
-    icon: "#C7C5CA",
+    icon: "#C7C9CC",
 
-    // Card shadows and elevation
+    // Elevation tokens (dark theme = slightly brighter layers)
     shadow: "#000000",
-    elevation1: "#242424",
-    elevation2: "#2C2C2C",
-    elevation3: "#353535",
+    elevation1: "#1E1E1E",
+    elevation2: "#242424",
+    elevation3: "#2B2B2B",
   },
 };
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
     sans: "system-ui",
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
     serif: "ui-serif",
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
     rounded: "ui-rounded",
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
     mono: "ui-monospace",
   },
   default: {
+    // Note: RN Android expects actual font families unless using system defaults.
+    // Keeping as generic fallbacks for cross-platform simplicity.
     sans: "normal",
     serif: "serif",
     rounded: "normal",
@@ -144,8 +191,7 @@ export const Fonts = Platform.select({
   web: {
     sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
     serif: "Georgia, 'Times New Roman', serif",
-    rounded:
-      "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
+    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
     mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
   },
 });

@@ -68,6 +68,7 @@ export default function GroceryScreen() {
     smartSuggestionsEnabled,
   } = useApp();
   const colors = Colors[colorScheme];
+  const isBangla = settings.language === "bn";
   const [modalVisible, setModalVisible] = useState(false);
   const [currentSuggestion, setCurrentSuggestion] =
     useState<LearningCandidate | null>(null);
@@ -162,7 +163,7 @@ export default function GroceryScreen() {
 
     Alert.alert(
       t.grocery.deleteItem,
-      `Are you sure you want to delete "${selectedItem.name}"?`,
+      t.alerts.deleteItemMessage,
       [
         { text: t.form.cancel, style: "cancel" },
         {
@@ -203,7 +204,7 @@ export default function GroceryScreen() {
   const handleClearCompleted = useCallback(() => {
     Alert.alert(
       t.grocery.clearCompleted,
-      "Are you sure you want to clear all completed items?",
+      t.alerts.clearCompletedMessage,
       [
         { text: t.form.cancel, style: "cancel" },
         {
@@ -256,11 +257,17 @@ export default function GroceryScreen() {
 
   const renderSectionHeader = useCallback(
     ({ section }: { section: GrocerySection }) => (
-      <Text style={[styles.categoryTitle, { color: colors.textSecondary }]}>
+      <Text
+        style={[
+          styles.categoryTitle,
+          { color: colors.textSecondary },
+          isBangla && styles.categoryTitleBangla,
+        ]}
+      >
         {t.categories[section.title as keyof typeof t.categories]}
       </Text>
     ),
-    [colors, t],
+    [colors, isBangla, t],
   );
 
   const renderSectionFooter = useCallback(
@@ -422,6 +429,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: "700",
+    lineHeight: 34,
   },
   clearButton: {
     paddingVertical: 8,
@@ -430,6 +438,7 @@ const styles = StyleSheet.create({
   clearButtonText: {
     fontSize: 14,
     fontWeight: "600",
+    lineHeight: 18,
   },
   scrollView: {
     flex: 1,
@@ -447,10 +456,13 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 16,
     marginBottom: 8,
+    lineHeight: 26,
+    textAlign: "center",
   },
   emptyDescription: {
     fontSize: 16,
     textAlign: "center",
+    lineHeight: 22,
   },
   categoryTitle: {
     fontSize: 14,
@@ -458,6 +470,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textTransform: "uppercase",
     letterSpacing: 0.5,
+    lineHeight: 18,
+  },
+  categoryTitleBangla: {
+    textTransform: "none",
+    letterSpacing: 0,
+    lineHeight: 18,
   },
   sectionFooter: {
     height: 24,

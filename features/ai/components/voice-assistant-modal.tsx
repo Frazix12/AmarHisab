@@ -21,7 +21,7 @@ import { parseBanglaNumber } from "@/utils/format";
 import { useModalAnimation } from "@/utils/animations";
 import {
   Cancel01Icon,
-  Mic01Icon,
+  AiMicIcon,
   Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
@@ -39,7 +39,13 @@ import {
   TextInput,
   View,
 } from "react-native";
-import Animated from "react-native-reanimated";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 
 interface VoiceAssistantModalProps {
   visible: boolean;
@@ -54,14 +60,6 @@ const isAudioRecordAvailable = () => AudioRecord.isAvailable();
 
 const normalizeSpeechText = (value: string) =>
   value.replace(/\s+/g, " ").trim();
-
-const buildLanguageLabel = (languageCode: string | null) => {
-  if (!languageCode) return "";
-  const normalized = languageCode.toLowerCase();
-  if (normalized.startsWith("bn")) return "Bangla";
-  if (normalized.startsWith("en")) return "English";
-  return normalized.toUpperCase();
-};
 
 const resolveLanguageCode = (languageCode: string | null) => {
   if (!languageCode) return "";
@@ -98,6 +96,37 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
   } | null>(null);
 
   const isListeningRef = useRef(false);
+  const readyPulse = useSharedValue(1);
+  const readyOpacity = useSharedValue(0.55);
+
+  useEffect(() => {
+    if (status === "idle" && visible) {
+      readyPulse.value = withRepeat(
+        withTiming(1.35, {
+          duration: 1200,
+          easing: Easing.inOut(Easing.ease),
+        }),
+        -1,
+        true,
+      );
+      readyOpacity.value = withRepeat(
+        withTiming(0.9, {
+          duration: 1200,
+          easing: Easing.inOut(Easing.ease),
+        }),
+        -1,
+        true,
+      );
+    } else {
+      readyPulse.value = withTiming(1, { duration: 180 });
+      readyOpacity.value = withTiming(0.55, { duration: 180 });
+    }
+  }, [status, visible, readyPulse, readyOpacity]);
+
+  const readyPulseStyle = useAnimatedStyle(() => ({
+    opacity: readyOpacity.value,
+    transform: [{ scale: readyPulse.value }],
+  }));
 
   const displayTranscript = useMemo(() => {
     if (!transcript) return "";
@@ -315,7 +344,13 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
     });
   };
 
-  const languageLabel = buildLanguageLabel(detectedLanguage);
+  const languageLabel = useMemo(() => {
+    if (!detectedLanguage) return "";
+    const normalized = detectedLanguage.toLowerCase();
+    if (normalized.startsWith("bn")) return t.voice.languageBangla;
+    if (normalized.startsWith("en")) return t.voice.languageEnglish;
+    return normalized.toUpperCase();
+  }, [detectedLanguage, t]);
 
   return (
     <Modal
@@ -374,30 +409,46 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
             )}
 
             <View style={styles.statusRow}>
-              <View
-                style={[
-                  styles.statusPill,
-                  {
-                    backgroundColor:
-                      status === "listening"
-                        ? colors.primary + "20"
-                        : colors.surfaceVariant,
-                    borderColor: colors.outline,
-                  },
-                ]}
-              >
-                <Text
-                  style={[styles.statusText, { color: colors.text }]}
-                  numberOfLines={1}
+              <View style={styles.statusLeft}>
+                <View
+                  style={[
+                    styles.statusPill,
+                    {
+                      backgroundColor:
+                        status === "listening"
+                          ? colors.primary + "20"
+                          : colors.surfaceVariant,
+                      borderColor: colors.outline,
+                    },
+                  ]}
                 >
-                  {status === "listening"
-                    ? t.voice.listening
-                    : status === "processing"
-                      ? t.voice.processing
-                      : status === "review"
-                        ? t.voice.review
-                        : t.voice.ready}
-                </Text>
+                  {status === "idle" ? (
+                    <Animated.View
+                      style={[
+                        styles.readyIndicator,
+                        readyPulseStyle,
+                        {
+                          backgroundColor: colors.success,
+                          shadowColor: colors.success,
+                        },
+                      ]}
+                      accessibilityElementsHidden
+                      importantForAccessibility="no"
+                    />
+                  ) : null}
+                  <Text
+                    style={[styles.statusText, { color: colors.text }]}
+                    numberOfLines={1}
+                  >
+                    {status === "listening"
+                      ? t.voice.listening
+                      : status === "processing"
+                        ? t.voice.processing
+                        : status === "review"
+                          ? t.voice.review
+                          : t.voice.ready}
+                  </Text>
+                </View>
               </View>
               {languageLabel ? (
                 <Text style={[styles.languageText, { color: colors.textSecondary }]}
@@ -482,7 +533,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
                 ]}
               >
                 <HugeiconsIcon
-                  icon={Mic01Icon}
+                  icon={AiMicIcon}
                   size={20}
                   color={colors.onPrimary}
                   strokeWidth={2.2}
@@ -1144,11 +1195,13 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: "700",
+    lineHeight: 24,
   },
   modalSubtitle: {
     fontSize: 13,
     marginTop: 4,
     maxWidth: 240,
+    lineHeight: 18,
   },
   content: {
     paddingHorizontal: 20,
@@ -1172,19 +1225,40 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 16,
   },
+  statusLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   statusPill: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  readyIndicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 999,
+    shadowOpacity: 0.6,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 3,
   },
   statusText: {
     fontSize: 12,
     fontWeight: "600",
+    lineHeight: 16,
   },
   languageText: {
     fontSize: 12,
     fontWeight: "500",
+    lineHeight: 16,
+    flexShrink: 1,
+    textAlign: "right",
   },
   languageSelector: {
     marginTop: 16,
@@ -1207,6 +1281,7 @@ const styles = StyleSheet.create({
   selectorOptionText: {
     fontSize: 12,
     fontWeight: "600",
+    lineHeight: 16,
   },
   transcriptCard: {
     marginTop: 16,
@@ -1235,6 +1310,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: 15,
     fontWeight: "700",
+    lineHeight: 20,
   },
   secondaryButton: {
     paddingVertical: 12,
@@ -1247,6 +1323,7 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     fontSize: 14,
     fontWeight: "600",
+    lineHeight: 18,
   },
   processingRow: {
     flexDirection: "row",
@@ -1257,6 +1334,7 @@ const styles = StyleSheet.create({
   processingText: {
     fontSize: 14,
     fontWeight: "600",
+    lineHeight: 18,
   },
   reviewHeader: {
     marginTop: 20,
@@ -1265,10 +1343,12 @@ const styles = StyleSheet.create({
   reviewTitle: {
     fontSize: 18,
     fontWeight: "700",
+    lineHeight: 24,
   },
   reviewHint: {
     fontSize: 12,
     marginTop: 4,
+    lineHeight: 16,
   },
   reviewSection: {
     marginTop: 16,
@@ -1277,6 +1357,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     marginBottom: 8,
+    lineHeight: 18,
   },
   reviewCard: {
     borderWidth: 1,
@@ -1294,17 +1375,21 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     flex: 1,
+    lineHeight: 20,
   },
   reviewAmount: {
     fontSize: 14,
     fontWeight: "700",
+    lineHeight: 18,
   },
   reviewMeta: {
     fontSize: 12,
     marginTop: 4,
+    lineHeight: 16,
   },
   emptyText: {
     fontSize: 12,
+    lineHeight: 16,
   },
   reviewActions: {
     flexDirection: "row",
@@ -1346,12 +1431,14 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 14,
     fontWeight: "600",
+    lineHeight: 18,
   },
   input: {
     borderWidth: 1,
     borderRadius: 12,
     padding: 12,
     fontSize: 15,
+    lineHeight: 20,
   },
   textArea: {
     minHeight: 80,
@@ -1371,6 +1458,7 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 12,
     fontWeight: "600",
+    lineHeight: 16,
   },
   row: {
     flexDirection: "row",

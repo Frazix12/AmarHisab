@@ -1,10 +1,12 @@
 import { Expense } from "@/types";
+import { getTranslation } from "@/services/i18n";
 import { formatNumber } from "./format";
 
 /**
  * Format date for display
  */
 export const formatDate = (date: Date, language: string = "en"): string => {
+  const t = getTranslation(language);
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
@@ -27,9 +29,9 @@ export const formatDate = (date: Date, language: string = "en"): string => {
   );
 
   if (dateOnly.getTime() === todayOnly.getTime()) {
-    return "Today";
+    return t.common.today;
   } else if (dateOnly.getTime() === yesterdayOnly.getTime()) {
-    return "Yesterday";
+    return t.common.yesterday;
   } else {
     const formatted = date.toLocaleDateString(undefined, {
       month: "short",
@@ -57,11 +59,11 @@ export const formatDateTime = (date: Date): string => {
  * Group expenses by date period
  */
 export type DateGroup =
-  | "Today"
-  | "Yesterday"
-  | "This Week"
-  | "This Month"
-  | "Older";
+  | "today"
+  | "yesterday"
+  | "thisWeek"
+  | "thisMonth"
+  | "older";
 
 export const getDateGroup = (date: Date): DateGroup => {
   const today = new Date();
@@ -85,7 +87,7 @@ export const getDateGroup = (date: Date): DateGroup => {
   );
 
   if (dateOnly.getTime() === todayOnly.getTime()) {
-    return "Today";
+    return "today";
   } else if (
     dateOnly.getTime() ===
     new Date(
@@ -94,13 +96,13 @@ export const getDateGroup = (date: Date): DateGroup => {
       yesterday.getDate(),
     ).getTime()
   ) {
-    return "Yesterday";
+    return "yesterday";
   } else if (date >= weekAgo) {
-    return "This Week";
+    return "thisWeek";
   } else if (date >= monthStart) {
-    return "This Month";
+    return "thisMonth";
   } else {
-    return "Older";
+    return "older";
   }
 };
 

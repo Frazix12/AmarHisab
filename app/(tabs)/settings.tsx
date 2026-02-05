@@ -107,6 +107,7 @@ export default function Settings() {
     updateApiKey,
   } = useApp();
   const colors = Colors[colorScheme];
+  const isBangla = settings.language === "bn";
   const { addSampleExpenses, addSampleGroceryItems } = useSampleData();
 
   const [isApiKeyModalVisible, setIsApiKeyModalVisible] = useState(false);
@@ -198,18 +199,24 @@ export default function Settings() {
             />
           </View>
           <Text style={[styles.appName, { color: colors.onPrimaryContainer }]}>
-            Amar Hisab
+            {t.settings.appName}
           </Text>
           <Text
             style={[styles.appTagline, { color: colors.onPrimaryContainer }]}
           >
-            Your Personal Expense Tracker
+            {t.settings.appTagline}
           </Text>
         </View>
 
         {/* Settings Section */}
         <View style={styles.settingsSection}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: colors.textSecondary },
+              isBangla && styles.sectionTitleBangla,
+            ]}
+          >
             {t.settings.preferences}
           </Text>
 
@@ -237,14 +244,20 @@ export default function Settings() {
 
         {/* Smart Templates Section */}
         <View style={styles.settingsSection}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: colors.textSecondary },
+              isBangla && styles.sectionTitleBangla,
+            ]}
+          >
             {t.settings.aiAndSmartFeatures || "AI & Smart Features"}
           </Text>
 
           <SettingItem
             icon={InformationCircleIcon}
             title={t.settings.manageTemplates}
-            value={`${formatNumber(templates.length)} ${t.templates.title.toLowerCase()}`}
+            value={`${formatNumber(templates.length)} ${t.templates.title}`}
             onPress={() => router.push("/templates")}
           />
 
@@ -287,7 +300,13 @@ export default function Settings() {
 
         {/* About Section */}
         <View style={styles.settingsSection}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: colors.textSecondary },
+              isBangla && styles.sectionTitleBangla,
+            ]}
+          >
             {t.settings.about}
           </Text>
 
@@ -300,8 +319,14 @@ export default function Settings() {
 
         {/* Developer Section (for testing) */}
         <View style={styles.settingsSection}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-            Developer Tools
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: colors.textSecondary },
+              isBangla && styles.sectionTitleBangla,
+            ]}
+          >
+            {t.settings.developerTools}
           </Text>
 
           <Pressable
@@ -324,26 +349,26 @@ export default function Settings() {
                 { color: colors.onSecondaryContainer },
               ]}
             >
-              Add Sample Data
+              {t.settings.addSampleData}
             </Text>
           </Pressable>
 
           <Pressable
             onPress={() => {
               Alert.alert(
-                "Clear All Data",
-                "Are you sure you want to delete all expenses, grocery items, and templates? This action cannot be undone!",
+                t.settings.clearAllDataConfirmTitle,
+                t.settings.clearAllDataConfirmMessage,
                 [
                   {
                     text: t.form.cancel,
                     style: "cancel",
                   },
                   {
-                    text: "Delete All",
+                    text: t.settings.deleteAll,
                     style: "destructive",
                     onPress: () => {
                       clearAllData();
-                      Alert.alert("Success", "All data has been cleared");
+                      Alert.alert(t.alerts.successTitle, t.settings.dataCleared);
                     },
                   },
                 ],
@@ -360,7 +385,7 @@ export default function Settings() {
             ]}
           >
             <Text style={[styles.devButtonText, { color: "#FFFFFF" }]}>
-              🗑️ Clear All Data
+              🗑️ {t.settings.clearAllData}
             </Text>
           </Pressable>
         </View>
@@ -368,7 +393,7 @@ export default function Settings() {
         {/* Footer */}
         <View style={styles.footerContainer}>
           <Text style={[styles.footer, { color: colors.textSecondary }]}>
-            Made with ❤️ using Material Design 3 by{" "}
+            {t.settings.madeWith}{" "}
             <Text
               style={[styles.footerLink, { color: colors.primary }]}
               onPress={() => Linking.openURL("https://github.com/Frazix12")}
@@ -503,6 +528,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: "700",
+    lineHeight: 34,
   },
   scrollView: {
     flex: 1,
@@ -528,10 +554,12 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "700",
     marginBottom: 4,
+    lineHeight: 34,
   },
   appTagline: {
     fontSize: 16,
     fontWeight: "500",
+    lineHeight: 22,
   },
   settingsSection: {
     marginBottom: 32,
@@ -542,6 +570,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textTransform: "uppercase",
     letterSpacing: 0.5,
+    lineHeight: 18,
+  },
+  sectionTitleBangla: {
+    textTransform: "none",
+    letterSpacing: 0,
+    lineHeight: 18,
   },
   settingItem: {
     flexDirection: "row",
@@ -572,18 +606,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     flex: 1,
+    lineHeight: 22,
   },
   settingValue: {
     fontSize: 15,
     fontWeight: "500",
-    flexShrink: 0,
+    flexShrink: 1,
     textAlign: "right",
+    lineHeight: 20,
   },
   footer: {
     textAlign: "center",
     fontSize: 14,
     marginTop: 20,
     marginBottom: 40,
+    lineHeight: 20,
   },
   footerContainer: {
     alignItems: "center",
@@ -600,6 +637,7 @@ const styles = StyleSheet.create({
   devButtonText: {
     fontSize: 16,
     fontWeight: "600",
+    lineHeight: 20,
   },
   devButtonDanger: {
     marginTop: 12,
@@ -625,10 +663,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     marginBottom: 8,
+    lineHeight: 26,
   },
   modalSubtitle: {
     fontSize: 14,
     marginBottom: 20,
+    lineHeight: 20,
   },
   input: {
     borderWidth: 1,
@@ -656,5 +696,6 @@ const styles = StyleSheet.create({
   modalButtonText: {
     fontSize: 16,
     fontWeight: "600",
+    lineHeight: 20,
   },
 });

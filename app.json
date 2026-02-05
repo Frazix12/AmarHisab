@@ -2,7 +2,7 @@
   "expo": {
     "name": "Amar Hisab",
     "slug": "amarhisab",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "orientation": "portrait",
     "icon": "./assets/icons/adaptive-icon.png",
     "scheme": "amarhisab",
@@ -26,6 +26,8 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.frazix.amarisab",
       "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.CAMERA"
       ]
@@ -73,7 +75,7 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/dfc803ea-0230-4998-b6a6-45f2041bd090"
+      "url": "https://u.expo.dev/2ce841f2-fa83-44d0-abf2-e356f89aa8dc"
     },
     "owner": "frazix",
     "extra": {

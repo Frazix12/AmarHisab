@@ -4,7 +4,7 @@ import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
 import {
   Analytics01Icon,
-  Mic01Icon,
+  AiMicIcon,
   Settings02Icon,
   ShoppingBasket01Icon,
   Wallet03Icon,
@@ -22,22 +22,21 @@ const TAB_ICONS: Record<string, typeof Settings02Icon> = {
   settings: Settings02Icon,
 };
 
-const TAB_LABELS = {
-  index: "Expenses",
-  list: "Grocery",
-  statistics: "Statistics",
-  settings: "Settings",
-};
-
 export const CustomTabBar: React.FC<BottomTabBarProps> = ({
   state,
   navigation,
 }) => {
-  const { colorScheme } = useApp();
+  const { colorScheme, t } = useApp();
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
   const [voiceModalVisible, setVoiceModalVisible] = useState(false);
   const middleIndex = Math.floor(state.routes.length / 2);
+  const tabLabels = {
+    index: t.tabs.expenses,
+    list: t.tabs.grocery,
+    statistics: t.tabs.statistics,
+    settings: t.tabs.settings,
+  };
 
   return (
     <View
@@ -55,7 +54,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
 
         const icon = TAB_ICONS[route.name as keyof typeof TAB_ICONS];
         const label =
-          TAB_LABELS[route.name as keyof typeof TAB_LABELS] || route.name;
+          tabLabels[route.name as keyof typeof tabLabels] || route.name;
 
         const color = isFocused ? colors.tint : colors.textSecondary;
 
@@ -86,10 +85,10 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
                     },
                   ]}
                   accessibilityRole="button"
-                  accessibilityLabel="AI Voice"
+                  accessibilityLabel={t.voice.title}
                 >
                   <HugeiconsIcon
-                    icon={Mic01Icon}
+                    icon={AiMicIcon}
                     size={26}
                     color={colors.onPrimary}
                     strokeWidth={2}
