@@ -260,7 +260,7 @@ export default function StatisticsScreen() {
                     ]}
                   >
                     {formatNumber(item.count)} {item.count === 1 ? t.common.item : t.common.items} •{" "}
-                    {formatNumber(item.percentage.toFixed(0))}%
+                    {formatNumber(Math.round(item.percentage))}%
                   </Text>
                 </View>
                 <View style={styles.categoryAmountContainer}>

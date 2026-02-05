@@ -26,6 +26,12 @@ const normalizeFileUri = (uri: string) => {
   if (uri.startsWith("file://") || uri.startsWith("content://")) {
     return uri;
   }
+  if (uri.startsWith("http://") || uri.startsWith("https://")) {
+    return uri;
+  }
+  if (uri.includes("://")) {
+    throw new Error(`Unsupported file URI scheme: ${uri}`);
+  }
   return `file://${uri}`;
 };
 

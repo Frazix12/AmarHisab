@@ -160,8 +160,10 @@ export default function EditTemplateScreen() {
             </Text>
           </View>
           <Text style={[styles.usageText, { color: colors.textSecondary }]}>
-            {t.templates.usedCount} {formatNumber(template.usageCount || 0)}{" "}
-            {t.templates.usedTimes}
+            {t.templates.usageDisplay.replace(
+              "{count}",
+              formatNumber(template.usageCount || 0),
+            )}
           </Text>
         </View>
 

@@ -199,7 +199,7 @@ export default function Settings() {
             />
           </View>
           <Text style={[styles.appName, { color: colors.onPrimaryContainer }]}>
-            {t.settings.appName}
+            Amar Hisab
           </Text>
           <Text
             style={[styles.appTagline, { color: colors.onPrimaryContainer }]}

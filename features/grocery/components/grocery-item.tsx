@@ -4,7 +4,13 @@ import { GroceryItem, UserSettings } from "@/types";
 import { Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  GestureResponderEvent,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 type ThemeColors = typeof Colors.light;
 
@@ -35,7 +41,12 @@ export const GroceryItemComponent = React.memo(
       : onPress
         ? () => onPress(item)
         : undefined;
-    const handleToggle = onToggle ? () => onToggle(item.id) : undefined;
+    const handleToggle = onToggle
+      ? (event: GestureResponderEvent) => {
+          event.stopPropagation();
+          onToggle(item.id);
+        }
+      : undefined;
     const handleLongPress = onLongPress ? () => onLongPress(item) : undefined;
 
     return (
@@ -108,7 +119,9 @@ export const GroceryItemComponent = React.memo(
               </Text>
             )}
             <Text style={[styles.category, { color: colors.textSecondary }]}>
-              {t.categories[item.category as keyof typeof t.categories]}
+              {t.categories[item.category as keyof typeof t.categories] ||
+                item.category ||
+                t.categories.other}
             </Text>
             {!item.checked && item.price === 0 && (
               <View

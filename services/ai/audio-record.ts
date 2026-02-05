@@ -1,4 +1,5 @@
-import { NativeEventEmitter, NativeModules } from "react-native";
+import { AudioModule, RecordingPresets, setAudioModeAsync } from "expo-audio";
+import type { AudioRecorder, RecordingOptions } from "expo-audio";
 
 type AudioRecordEvent = "data";
 
@@ -11,46 +12,68 @@ export interface AudioRecordOptions {
   bufferSize?: number;
 }
 
-type AudioRecordModule = {
-  init?: (options: AudioRecordOptions) => void;
-  start?: () => void;
-  stop?: () => Promise<string>;
-  addListener?: (event: string) => void;
-  removeListeners?: (count: number) => void;
-};
+let recorder: AudioRecorder | null = null;
+let recordingOptions: RecordingOptions = RecordingPresets.HIGH_QUALITY;
 
-const nativeModule = NativeModules.RNAudioRecord as AudioRecordModule | undefined;
+const resolveRecordingOptions = (options?: AudioRecordOptions) => {
+  const base = RecordingPresets.HIGH_QUALITY;
+  const extensionMatch = options?.wavFile?.match(/\.[^/.]+$/);
+  const requestedExtension = extensionMatch?.[0]?.toLowerCase();
+  const extension =
+    requestedExtension && [".m4a", ".3gp", ".webm"].includes(requestedExtension)
+      ? requestedExtension
+      : base.extension;
+  const sampleRate = options?.sampleRate ?? base.sampleRate;
+  const numberOfChannels = options?.channels ?? base.numberOfChannels;
 
-if (nativeModule && typeof nativeModule.addListener !== "function") {
-  nativeModule.addListener = () => undefined;
-}
-
-if (nativeModule && typeof nativeModule.removeListeners !== "function") {
-  nativeModule.removeListeners = () => undefined;
-}
-
-let emitter: NativeEventEmitter | null = null;
-
-const getEmitter = () => {
-  if (!nativeModule) return null;
-  if (!emitter) {
-    emitter = new NativeEventEmitter(nativeModule as any);
-  }
-  return emitter;
+  return {
+    ...base,
+    extension,
+    sampleRate,
+    numberOfChannels,
+    android: {
+      ...base.android,
+      sampleRate,
+      extension,
+    },
+    ios: {
+      ...base.ios,
+      sampleRate,
+      extension,
+      linearPCMBitDepth: options?.bitsPerSample ?? base.ios.linearPCMBitDepth,
+    },
+    web: {
+      ...base.web,
+    },
+  };
 };
 
 export const AudioRecord = {
-  isAvailable: () => Boolean(nativeModule?.init),
-  init: (options: AudioRecordOptions) => nativeModule?.init?.(options),
-  start: () => nativeModule?.start?.(),
-  stop: () => nativeModule?.stop?.() ?? Promise.resolve(""),
-  on: (event: AudioRecordEvent, handler: (data: string) => void) => {
-    const activeEmitter = getEmitter();
-    if (!activeEmitter) return null;
-    activeEmitter.removeAllListeners(event);
-    return activeEmitter.addListener(event, handler);
+  isAvailable: () => Boolean(AudioModule?.AudioRecorder),
+  init: (options: AudioRecordOptions) => {
+    recordingOptions = resolveRecordingOptions(options);
+    recorder = new AudioModule.AudioRecorder(recordingOptions);
   },
-  removeAllListeners: (event: AudioRecordEvent) => {
-    getEmitter()?.removeAllListeners(event);
+  start: async () => {
+    if (!AudioModule?.AudioRecorder) {
+      throw new Error("Audio recorder unavailable");
+    }
+    if (!recorder) {
+      recorder = new AudioModule.AudioRecorder(recordingOptions);
+    }
+    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+    await recorder.prepareToRecordAsync(recordingOptions);
+    recorder.record();
   },
+  stop: async (): Promise<string | null> => {
+    if (!recorder) {
+      throw new Error("Audio recorder unavailable");
+    }
+    await recorder.stop();
+    const uri = recorder.uri;
+    recorder = null;
+    return uri ?? null;
+  },
+  on: (event: AudioRecordEvent, handler: (data: string) => void) => null,
+  removeAllListeners: (event: AudioRecordEvent) => undefined,
 };

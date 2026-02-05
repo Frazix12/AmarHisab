@@ -22,6 +22,12 @@ const DEFAULT_MODEL_ID = "scribe_v2_realtime";
 const DEFAULT_AUDIO_FORMAT = "pcm_16000" as const;
 const BASE_URL = "wss://api.elevenlabs.io/v1/speech-to-text/realtime";
 
+const resolveSampleRate = (audioFormat: string) => {
+  const match = audioFormat.match(/pcm_(\d+)/);
+  const parsed = match ? Number.parseInt(match[1], 10) : NaN;
+  return Number.isFinite(parsed) ? parsed : 16000;
+};
+
 const buildRealtimeUrl = (config: ElevenLabsRealtimeConfig) => {
   const params = new URLSearchParams();
   params.set("model_id", config.modelId ?? DEFAULT_MODEL_ID);
@@ -48,16 +54,16 @@ const parseRealtimeMessage = (raw: string) => {
 export const createElevenLabsRealtimeConnection = (
   config: ElevenLabsRealtimeConfig,
 ): ElevenLabsRealtimeConnection => {
-  const url = buildRealtimeUrl(config);
+  const audioFormat = config.audioFormat ?? DEFAULT_AUDIO_FORMAT;
+  const url = buildRealtimeUrl({ ...config, audioFormat });
+  const sampleRate = resolveSampleRate(audioFormat);
   const ws = new (WebSocket as any)(url, undefined, {
     headers: {
       "xi-api-key": config.apiKey,
     },
   }) as WebSocket;
 
-  ws.onopen = () => {
-    config.onReady?.();
-  };
+  ws.onopen = () => {};
 
   ws.onmessage = (event) => {
     if (typeof event.data !== "string") return;
@@ -106,7 +112,7 @@ export const createElevenLabsRealtimeConnection = (
         message_type: "input_audio_chunk",
         audio_base_64: base64Audio,
         commit: false,
-        sample_rate: 16000,
+        sample_rate: sampleRate,
       }),
     );
   };
@@ -118,7 +124,7 @@ export const createElevenLabsRealtimeConnection = (
         message_type: "input_audio_chunk",
         audio_base_64: "",
         commit: true,
-        sample_rate: 16000,
+        sample_rate: sampleRate,
       }),
     );
   };

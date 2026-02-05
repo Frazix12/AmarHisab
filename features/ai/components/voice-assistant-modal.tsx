@@ -173,22 +173,32 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
     const expenses = await Promise.all(
       result.expenses.map(async (item) => {
         if (item.category) return item;
-        const detected = await detectExpenseCategory(item.description);
-        return {
-          ...item,
-          category: (detected as ExpenseCategory) || "other",
-        };
+        try {
+          const detected = await detectExpenseCategory(item.description);
+          return {
+            ...item,
+            category: (detected as ExpenseCategory) || "other",
+          };
+        } catch (error) {
+          console.warn("Failed to detect expense category", error);
+          return { ...item, category: "other" as ExpenseCategory };
+        }
       }),
     );
 
     const groceries = await Promise.all(
       result.groceries.map(async (item) => {
         if (item.category) return item;
-        const detected = await detectItemCategory(item.name);
-        return {
-          ...item,
-          category: detected || "other",
-        };
+        try {
+          const detected = await detectItemCategory(item.name);
+          return {
+            ...item,
+            category: (detected as GroceryCategory) || "other",
+          };
+        } catch (error) {
+          console.warn("Failed to detect grocery category", error);
+          return { ...item, category: "other" as GroceryCategory };
+        }
       }),
     );
 
@@ -224,16 +234,25 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
     setDetectedLanguage(null);
     setStatus("listening");
 
-    AudioRecord.init({
-      sampleRate: AUDIO_SAMPLE_RATE,
-      channels: 1,
-      bitsPerSample: 16,
-      audioSource: 6,
-      wavFile: "ai-voice.wav",
-    });
+    try {
+      AudioRecord.init({
+        sampleRate: AUDIO_SAMPLE_RATE,
+        channels: 1,
+        bitsPerSample: 16,
+        audioSource: 6,
+        wavFile: "ai-voice.wav",
+      });
 
-    isListeningRef.current = true;
-    AudioRecord.start();
+      await AudioRecord.start();
+      isListeningRef.current = true;
+    } catch (error) {
+      console.error("Failed to start audio recording", error);
+      isListeningRef.current = false;
+      setErrorMessage(
+        error instanceof Error ? error.message : t.voice.missingRecorder,
+      );
+      setStatus("idle");
+    }
   };
 
   const processTranscript = async (transcript: string) => {
@@ -278,9 +297,16 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
         return;
       }
 
+      const apiKey = getElevenLabsApiKey();
+      if (!apiKey || !apiKey.trim()) {
+        setErrorMessage(t.voice.missingApiKey);
+        setStatus("idle");
+        return;
+      }
+
       const result = await transcribeAudioFile({
         fileUri: audioFileUri,
-        apiKey: getElevenLabsApiKey(),
+        apiKey,
         languageCode: languageMode === "auto" ? undefined : languageMode,
       });
 
@@ -367,7 +393,9 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
             animatedStyle,
           ]}
         >
-          <View style={styles.modalHeader}>
+          <View
+            style={[styles.modalHeader, { borderBottomColor: colors.outline }]}
+          >
             <View>
               <Text style={[styles.modalTitle, { color: colors.text }]}
                 numberOfLines={1}
@@ -802,12 +830,21 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<ExpenseCategory>("other");
+  const [amountError, setAmountError] = useState<string | null>(null);
+
+  const parsedAmount = Number.parseFloat(amount);
+  const isAmountValid = !Number.isNaN(parsedAmount) && parsedAmount > 0;
+  const isSaveDisabled = !isAmountValid;
+  const validationError =
+    !isAmountValid && amount.trim() ? t.alerts.invalidAmount : null;
+  const displayAmountError = amountError ?? validationError;
 
   useEffect(() => {
     if (!visible || !item) return;
     setAmount(item.amount.toString());
     setDescription(item.description);
     setCategory(item.category || "other");
+    setAmountError(null);
   }, [visible, item]);
 
   if (!item) return null;
@@ -857,9 +894,17 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                   },
                 ]}
                 value={formatNumber(amount)}
-                onChangeText={(text) => setAmount(parseBanglaNumber(text))}
+                onChangeText={(text) => {
+                  setAmount(parseBanglaNumber(text));
+                  if (amountError) setAmountError(null);
+                }}
                 keyboardType="decimal-pad"
               />
+              {displayAmountError ? (
+                <Text style={[styles.inputErrorText, { color: colors.error }]}>
+                  {displayAmountError}
+                </Text>
+              ) : null}
 
               <Text style={[styles.fieldLabel, { color: colors.text }]}
               >
@@ -937,18 +982,26 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                 </Text>
               </Pressable>
               <Pressable
+                disabled={isSaveDisabled}
                 onPress={() => {
-                  const parsed = Number.parseFloat(amount);
-                  if (Number.isNaN(parsed) || parsed <= 0) return;
+                  if (!isAmountValid) {
+                    setAmountError(t.alerts.invalidAmount);
+                    return;
+                  }
+                  setAmountError(null);
                   onSave({
-                    amount: parsed,
+                    amount: parsedAmount,
                     description: description.trim() || item.description,
                     category,
                   });
                 }}
                 style={[
                   styles.primaryButton,
-                  { backgroundColor: colors.primary, flex: 1 },
+                  {
+                    backgroundColor: colors.primary,
+                    flex: 1,
+                    opacity: isSaveDisabled ? 0.6 : 1,
+                  },
                 ]}
               >
                 <Text
@@ -984,6 +1037,9 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
   const [quantity, setQuantity] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState<GroceryCategory>("other");
+  const [nameError, setNameError] = useState<string | null>(null);
+
+  const isNameValid = name.trim().length > 0;
 
   useEffect(() => {
     if (!visible || !item) return;
@@ -991,6 +1047,7 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
     setQuantity(item.quantity || "");
     setPrice(item.price?.toString() || "");
     setCategory(item.category || "other");
+    setNameError(null);
   }, [visible, item]);
 
   if (!item) return null;
@@ -1040,8 +1097,16 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                   },
                 ]}
                 value={name}
-                onChangeText={setName}
+                onChangeText={(text) => {
+                  setName(text);
+                  if (nameError && text.trim()) setNameError(null);
+                }}
               />
+              {nameError ? (
+                <Text style={[styles.inputErrorText, { color: colors.error }]}>
+                  {nameError}
+                </Text>
+              ) : null}
 
               <View style={styles.row}>
                 <View style={{ flex: 1 }}>
@@ -1142,14 +1207,22 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
               </Pressable>
               <Pressable
                 onPress={() => {
-                  if (!name.trim()) return;
-                  const parsed = price.trim()
+                  if (!isNameValid) {
+                    setNameError(t.alerts.requiredName);
+                    return;
+                  }
+                  setNameError(null);
+                  const parsedPrice = price.trim()
                     ? Number.parseFloat(price)
                     : undefined;
+                  const priceValue =
+                    parsedPrice !== undefined && !Number.isNaN(parsedPrice)
+                      ? parsedPrice
+                      : undefined;
                   onSave({
                     name: name.trim(),
                     quantity: quantity.trim() || undefined,
-                    price: Number.isNaN(parsed as number) ? undefined : parsed,
+                    price: priceValue,
                     category,
                   });
                 }}
@@ -1190,7 +1263,6 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
   },
   modalTitle: {
     fontSize: 20,
@@ -1439,6 +1511,12 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 15,
     lineHeight: 20,
+  },
+  inputErrorText: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 6,
+    fontWeight: "600",
   },
   textArea: {
     minHeight: 80,

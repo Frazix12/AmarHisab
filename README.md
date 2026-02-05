@@ -23,7 +23,7 @@ _A beautiful, minimalistic expense tracker with integrated grocery list manageme
 
 - **Track Daily Expenses** - Add and categorize your spending with ease
 - **Photo Attachments** - Capture or select photos for your expenses (receipts, bills, etc.)
-- **Edit \ Modify** - Long-press any expense to edit or delete it
+- **Edit / Modify** - Long-press any expense to edit or delete it
   - Edit amount, description, category, and attached images
   - Action menu with smooth animations
   - Confirmation dialogs for destructive actions
@@ -69,7 +69,7 @@ _A beautiful, minimalistic expense tracker with integrated grocery list manageme
 - **Stable Rendering** - Memoized row components and list renderers to reduce re-renders
 - **Optimized Stats** - Aggregate calculations consolidated to minimize recomputation
 
-### 💬 User Feedback \ Guidance
+### 💬 User Feedback / Guidance
 
 - **Toast Notifications** - Elegant feedback for user actions
   - Success confirmations for saves and updates

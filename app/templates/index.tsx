@@ -129,9 +129,12 @@ export default function TemplatesScreen() {
                     : t.templates.manualTag}
                 </Text>
               </View>
-                <Text style={[styles.metaText, { color: colors.textSecondary }]}>
-                  {t.templates.usedCount} {formatNumber(template.usageCount || 0)} {t.templates.usedTimes}
-                </Text>
+              <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                {t.templates.usageDisplay.replace(
+                  "{count}",
+                  formatNumber(template.usageCount || 0),
+                )}
+              </Text>
             </View>
           </View>
           <View style={styles.actions}>
@@ -182,8 +185,11 @@ export default function TemplatesScreen() {
               {t.templates.defaultPrice}:
             </Text>
             <Text style={[styles.detailValue, { color: colors.text }]}>
-              {settings.currency.symbol}
-              {formatNumber(template.defaultPrice.toFixed(2))}
+              {template.defaultPrice != null
+                ? `${settings.currency.symbol}${formatNumber(
+                    template.defaultPrice.toFixed(2),
+                  )}`
+                : "—"}
             </Text>
           </View>
           <View style={styles.detailRow}>

@@ -159,7 +159,7 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
           </Text>
           <Text style={[styles.detailValue, { color: colors.text }]}>
             {settings.currency.symbol}
-            {formatNumber(suggestion.defaultPrice.toFixed(2))}
+            {formatNumber(Math.round(suggestion.defaultPrice * 100) / 100)}
           </Text>
         </View>
         <View style={styles.detailRow}>
@@ -167,7 +167,10 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
             {t.templates.purchased}:
           </Text>
           <Text style={[styles.detailValue, { color: colors.text }]}>
-            {formatNumber(suggestion.occurrences)} {t.templates.usedTimes}
+            {t.templates.usageDisplay.replace(
+              "{count}",
+              formatNumber(suggestion.occurrences),
+            )}
           </Text>
         </View>
       </View>

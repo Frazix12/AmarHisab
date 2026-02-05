@@ -27,8 +27,8 @@ It captures commands, structure, and conventions that are visible in the code.
 - `bun run lint`
 
 ### Tests
-- No test runner is configured in `package.json`.
-- Single test: N/A (add a test script first).
+- Jest is configured via `jest-expo`.
+- `bun run test`
 
 ### Native Builds / Dev Client
 - `bunx expo prebuild` (required after adding native modules)

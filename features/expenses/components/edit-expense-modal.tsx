@@ -11,7 +11,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import * as ImagePicker from "expo-image-picker";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Image,
@@ -48,6 +48,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
   const [category, setCategory] = useState<ExpenseCategory>("food");
   const [description, setDescription] = useState("");
   const [imageUri, setImageUri] = useState<string | undefined>(undefined);
+  const amountInputRef = useRef<TextInput | null>(null);
 
   // Initialize form with expense data when modal opens
   useEffect(() => {
@@ -67,7 +68,8 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
       if (status !== "granted") {
         Alert.alert(
           t.form.permission || "Permission Required",
-          t.alerts.photoLibraryPermission,
+          t.alerts?.photoLibraryPermission ||
+            "Photo library permission is required to attach images.",
         );
         return;
       }
@@ -84,7 +86,10 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
       }
     } catch (error) {
       console.error("Error picking image:", error);
-      Alert.alert(t.alerts.errorTitle, t.alerts.pickImageFailed);
+      Alert.alert(
+        t.alerts?.errorTitle ?? "Error",
+        t.alerts?.pickImageFailed ?? "Failed to pick image. Please try again.",
+      );
     }
   };
 
@@ -95,7 +100,8 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
       if (status !== "granted") {
         Alert.alert(
           t.form.permission || "Permission Required",
-          t.alerts.cameraPermission,
+          t.alerts?.cameraPermission ||
+            "Camera permission is required to capture photos.",
         );
         return;
       }
@@ -111,7 +117,26 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
       }
     } catch (error) {
       console.error("Error capturing image:", error);
-      Alert.alert(t.alerts.errorTitle, t.alerts.captureImageFailed);
+      const fallbackMessage =
+        t.alerts?.captureImageFailed ??
+        "Failed to capture image. Please try again.";
+      const errorDetail = error instanceof Error ? error.message : "";
+      const message = errorDetail
+        ? `${fallbackMessage}\n${errorDetail}`
+        : fallbackMessage;
+      Alert.alert(t.alerts?.errorTitle ?? "Error", message, [
+        {
+          text: "Retry",
+          onPress: () => {
+            void captureImageFromCamera();
+          },
+        },
+        {
+          text: t.form.cancel || "Cancel",
+          style: "cancel",
+          onPress: onClose,
+        },
+      ]);
     }
   };
 
@@ -122,7 +147,21 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
   const handleSave = () => {
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
-      Alert.alert(t.alerts.errorTitle, t.alerts.invalidAmount);
+      Alert.alert(
+        t.alerts?.errorTitle ?? "Error",
+        t.alerts?.invalidAmount ?? "Please enter a valid amount",
+        [
+          {
+            text: t.form.cancel || "Cancel",
+            style: "cancel",
+            onPress: onClose,
+          },
+          {
+            text: "OK",
+            onPress: () => amountInputRef.current?.focus(),
+          },
+        ],
+      );
       return;
     }
 
@@ -178,6 +217,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                   {t.form.amount}
                 </Text>
                 <TextInput
+                  ref={amountInputRef}
                   style={[
                     styles.input,
                     {

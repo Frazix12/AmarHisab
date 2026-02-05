@@ -492,7 +492,10 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                           { color: colors.textSecondary },
                         ]}
                       >
-                        {t.templates.usedCount} {formatNumber(match.template.usageCount)} {t.templates.usedTimes}
+                        {t.templates.usageDisplay.replace(
+                          "{count}",
+                          formatNumber(match.template.usageCount),
+                        )}
                       </Text>
                     </View>
                   </Pressable>
