@@ -38,7 +38,7 @@ _A beautiful, minimalistic expense tracker with integrated grocery list manageme
   - Modify name, quantity, price, and category
   - Optional template update (opt-in to update linked templates)
   - Action menu for quick access to edit/delete
-- **Check \u0026 Track** - Mark items as purchased while shopping
+- **Check \ Track** - Mark items as purchased while shopping
 - **Auto-Expense Creation** - Checked items automatically become expense entries
 - **Price Tracking** - Monitor your grocery spending in real-time
 - **Category Organization** - Organize items by Fruits, Vegetables, Dairy, Meat, Snacks, Beverages, and more
@@ -110,16 +110,6 @@ Support for 8 major currencies:
 - All data stored locally using AsyncStorage
 - No internet required
 - Privacy-focused - your data never leaves your device
-
----
-
-## 📱 Screenshots
-
-> _Beautiful, intuitive interface in both light and dark modes_
-
-| **Expense Tracker**                       | **Grocery List**                                 | **Settings**                            |
-| ----------------------------------------- | ------------------------------------------------ | --------------------------------------- |
-| Track your spending with visual summaries | Manage shopping with integrated expense tracking | Customize theme, language, and currency |
 
 ---
 
@@ -195,7 +185,7 @@ eas build:run -p android
 
 ## 📂 Project Structure
 
-```
+```bash
 app/
 ├── app/                      # Expo Router screens
 │   ├── (tabs)/              # Tab-based navigation
@@ -247,8 +237,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 ## 👨‍💻 Author
-
-**Frazix**
 
 - GitHub: [@Frazix12](https://github.com/Frazix12)
 - Project Link: [https://github.com/Frazix12/AmarHisab](https://github.com/Frazix12/AmarHisab)
