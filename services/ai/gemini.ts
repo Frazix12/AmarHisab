@@ -327,6 +327,7 @@ Return ONLY valid JSON with this exact shape:
 }
 
 Rules:
+- if input is bangla give bangla if not english.
 - Use numeric values for amount/price (no currency symbols).
 - Use only these expense categories: ${expenseCategories}.
 - Use only these grocery categories: ${groceryCategories}.
@@ -355,34 +356,34 @@ ${transcript}
 
     const expenses = Array.isArray(parsed.expenses)
       ? parsed.expenses
-          .map((item) => {
-            const amount = normalizeNumber((item as any)?.amount);
-            const description = normalizeString((item as any)?.description);
-            if (!amount || !description) return null;
-            return {
-              amount,
-              description,
-              category: normalizeExpenseCategory((item as any)?.category),
-            } as VoiceParsedExpense;
-          })
-          .filter(Boolean)
+        .map((item) => {
+          const amount = normalizeNumber((item as any)?.amount);
+          const description = normalizeString((item as any)?.description);
+          if (!amount || !description) return null;
+          return {
+            amount,
+            description,
+            category: normalizeExpenseCategory((item as any)?.category),
+          } as VoiceParsedExpense;
+        })
+        .filter(Boolean)
       : [];
 
     const groceries = Array.isArray(parsed.groceries)
       ? parsed.groceries
-          .map((item) => {
-            const name = normalizeString((item as any)?.name);
-            if (!name) return null;
-            const quantity = normalizeString((item as any)?.quantity);
-            const price = normalizeNumber((item as any)?.price);
-            return {
-              name,
-              quantity: quantity || undefined,
-              price: price ?? undefined,
-              category: normalizeGroceryCategory((item as any)?.category),
-            } as VoiceParsedGrocery;
-          })
-          .filter(Boolean)
+        .map((item) => {
+          const name = normalizeString((item as any)?.name);
+          if (!name) return null;
+          const quantity = normalizeString((item as any)?.quantity);
+          const price = normalizeNumber((item as any)?.price);
+          return {
+            name,
+            quantity: quantity || undefined,
+            price: price ?? undefined,
+            category: normalizeGroceryCategory((item as any)?.category),
+          } as VoiceParsedGrocery;
+        })
+        .filter(Boolean)
       : [];
 
     return {

@@ -308,12 +308,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginTop: 12,
     alignItems: "center",
+    width: "100%",
   },
   itemCountText: {
     fontSize: 16,
-    fontWeight: "600",
-    lineHeight: 22,
+    fontWeight: "500",
     textAlign: "center",
+    flexShrink: 1,
+    includeFontPadding: true,
   },
   emptyState: {
     flex: 1,

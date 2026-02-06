@@ -15,6 +15,7 @@ import React, { useEffect, useState } from "react";
 import {
     Alert,
     Image,
+    Keyboard,
     KeyboardAvoidingView,
     Modal,
     Platform,
@@ -46,6 +47,10 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
   const [price, setPrice] = useState("");
   const [imageUri, setImageUri] = useState<string | undefined>(undefined);
   const [error, setError] = useState("");
+  const [isPriceFocused, setIsPriceFocused] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [priceInputY, setPriceInputY] = useState(0);
+  const scrollRef = React.useRef<ScrollView>(null);
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -53,12 +58,48 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
       setPrice(item.price > 0 ? item.price.toString() : "");
       setImageUri(item.imageUri);
       setError("");
+      setIsPriceFocused(false);
+      setKeyboardHeight(0);
     } else {
       setPrice("");
       setImageUri(undefined);
       setError("");
+      setIsPriceFocused(false);
+      setKeyboardHeight(0);
     }
   }, [visible, item]);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSub = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const scrollPriceFieldIntoView = () => {
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({
+        y: Math.max(priceInputY - 16, 0),
+        animated: true,
+      });
+    });
+  };
+
+  const extraKeyboardSpace = isPriceFocused
+    ? settings.language === "bn"
+      ? 330
+      : keyboardHeight
+    : 0;
 
   const pickImageFromGallery = async () => {
     try {
@@ -169,7 +210,15 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
               </Pressable>
             </View>
 
-            <ScrollView style={styles.formContainer}>
+            <ScrollView
+              ref={scrollRef}
+              style={styles.formContainer}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={[
+                styles.formContent,
+                { paddingBottom: 20 + extraKeyboardSpace },
+              ]}
+            >
               {/* Item Details (Read-only) */}
               <View style={styles.infoGroup}>
                 <Text
@@ -207,8 +256,13 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
               </View>
 
               {/* Price Input (Required) */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text }]}>
+              <View
+                style={styles.inputGroup}
+                onLayout={(event) => {
+                  setPriceInputY(event.nativeEvent.layout.y);
+                }}
+              >
+                <Text style={[styles.label, { color: colors.text }]}> 
                   {t.form.price}{" "}
                   <Text style={{ color: colors.error || "#DC2626" }}>*</Text>
                 </Text>
@@ -229,6 +283,11 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
                     setPrice(text);
                     setError("");
                   }}
+                  onFocus={() => {
+                    setIsPriceFocused(true);
+                    scrollPriceFieldIntoView();
+                  }}
+                  onBlur={() => setIsPriceFocused(false)}
                   isBanglaMode={settings.language === "bn"}
                   placeholder={`0.00 ${settings.currency.symbol}`}
                   placeholderTextColor={colors.textSecondary}
@@ -401,6 +460,9 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     padding: 20,
+  },
+  formContent: {
+    paddingBottom: 20,
   },
   infoGroup: {
     marginBottom: 12,

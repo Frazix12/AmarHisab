@@ -314,7 +314,13 @@ export default function GroceryScreen() {
               { opacity: pressed ? 0.7 : 1 },
             ]}
           >
-            <Text style={[styles.clearButtonText, { color: colors.error }]}>
+            <Text
+              style={[
+                styles.clearButtonText,
+                isBangla && styles.clearButtonTextBangla,
+                { color: colors.error },
+              ]}
+            >
               {t.grocery.clearCompleted}
             </Text>
           </Pressable>
@@ -430,15 +436,25 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "700",
     lineHeight: 34,
+    flexShrink: 1,
   },
   clearButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,
+    marginLeft: 8,
+    flexShrink: 1,
+    alignItems: "flex-end",
+    maxWidth: "58%",
   },
   clearButtonText: {
     fontSize: 14,
     fontWeight: "600",
-    lineHeight: 18,
+    textAlign: "right",
+  },
+  clearButtonTextBangla: {
+    fontWeight: "500",
+    lineHeight: 22,
+    includeFontPadding: true,
   },
   scrollView: {
     flex: 1,
