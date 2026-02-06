@@ -1,3 +1,4 @@
+import { BanglaNumberInput } from "@/components/shared/bangla-number-input";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
 import { normalizeProductName } from "@/features/templates/services/template-utils";
@@ -227,15 +228,15 @@ export default function EditTemplateScreen() {
             <Text style={[styles.currencySymbol, { color: colors.text }]}>
               {settings.currency.symbol}
             </Text>
-            <TextInput
-              value={formatNumber(price)}
+            <BanglaNumberInput
+              value={price}
               onChangeText={(text) => {
-                setPrice(parseBanglaNumber(text));
+                setPrice(text);
                 if (errors.price) setErrors({ ...errors, price: undefined });
               }}
+              isBanglaMode={settings.language === "bn"}
               placeholder={t.placeholders.templatePrice}
               placeholderTextColor={colors.textSecondary}
-              keyboardType="decimal-pad"
               style={[
                 styles.priceInput,
                 {

@@ -1,8 +1,8 @@
+import { BanglaNumberInput } from "@/components/shared/bangla-number-input";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
 import { EXPENSE_CATEGORIES, Expense, ExpenseCategory } from "@/types";
 import { useModalAnimation } from "@/utils/animations";
-import { parseBanglaNumber } from "@/utils/format";
 import {
   Camera01Icon,
   Cancel01Icon,
@@ -40,7 +40,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
   expense,
   onSave,
 }) => {
-  const { updateExpense, colorScheme, t, formatNumber } = useApp();
+  const { updateExpense, colorScheme, t, settings } = useApp();
   const colors = Colors[colorScheme];
   const { animatedStyle, backdropStyle } = useModalAnimation(visible);
 
@@ -216,7 +216,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                 <Text style={[styles.label, { color: colors.text }]}>
                   {t.form.amount}
                 </Text>
-                <TextInput
+                <BanglaNumberInput
                   ref={amountInputRef}
                   style={[
                     styles.input,
@@ -226,9 +226,9 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                       borderColor: colors.outline,
                     },
                   ]}
-                  value={formatNumber(amount)}
-                  onChangeText={(text) => setAmount(parseBanglaNumber(text))}
-                  keyboardType="decimal-pad"
+                  value={amount}
+                  onChangeText={setAmount}
+                  isBanglaMode={settings.language === "bn"}
                   placeholder={t.placeholders.expenseAmount}
                   placeholderTextColor={colors.textSecondary}
                 />

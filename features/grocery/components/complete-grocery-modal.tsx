@@ -1,8 +1,8 @@
+import { BanglaNumberInput } from "@/components/shared/bangla-number-input";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
 import { GroceryItem } from "@/types";
 import { useModalAnimation } from "@/utils/animations";
-import { parseBanglaNumber } from "@/utils/format";
 import {
     Camera01Icon,
     Cancel01Icon,
@@ -19,11 +19,10 @@ import {
     Modal,
     Platform,
     Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import Animated from "react-native-reanimated";
 
@@ -213,7 +212,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
                   {t.form.price}{" "}
                   <Text style={{ color: colors.error || "#DC2626" }}>*</Text>
                 </Text>
-                <TextInput
+                <BanglaNumberInput
                   style={[
                     styles.input,
                     {
@@ -225,12 +224,12 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
                       borderWidth: error ? 2 : 1,
                     },
                   ]}
-                  value={formatNumber(price)}
+                  value={price}
                   onChangeText={(text) => {
-                    setPrice(parseBanglaNumber(text));
+                    setPrice(text);
                     setError("");
                   }}
-                  keyboardType="decimal-pad"
+                  isBanglaMode={settings.language === "bn"}
                   placeholder={`0.00 ${settings.currency.symbol}`}
                   placeholderTextColor={colors.textSecondary}
                 />

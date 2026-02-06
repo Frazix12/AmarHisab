@@ -1,3 +1,4 @@
+import { BanglaNumberInput } from "@/components/shared/bangla-number-input";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
 import { GROCERY_CATEGORIES, GroceryCategory, GroceryItem } from "@/types";
@@ -171,7 +172,7 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                 <Text style={[styles.label, { color: colors.text }]}>
                   {t.form.price} ({settings.currency.symbol})
                 </Text>
-                <TextInput
+                <BanglaNumberInput
                   style={[
                     styles.input,
                     {
@@ -180,9 +181,9 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                       borderColor: colors.outline,
                     },
                   ]}
-                  value={formatNumber(price)}
-                  onChangeText={(text) => setPrice(parseBanglaNumber(text))}
-                  keyboardType="decimal-pad"
+                  value={price}
+                  onChangeText={setPrice}
+                  isBanglaMode={settings.language === "bn"}
                   placeholder={t.placeholders.groceryPrice}
                   placeholderTextColor={colors.textSecondary}
                 />

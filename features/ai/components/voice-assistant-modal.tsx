@@ -1,3 +1,4 @@
+import { BanglaNumberInput } from "@/components/shared/bangla-number-input";
 import { showToast } from "@/components/ui/toast";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
@@ -825,7 +826,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
   onClose,
   onSave,
 }) => {
-  const { colorScheme, t, settings, formatNumber } = useApp();
+  const { colorScheme, t, settings } = useApp();
   const colors = Colors[colorScheme];
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
@@ -884,7 +885,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
               >
                 {t.form.amount} ({settings.currency.symbol})
               </Text>
-              <TextInput
+              <BanglaNumberInput
                 style={[
                   styles.input,
                   {
@@ -893,12 +894,12 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                     color: colors.text,
                   },
                 ]}
-                value={formatNumber(amount)}
+                value={amount}
                 onChangeText={(text) => {
-                  setAmount(parseBanglaNumber(text));
+                  setAmount(text);
                   if (amountError) setAmountError(null);
                 }}
-                keyboardType="decimal-pad"
+                isBanglaMode={settings.language === "bn"}
               />
               {displayAmountError ? (
                 <Text style={[styles.inputErrorText, { color: colors.error }]}>
@@ -1135,7 +1136,7 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                   >
                     {t.form.price} ({settings.currency.symbol})
                   </Text>
-                  <TextInput
+                  <BanglaNumberInput
                     style={[
                       styles.input,
                       {
@@ -1144,9 +1145,9 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                         color: colors.text,
                       },
                     ]}
-                    value={formatNumber(price)}
-                    onChangeText={(text) => setPrice(parseBanglaNumber(text))}
-                    keyboardType="decimal-pad"
+                    value={price}
+                    onChangeText={setPrice}
+                    isBanglaMode={settings.language === "bn"}
                   />
                 </View>
               </View>
