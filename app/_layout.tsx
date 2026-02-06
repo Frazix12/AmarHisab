@@ -26,13 +26,31 @@ const RootLayoutContent = () => {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
+      <Stack
+        screenOptions={{
+          animation: "fade",
+          animationDuration: 220,
+          gestureEnabled: true,
+        }}
+      >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="modal"
-          options={{ presentation: "modal", title: "Modal" }}
+          options={{
+            presentation: "modal",
+            title: "Modal",
+            animation: "slide_from_bottom",
+            animationDuration: 240,
+          }}
         />
-        <Stack.Screen name="templates" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="templates"
+          options={{
+            headerShown: false,
+            animation: "slide_from_right",
+            animationDuration: 240,
+          }}
+        />
       </Stack>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
     </ThemeProvider>

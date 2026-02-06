@@ -1,5 +1,6 @@
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
+import { useReducedMotionPreference } from "@/utils/animations";
 import { Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import React, { useCallback } from "react";
@@ -44,6 +45,20 @@ export const SettingSelectionModal = ({
 }: SettingSelectionModalProps) => {
   const { colorScheme } = useApp();
   const colors = Colors[colorScheme];
+  const reduceMotion = useReducedMotionPreference();
+
+  const overlayEntering = reduceMotion
+    ? FadeIn.duration(0)
+    : FadeIn.duration(180);
+  const overlayExiting = reduceMotion
+    ? FadeOut.duration(0)
+    : FadeOut.duration(160);
+  const contentEntering = reduceMotion
+    ? SlideInDown.duration(0)
+    : SlideInDown.springify().damping(30).stiffness(300).mass(1);
+  const contentExiting = reduceMotion
+    ? SlideOutDown.duration(0)
+    : SlideOutDown.duration(180);
 
   const renderOption = useCallback(
     ({ item: option }: { item: Option }) => {
@@ -124,8 +139,8 @@ export const SettingSelectionModal = ({
     >
       <TouchableWithoutFeedback onPress={onClose}>
         <Animated.View
-          entering={FadeIn.duration(200)}
-          exiting={FadeOut.duration(200)}
+          entering={overlayEntering}
+          exiting={overlayExiting}
           style={styles.overlay}
         >
           <View style={styles.backdrop} />
@@ -134,8 +149,8 @@ export const SettingSelectionModal = ({
 
       <View style={styles.modalContainer} pointerEvents="box-none">
         <Animated.View
-          entering={SlideInDown.springify().damping(30).stiffness(300).mass(1)}
-          exiting={SlideOutDown.duration(200)}
+          entering={contentEntering}
+          exiting={contentExiting}
           style={[
             styles.modalContent,
             { backgroundColor: colors.surface, paddingBottom: 40 },

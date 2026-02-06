@@ -42,7 +42,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
 }) => {
   const { colorScheme, t, settings, formatNumber } = useApp();
   const colors = Colors[colorScheme];
-  const { animatedStyle, backdropStyle } = useModalAnimation(visible);
+  const { animatedStyle, backdropStyle, shouldRender } = useModalAnimation(visible);
 
   const [price, setPrice] = useState("");
   const [imageUri, setImageUri] = useState<string | undefined>(undefined);
@@ -176,9 +176,11 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
 
   if (!item) return null;
 
+  if (!shouldRender) return null;
+
   return (
     <Modal
-      visible={visible}
+      visible={shouldRender}
       transparent
       animationType="none"
       onRequestClose={onClose}

@@ -42,7 +42,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
 }) => {
   const { updateExpense, colorScheme, t, settings } = useApp();
   const colors = Colors[colorScheme];
-  const { animatedStyle, backdropStyle } = useModalAnimation(visible);
+  const { animatedStyle, backdropStyle, shouldRender } = useModalAnimation(visible);
 
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<ExpenseCategory>("food");
@@ -176,9 +176,11 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
     onClose();
   };
 
+  if (!shouldRender) return null;
+
   return (
     <Modal
-      visible={visible}
+      visible={shouldRender}
       transparent
       animationType="none"
       onRequestClose={onClose}

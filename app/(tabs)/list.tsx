@@ -13,6 +13,7 @@ import { GroceryItemComponent } from "@/features/grocery/components/grocery-item
 import { TemplateSuggestionCard } from "@/features/templates/components/template-suggestion-card";
 import { GroceryCategory, GroceryItem } from "@/types";
 import { LearningCandidate } from "@/types/template";
+import { usePageTransition } from "@/utils/animations";
 import {
     Add01Icon,
     Delete02Icon,
@@ -31,6 +32,7 @@ import {
   Vibration,
   View,
 } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const GROCERY_CATEGORY_ORDER: GroceryCategory[] = [
@@ -296,11 +298,13 @@ export default function GroceryScreen() {
       t,
     ],
   );
+  const pageTransitionStyle = usePageTransition();
 
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
     >
+      <Animated.View style={[styles.screenTransition, pageTransitionStyle]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <Text style={[styles.headerTitle, { color: colors.text }]}>
@@ -413,12 +417,16 @@ export default function GroceryScreen() {
 
       {/* Toast Notifications */}
       <Toast />
+      </Animated.View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  screenTransition: {
     flex: 1,
   },
   header: {

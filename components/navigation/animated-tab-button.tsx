@@ -1,13 +1,16 @@
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
+import { useReducedMotionPreference } from "@/utils/animations";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import * as Haptics from "expo-haptics";
 import React, { useEffect } from "react";
 import { Platform, Pressable, StyleSheet } from "react-native";
 import Animated, {
+  Easing,
+  Extrapolation,
+  interpolate,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming,
 } from "react-native-reanimated";
 
@@ -20,27 +23,9 @@ interface AnimatedTabButtonProps {
 }
 
 const ANIMATION_CONFIG = {
-  iconScale: {
-    inactive: 1.0,
-    active: 1.4,
-  },
-  iconTranslateY: {
-    inactive: 0,
-    active: 3.6, // Half of label height (16px / 2) to center vertically
-  },
-  labelOpacity: {
-    inactive: 1.0,
-    active: 0.0,
-  },
-  spring: {
-    damping: 15,
-    stiffness: 150,
-    mass: 1,
-  },
-  timing: {
-    duration: 150,
-  },
-};
+  activeDuration: 220,
+  inactiveDuration: 170,
+} as const;
 
 export const AnimatedTabButton: React.FC<AnimatedTabButtonProps> = ({
   isActive,
@@ -51,46 +36,39 @@ export const AnimatedTabButton: React.FC<AnimatedTabButtonProps> = ({
 }) => {
   const { colorScheme } = useApp();
   const colors = Colors[colorScheme];
+  const reduceMotion = useReducedMotionPreference();
 
-  // Shared values for animations
-  const iconScale = useSharedValue(ANIMATION_CONFIG.iconScale.inactive);
-  const iconTranslateY = useSharedValue(
-    ANIMATION_CONFIG.iconTranslateY.inactive,
-  );
-  const labelOpacity = useSharedValue(ANIMATION_CONFIG.labelOpacity.inactive);
+  const activeProgress = useSharedValue(isActive ? 1 : 0);
 
-  // Animate when active state changes
   useEffect(() => {
-    iconScale.value = withSpring(
-      isActive
-        ? ANIMATION_CONFIG.iconScale.active
-        : ANIMATION_CONFIG.iconScale.inactive,
-      ANIMATION_CONFIG.spring,
-    );
-    iconTranslateY.value = withSpring(
-      isActive
-        ? ANIMATION_CONFIG.iconTranslateY.active
-        : ANIMATION_CONFIG.iconTranslateY.inactive,
-      ANIMATION_CONFIG.spring,
-    );
-    labelOpacity.value = withTiming(
-      isActive
-        ? ANIMATION_CONFIG.labelOpacity.active
-        : ANIMATION_CONFIG.labelOpacity.inactive,
-      { duration: ANIMATION_CONFIG.timing.duration },
-    );
-  }, [isActive, iconScale, iconTranslateY, labelOpacity]);
+    activeProgress.value = withTiming(isActive ? 1 : 0, {
+      duration: reduceMotion
+        ? 0
+        : isActive
+          ? ANIMATION_CONFIG.activeDuration
+          : ANIMATION_CONFIG.inactiveDuration,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [activeProgress, isActive, reduceMotion]);
 
-  // Animated styles
   const animatedIconStyle = useAnimatedStyle(() => ({
     transform: [
-      { scale: iconScale.value },
-      { translateY: iconTranslateY.value },
+      {
+        scale: interpolate(activeProgress.value, [0, 1], [1, 1.12], Extrapolation.CLAMP),
+      },
+      {
+        translateY: interpolate(activeProgress.value, [0, 1], [0, -1], Extrapolation.CLAMP),
+      },
     ],
   }));
 
   const animatedLabelStyle = useAnimatedStyle(() => ({
-    opacity: labelOpacity.value,
+    opacity: interpolate(activeProgress.value, [0, 1], [0.82, 1], Extrapolation.CLAMP),
+    transform: [
+      {
+        translateY: interpolate(activeProgress.value, [0, 1], [0, -1], Extrapolation.CLAMP),
+      },
+    ],
   }));
 
   const handlePress = () => {
@@ -104,6 +82,7 @@ export const AnimatedTabButton: React.FC<AnimatedTabButtonProps> = ({
     <Pressable
       onPress={handlePress}
       style={styles.container}
+      hitSlop={8}
       accessibilityRole="tab"
       accessibilityState={{ selected: isActive }}
       accessibilityLabel={label}
@@ -113,16 +92,18 @@ export const AnimatedTabButton: React.FC<AnimatedTabButtonProps> = ({
           icon={icon}
           size={28}
           color={color}
-          strokeWidth={isActive ? 2 : 1.5}
+          strokeWidth={isActive ? 2.2 : 1.7}
         />
       </Animated.View>
       <Animated.Text
         style={[
           styles.label,
-          { color: isActive ? colors.textSecondary : colors.textSecondary },
+          { color: isActive ? colors.tint : colors.textSecondary },
           animatedLabelStyle,
         ]}
         numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.75}
       >
         {label}
       </Animated.Text>
@@ -136,17 +117,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 8,
-    minHeight: 60,
+    minHeight: 64,
+    borderRadius: 18,
+    overflow: "visible",
   },
   iconContainer: {
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 2,
+    marginBottom: 4,
   },
   label: {
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "600",
     lineHeight: 18,
     minHeight: 18,
+    width: "100%",
+    textAlign: "center",
+    paddingHorizontal: 2,
+    includeFontPadding: true,
   },
 });

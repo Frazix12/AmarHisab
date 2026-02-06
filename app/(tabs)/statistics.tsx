@@ -10,6 +10,7 @@ import { EditExpenseModal } from "@/features/expenses/components/edit-expense-mo
 import { ExpenseCard } from "@/features/expenses/components/expense-card";
 import { Expense } from "@/types";
 import { DateGroup, groupExpensesByDate } from "@/utils/date";
+import { usePageTransition } from "@/utils/animations";
 import {
   Analytics01Icon,
   Calendar03Icon,
@@ -30,6 +31,7 @@ import {
   Vibration,
   View,
 } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const DATE_GROUP_ORDER: DateGroup[] = [
@@ -305,11 +307,13 @@ export default function StatisticsScreen() {
       weekExpenses,
     ],
   );
+  const pageTransitionStyle = usePageTransition();
 
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
     >
+      <Animated.View style={[styles.screenTransition, pageTransitionStyle]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <Text style={[styles.headerTitle, { color: colors.text }]}>
@@ -360,12 +364,16 @@ export default function StatisticsScreen() {
 
       {/* Toast Notifications */}
       <Toast />
+      </Animated.View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  screenTransition: {
     flex: 1,
   },
   header: {

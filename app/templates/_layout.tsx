@@ -5,6 +5,9 @@ export default function TemplatesLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
+        animation: "slide_from_right",
+        animationDuration: 240,
+        gestureEnabled: true,
       }}
     />
   );

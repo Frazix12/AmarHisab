@@ -1,28 +1,29 @@
-/**
- * Animation utilities and configurations
- * Using react-native-reanimated for 60fps UI thread animations
- */
-
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AccessibilityInfo } from "react-native";
 import {
+  Easing,
+  Extrapolation,
+  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
 } from "react-native-reanimated";
 
-// Animation timing configurations
 export const ANIMATION_CONFIGS = {
   modal: {
+    enterDuration: 260,
+    exitDuration: 190,
+    backdropDuration: 180,
     spring: {
-      damping: 15,
-      stiffness: 150,
-      mass: 0.8,
-      overshootClamping: false,
+      damping: 18,
+      stiffness: 220,
+      mass: 0.9,
     },
-    timing: {
-      duration: 300,
-    },
+  },
+  page: {
+    enterDuration: 240,
+    exitDuration: 160,
   },
   fade: {
     duration: 200,
@@ -30,67 +31,159 @@ export const ANIMATION_CONFIGS = {
   quick: {
     duration: 150,
   },
-};
+} as const;
 
-// Hook for modal slide-up animation
-export const useModalAnimation = (visible: boolean) => {
-  const translateY = useSharedValue(1000);
-  const opacity = useSharedValue(0);
+export const useReducedMotionPreference = () => {
+  const [reducedMotionEnabled, setReducedMotionEnabled] = useState(false);
 
   useEffect(() => {
-    if (visible) {
-      translateY.value = withSpring(0, ANIMATION_CONFIGS.modal.spring);
-      opacity.value = withTiming(1, { duration: 200 });
-    } else {
-      translateY.value = withTiming(1000, ANIMATION_CONFIGS.modal.timing);
-      opacity.value = withTiming(0, { duration: 150 });
+    let isMounted = true;
+
+    const syncReducedMotion = async () => {
+      try {
+        const enabled = await AccessibilityInfo.isReduceMotionEnabled();
+        if (isMounted) {
+          setReducedMotionEnabled(enabled);
+        }
+      } catch {
+        if (isMounted) {
+          setReducedMotionEnabled(false);
+        }
+      }
+    };
+
+    void syncReducedMotion();
+
+    const subscription = AccessibilityInfo.addEventListener(
+      "reduceMotionChanged",
+      setReducedMotionEnabled,
+    );
+
+    return () => {
+      isMounted = false;
+      subscription.remove();
+    };
+  }, []);
+
+  return reducedMotionEnabled;
+};
+
+export const useModalAnimation = (visible: boolean) => {
+  const reduceMotion = useReducedMotionPreference();
+  const [shouldRender, setShouldRender] = useState(visible);
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const progress = useSharedValue(visible ? 1 : 0);
+
+  useEffect(() => {
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible]);
+
+    if (visible) {
+      setShouldRender(true);
+      progress.value = reduceMotion
+        ? withTiming(1, { duration: 0 })
+        : withSpring(1, ANIMATION_CONFIGS.modal.spring);
+      return;
+    }
+
+    progress.value = withTiming(0, {
+      duration: reduceMotion ? 0 : ANIMATION_CONFIGS.modal.exitDuration,
+      easing: Easing.in(Easing.cubic),
+    });
+
+    if (reduceMotion) {
+      setShouldRender(false);
+      return;
+    }
+
+    hideTimeoutRef.current = setTimeout(() => {
+      setShouldRender(false);
+    }, ANIMATION_CONFIGS.modal.exitDuration);
+
+    return () => {
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+        hideTimeoutRef.current = null;
+      }
+    };
+  }, [progress, reduceMotion, visible]);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-    opacity: opacity.value,
+    opacity: interpolate(progress.value, [0, 1], [0.96, 1], Extrapolation.CLAMP),
+    transform: [
+      {
+        translateY: interpolate(progress.value, [0, 1], [28, 0], Extrapolation.CLAMP),
+      },
+      {
+        scale: interpolate(progress.value, [0, 1], [0.98, 1], Extrapolation.CLAMP),
+      },
+    ],
   }));
 
   const backdropStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
+    opacity: interpolate(progress.value, [0, 1], [0, 1], Extrapolation.CLAMP),
   }));
 
-  return { animatedStyle, backdropStyle };
+  return { animatedStyle, backdropStyle, shouldRender };
 };
 
-// Hook for fade animation
 export const useFadeAnimation = (visible: boolean) => {
-  const opacity = useSharedValue(0);
+  const reduceMotion = useReducedMotionPreference();
+  const opacity = useSharedValue(visible ? 1 : 0);
 
   useEffect(() => {
-    opacity.value = withTiming(visible ? 1 : 0, ANIMATION_CONFIGS.fade);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible]);
+    opacity.value = withTiming(visible ? 1 : 0, {
+      duration: reduceMotion ? 0 : ANIMATION_CONFIGS.fade.duration,
+      easing: Easing.out(Easing.quad),
+    });
+  }, [opacity, reduceMotion, visible]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
+  return useAnimatedStyle(() => ({
     opacity: opacity.value,
   }));
-
-  return animatedStyle;
 };
 
-// Hook for scale bounce animation
 export const useScaleAnimation = (pressed: boolean) => {
+  const reduceMotion = useReducedMotionPreference();
   const scale = useSharedValue(1);
 
   useEffect(() => {
-    scale.value = withSpring(pressed ? 0.95 : 1, {
-      damping: 10,
-      stiffness: 200,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pressed]);
+    scale.value = reduceMotion
+      ? withTiming(pressed ? 0.98 : 1, { duration: 0 })
+      : withSpring(pressed ? 0.96 : 1, {
+          damping: 14,
+          stiffness: 260,
+          mass: 0.6,
+        });
+  }, [pressed, reduceMotion, scale]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
+  return useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
+};
 
-  return animatedStyle;
+export const usePageTransition = () => {
+  const reduceMotion = useReducedMotionPreference();
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    progress.value = withTiming(1, {
+      duration: reduceMotion ? 0 : ANIMATION_CONFIGS.page.enterDuration,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [progress, reduceMotion]);
+
+  return useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [0, 1], [0.94, 1], Extrapolation.CLAMP),
+    transform: [
+      {
+        translateY: interpolate(progress.value, [0, 1], [10, 0], Extrapolation.CLAMP),
+      },
+      {
+        scale: interpolate(progress.value, [0, 1], [0.985, 1], Extrapolation.CLAMP),
+      },
+    ],
+  }));
 };

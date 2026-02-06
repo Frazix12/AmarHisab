@@ -3,10 +3,12 @@ import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
 import { SettingSelectionModal } from "@/features/settings/components/setting-selection-modal";
 import { CURRENCIES } from "@/types";
+import { usePageTransition } from "@/utils/animations";
 import { useSampleData } from "@/utils/sample-data";
 import {
   ArtificialIntelligence04Icon,
   ComputerIcon,
+  Delete02Icon,
   InformationCircleIcon,
   Money01Icon,
   Moon02Icon,
@@ -27,6 +29,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import packageJson from "../../package.json";
 
@@ -115,6 +118,7 @@ export default function Settings() {
   const [activeModal, setActiveModal] = useState<
     "none" | "currency" | "theme" | "language"
   >("none");
+  const pageTransitionStyle = usePageTransition();
 
   const handleApiKeySave = () => {
     updateApiKey(apiKeyInput);
@@ -170,6 +174,7 @@ export default function Settings() {
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
     >
+      <Animated.View style={[styles.screenTransition, pageTransitionStyle]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <Text style={[styles.headerTitle, { color: colors.text }]}>
@@ -384,9 +389,17 @@ export default function Settings() {
               },
             ]}
           >
-            <Text style={[styles.devButtonText, { color: "#FFFFFF" }]}>
-              🗑️ {t.settings.clearAllData}
-            </Text>
+            <View style={styles.devButtonContent}>
+              <HugeiconsIcon
+                icon={Delete02Icon}
+                size={18}
+                color="#FFFFFF"
+                strokeWidth={2}
+              />
+              <Text style={[styles.devButtonText, { color: "#FFFFFF" }]}> 
+                {t.settings.clearAllData}
+              </Text>
+            </View>
           </Pressable>
         </View>
 
@@ -506,12 +519,16 @@ export default function Settings() {
 
       {/* Toast Notification */}
       <Toast />
+      </Animated.View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  screenTransition: {
     flex: 1,
   },
   header: {
@@ -638,6 +655,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     lineHeight: 20,
+  },
+  devButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   devButtonDanger: {
     marginTop: 12,

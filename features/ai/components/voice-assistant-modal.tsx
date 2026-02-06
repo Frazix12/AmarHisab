@@ -77,7 +77,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
   const { addExpense, addGroceryItem, settings, colorScheme, t, formatNumber } =
     useApp();
   const colors = Colors[colorScheme];
-  const { animatedStyle, backdropStyle } = useModalAnimation(visible);
+  const { animatedStyle, backdropStyle, shouldRender } = useModalAnimation(visible);
 
   const [status, setStatus] = useState<VoiceStatus>("idle");
   const [transcript, setTranscript] = useState("");
@@ -379,9 +379,11 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
     return normalized.toUpperCase();
   }, [detectedLanguage, t]);
 
+  if (!shouldRender) return null;
+
   return (
     <Modal
-      visible={visible}
+      visible={shouldRender}
       transparent
       animationType="none"
       onRequestClose={onClose}

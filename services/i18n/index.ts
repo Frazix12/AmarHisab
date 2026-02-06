@@ -117,7 +117,7 @@ export const translations = {
       takePhoto: "Take Photo",
       choosePhoto: "Choose Photo",
       edit: "Edit",
-      updateTemplate: "📝 Update template with these values",
+      updateTemplate: "Update this template with the new values",
       item: "Item",
     },
 
@@ -182,13 +182,13 @@ export const translations = {
       aiDetecting: "AI detecting...",
       aiSuggested: "AI suggested",
       templateInfo:
-        "💡 Templates help you quickly add grocery items with pre-filled values. You can also edit or delete them anytime.",
-      usingTemplate: "✨ Using template",
+        "Templates help you add grocery items faster with pre-filled values. You can edit or remove them anytime.",
+      usingTemplate: "Using template",
     },
 
     // Tips
     tips: {
-      longPressTip: "💡 Tip: Long-press any item to edit or delete",
+      longPressTip: "Long-press any item to edit or delete it quickly.",
     },
 
     // Settings
@@ -277,8 +277,8 @@ export const translations = {
       noTemplates: "No templates yet. Tap + to create one!",
       noManualTemplates: "No manual templates yet.",
       noLearnedTemplates: "No learned templates yet.",
-      aiLearned: "🧠 AI Learned",
-      manualTag: "✋ Manual",
+      aiLearned: "AI Learned",
+      manualTag: "Manual",
       usedCount: "Used",
       usedTimes: "times",
       usageDisplay: "Used {count} times",
@@ -679,7 +679,7 @@ export const translations = {
       takePhoto: "ক্যামেরা  ",
       choosePhoto: "গ্যালারি  ",
       edit: "এডিট  ",
-      updateTemplate: "📝 টেমপ্লেট আপডেট  ",
+      updateTemplate: "নতুন মান দিয়ে টেমপ্লেট আপডেট করুন",
       item: "জিনিস  ",
     },
 
@@ -744,13 +744,13 @@ export const translations = {
       aiDetecting: "AI দেখছে...",
       aiSuggested: "AI সাজেস্ট",
       templateInfo:
-        "💡 টেমপ্লেট দিয়ে দ্রুত বাজার যোগ করুন। পরে এডিট বা ডিলিট করতে পারবেন।",
-      usingTemplate: "✓ টেমপ্লেট ব্যবহার",
+        "টেমপ্লেট ব্যবহার করলে বাজার দ্রুত যোগ করা যায়। পরে চাইলে এডিট বা মুছে ফেলতে পারবেন।",
+      usingTemplate: "টেমপ্লেট ব্যবহার হচ্ছে",
     },
 
     // Tips
     tips: {
-      longPressTip: "💡 টিপ: চেপে ধরে এডিট বা ডিলিট",
+      longPressTip: "চেপে ধরে রাখলে দ্রুত এডিট বা ডিলিট করা যাবে।",
     },
 
     // Settings
@@ -758,7 +758,7 @@ export const translations = {
       title: "সেটিং",
       currency: "মুদ্রা",
       theme: "থিম",
-      language: "ভাষা",
+      language: "ভাষা  ",
       about: "সম্পর্কে",
       version: "ভার্সন",
       appName: "আমার হিসাব",
@@ -837,8 +837,8 @@ export const translations = {
       noTemplates: "টেমপ্লেট নেই। + চাপুন বানাতে!",
       noManualTemplates: "হাতে বানানো নেই।",
       noLearnedTemplates: "AI শেখানো নেই।",
-      aiLearned: "🧠 AI",
-      manualTag: "✋ হাতে",
+      aiLearned: "AI শেখা",
+      manualTag: "হাতে যোগ করা",
       usedCount: "ব্যবহার",
       usedTimes: "বার",
       usageDisplay: "ব্যবহার {count} বার",

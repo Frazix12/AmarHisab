@@ -42,7 +42,7 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
     formatNumber,
   } = useApp();
   const colors = Colors[colorScheme];
-  const { animatedStyle, backdropStyle } = useModalAnimation(visible);
+  const { animatedStyle, backdropStyle, shouldRender } = useModalAnimation(visible);
 
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -94,9 +94,11 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
     onClose();
   };
 
+  if (!shouldRender) return null;
+
   return (
     <Modal
-      visible={visible}
+      visible={shouldRender}
       transparent
       animationType="none"
       onRequestClose={onClose}
@@ -270,7 +272,7 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                     ]}
                   >
                     {t.form.updateTemplate ||
-                      "📝 Update template with these values"}
+                      "Update this template with the new values"}
                   </Text>
                 </Pressable>
               </View>

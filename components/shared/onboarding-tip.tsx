@@ -1,10 +1,20 @@
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
+import { useReducedMotionPreference } from "@/utils/animations";
 import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { useCallback, useEffect, useState } from "react";
-import { Animated, Platform, Pressable, StyleSheet, Text } from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Platform, Pressable, StyleSheet, Text } from "react-native";
+import Animated, {
+  Easing,
+  Extrapolation,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 
 const STORAGE_KEY_PREFIX = "@onboarding_longpress_tip_dismissed_";
 
@@ -15,53 +25,63 @@ interface OnboardingTipProps {
 export const OnboardingTip: React.FC<OnboardingTipProps> = ({ screenKey }) => {
   const { colorScheme, t } = useApp();
   const colors = Colors[colorScheme];
-  const [visible, setVisible] = useState(false);
-  const slideAnim = useState(new Animated.Value(-100))[0];
-  const opacityAnim = useState(new Animated.Value(0))[0];
+  const reduceMotion = useReducedMotionPreference();
+  const [shouldRender, setShouldRender] = useState(false);
+  const progress = useSharedValue(0);
+  const autoDismissTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const animateIn = useCallback(() => {
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [slideAnim, opacityAnim]);
+    setShouldRender(true);
+    progress.value = reduceMotion
+      ? withTiming(1, { duration: 0 })
+      : withSpring(1, {
+          damping: 16,
+          stiffness: 220,
+          mass: 0.9,
+        });
+  }, [progress, reduceMotion]);
 
   const animateOut = useCallback(
-    (callback: () => void) => {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: -100,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start(callback);
+    (callback?: () => void) => {
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+        hideTimeoutRef.current = null;
+      }
+
+      progress.value = withTiming(0, {
+        duration: reduceMotion ? 0 : 180,
+        easing: Easing.in(Easing.cubic),
+      });
+
+      if (reduceMotion) {
+        setShouldRender(false);
+        callback?.();
+        return;
+      }
+
+      hideTimeoutRef.current = setTimeout(() => {
+        setShouldRender(false);
+        callback?.();
+      }, 180);
     },
-    [slideAnim, opacityAnim],
+    [progress, reduceMotion],
   );
 
   const handleDismiss = useCallback(async () => {
-    animateOut(async () => {
-      setVisible(false);
-      try {
-        await AsyncStorage.setItem(`${STORAGE_KEY_PREFIX}${screenKey}`, "true");
-      } catch (error) {
-        console.error("Error saving onboarding tip dismissal:", error);
-      }
+    if (autoDismissTimeoutRef.current) {
+      clearTimeout(autoDismissTimeoutRef.current);
+      autoDismissTimeoutRef.current = null;
+    }
+
+    animateOut(() => {
+      void AsyncStorage.setItem(`${STORAGE_KEY_PREFIX}${screenKey}`, "true").catch(
+        (error) => {
+          console.error("Error saving onboarding tip dismissal:", error);
+        },
+      );
     });
-  }, [screenKey, animateOut]);
+  }, [animateOut, screenKey]);
 
   const checkDismissal = useCallback(async () => {
     try {
@@ -69,11 +89,10 @@ export const OnboardingTip: React.FC<OnboardingTipProps> = ({ screenKey }) => {
         `${STORAGE_KEY_PREFIX}${screenKey}`,
       );
       if (!dismissed) {
-        setVisible(true);
         animateIn();
-        // Auto-dismiss after 10 seconds
-        setTimeout(() => {
-          handleDismiss();
+
+        autoDismissTimeoutRef.current = setTimeout(() => {
+          void handleDismiss();
         }, 10000);
       }
     } catch (error) {
@@ -82,10 +101,31 @@ export const OnboardingTip: React.FC<OnboardingTipProps> = ({ screenKey }) => {
   }, [screenKey, animateIn, handleDismiss]);
 
   useEffect(() => {
-    checkDismissal();
+    void checkDismissal();
+
+    return () => {
+      if (autoDismissTimeoutRef.current) {
+        clearTimeout(autoDismissTimeoutRef.current);
+      }
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+      }
+    };
   }, [checkDismissal]);
 
-  if (!visible) return null;
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [
+      {
+        translateY: interpolate(progress.value, [0, 1], [-10, 0], Extrapolation.CLAMP),
+      },
+      {
+        scale: interpolate(progress.value, [0, 1], [0.98, 1], Extrapolation.CLAMP),
+      },
+    ],
+  }));
+
+  if (!shouldRender) return null;
 
   return (
     <Animated.View
@@ -94,14 +134,12 @@ export const OnboardingTip: React.FC<OnboardingTipProps> = ({ screenKey }) => {
         {
           backgroundColor: colors.primaryContainer,
           borderColor: colors.primary,
-          transform: [{ translateY: slideAnim }],
-          opacity: opacityAnim,
         },
+        animatedStyle,
       ]}
     >
       <Text style={[styles.tipText, { color: colors.text }]}>
-        {t.tips?.longPressTip ||
-          "💡 Tip: Long-press any item to edit or delete"}
+        {t.tips?.longPressTip || "Long-press an item to edit or delete it quickly."}
       </Text>
       <Pressable
         onPress={handleDismiss}
@@ -155,6 +193,9 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   closeButton: {
-    padding: 4,
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

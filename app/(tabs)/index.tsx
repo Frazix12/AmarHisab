@@ -11,6 +11,7 @@ import { AddExpenseModal } from "@/features/expenses/components/add-expense-moda
 import { EditExpenseModal } from "@/features/expenses/components/edit-expense-modal";
 import { ExpenseCard } from "@/features/expenses/components/expense-card";
 import { Expense } from "@/types";
+import { usePageTransition } from "@/utils/animations";
 import {
   Add01Icon,
   Delete02Icon,
@@ -30,6 +31,7 @@ import {
   Vibration,
   View,
 } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ExpensesScreen() {
@@ -187,11 +189,13 @@ export default function ExpensesScreen() {
     ),
     [colors, formatNumber, sortedExpenses.length, t, todayExpenses],
   );
+  const pageTransitionStyle = usePageTransition();
 
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
     >
+      <Animated.View style={[styles.screenTransition, pageTransitionStyle]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <Text style={[styles.headerTitle, { color: colors.text }]}>
@@ -268,12 +272,16 @@ export default function ExpensesScreen() {
 
       {/* Toast Notifications */}
       <Toast />
+      </Animated.View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  screenTransition: {
     flex: 1,
   },
   header: {

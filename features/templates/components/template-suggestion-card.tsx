@@ -1,14 +1,25 @@
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
 import { LearningCandidate } from "@/types/template";
+import { useReducedMotionPreference } from "@/utils/animations";
 import {
-    Cancel01Icon,
-    Delete02Icon,
-    Tick02Icon,
+  ArtificialIntelligence04Icon,
+  Cancel01Icon,
+  Delete02Icon,
+  Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
-import React, { useEffect, useState } from "react";
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import Animated, {
+  Easing,
+  Extrapolation,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 
 interface TemplateSuggestionCardProps {
   suggestion: LearningCandidate;
@@ -26,64 +37,100 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
   const { colorScheme, settings, t, formatNumber } = useApp();
   const colors = Colors[colorScheme];
 
-  const [fadeAnim] = useState(new Animated.Value(0));
-  const [slideAnim] = useState(new Animated.Value(-100));
+  const reduceMotion = useReducedMotionPreference();
+  const [shouldRender, setShouldRender] = useState(visible);
   const [showUndo, setShowUndo] = useState(false);
-  const [undoTimeout, setUndoTimeout] = useState<ReturnType<
-    typeof setTimeout
-  > | null>(null);
+  const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const progress = useSharedValue(visible ? 1 : 0);
+
+  const isOpen = visible || showUndo;
 
   useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          tension: 50,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: -100,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
     }
-  }, [visible, fadeAnim, slideAnim]);
+
+    if (isOpen) {
+      setShouldRender(true);
+      progress.value = reduceMotion
+        ? withTiming(1, { duration: 0 })
+        : withSpring(1, {
+            damping: 18,
+            stiffness: 220,
+            mass: 0.9,
+          });
+      return;
+    }
+
+    progress.value = withTiming(0, {
+      duration: reduceMotion ? 0 : 180,
+      easing: Easing.in(Easing.cubic),
+    });
+
+    if (reduceMotion) {
+      setShouldRender(false);
+      return;
+    }
+
+    hideTimeoutRef.current = setTimeout(() => {
+      setShouldRender(false);
+    }, 180);
+
+    return () => {
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+      }
+    };
+  }, [isOpen, progress, reduceMotion]);
+
+  useEffect(() => {
+    return () => {
+      if (undoTimeoutRef.current) {
+        clearTimeout(undoTimeoutRef.current);
+      }
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [
+      {
+        translateY: interpolate(progress.value, [0, 1], [-10, 0], Extrapolation.CLAMP),
+      },
+      {
+        scale: interpolate(progress.value, [0, 1], [0.98, 1], Extrapolation.CLAMP),
+      },
+    ],
+  }));
 
   const handleSave = () => {
     onSave();
     setShowUndo(true);
 
-    // Auto-hide undo after 3 seconds
-    const timeout = setTimeout(() => {
+    if (undoTimeoutRef.current) {
+      clearTimeout(undoTimeoutRef.current);
+    }
+
+    undoTimeoutRef.current = setTimeout(() => {
       setShowUndo(false);
     }, 3000);
-    setUndoTimeout(timeout);
   };
 
   const handleUndo = () => {
-    if (undoTimeout) {
-      clearTimeout(undoTimeout);
+    if (undoTimeoutRef.current) {
+      clearTimeout(undoTimeoutRef.current);
+      undoTimeoutRef.current = null;
     }
     setShowUndo(false);
-    onDismiss(false); // Dismiss without marking as "never"
+    onDismiss(false);
   };
 
-  if (!visible && !showUndo) return null;
+  if (!shouldRender) return null;
 
   if (showUndo) {
     return (
@@ -92,14 +139,13 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
           styles.container,
           {
             backgroundColor: colors.primaryContainer,
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
           },
+          animatedStyle,
         ]}
       >
         <View style={styles.undoContent}>
           <Text style={[styles.undoText, { color: colors.onPrimaryContainer }]}>
-            ✅ {t.templates.templateSaved}
+            {t.templates.templateSaved}
           </Text>
           <Pressable onPress={handleUndo} style={styles.undoButton}>
             <Text style={[styles.undoButtonText, { color: colors.primary }]}>
@@ -118,23 +164,26 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
         {
           backgroundColor: colors.surface,
           borderColor: colors.primary,
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
         },
+        animatedStyle,
       ]}
     >
-      {/* Header */}
       <View style={styles.header}>
         <View
           style={[styles.iconBadge, { backgroundColor: colors.primary + "20" }]}
         >
-          <Text style={styles.iconEmoji}>🧠</Text>
+          <HugeiconsIcon
+            icon={ArtificialIntelligence04Icon}
+            size={20}
+            color={colors.primary}
+            strokeWidth={2}
+          />
         </View>
         <View style={styles.headerText}>
-          <Text style={[styles.title, { color: colors.text }]}>
+          <Text style={[styles.title, { color: colors.text }]}> 
             {t.templates.saveAsTemplateTitle}
           </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}> 
             {t.templates.saveAsTemplateSubtitle.replace(
               "{name}",
               suggestion.productName,
@@ -143,30 +192,29 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
         </View>
       </View>
 
-      {/* Suggestion Details */}
       <View style={styles.details}>
         <View style={styles.detailRow}>
-          <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
+          <Text style={[styles.detailLabel, { color: colors.textSecondary }]}> 
             {t.templates.typicalQuantity}:
           </Text>
-          <Text style={[styles.detailValue, { color: colors.text }]}>
+          <Text style={[styles.detailValue, { color: colors.text }]}> 
             {suggestion.defaultQuantity}
           </Text>
         </View>
         <View style={styles.detailRow}>
-          <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
+          <Text style={[styles.detailLabel, { color: colors.textSecondary }]}> 
             {t.templates.avgPrice}:
           </Text>
-          <Text style={[styles.detailValue, { color: colors.text }]}>
+          <Text style={[styles.detailValue, { color: colors.text }]}> 
             {settings.currency.symbol}
             {formatNumber(Math.round(suggestion.defaultPrice * 100) / 100)}
           </Text>
         </View>
         <View style={styles.detailRow}>
-          <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
+          <Text style={[styles.detailLabel, { color: colors.textSecondary }]}> 
             {t.templates.purchased}:
           </Text>
-          <Text style={[styles.detailValue, { color: colors.text }]}>
+          <Text style={[styles.detailValue, { color: colors.text }]}> 
             {t.templates.usageDisplay.replace(
               "{count}",
               formatNumber(suggestion.occurrences),
@@ -175,7 +223,6 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
         </View>
       </View>
 
-      {/* Actions */}
       <View style={styles.actions}>
         <Pressable
           onPress={() => onDismiss(true)}
@@ -186,7 +233,7 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
           ]}
         >
           <HugeiconsIcon icon={Delete02Icon} size={16} color={colors.error} />
-          <Text style={[styles.actionButtonText, { color: colors.error }]}>
+          <Text style={[styles.actionButtonText, { color: colors.error }]}> 
             {t.templates.never}
           </Text>
         </Pressable>
@@ -200,7 +247,7 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
           ]}
         >
           <HugeiconsIcon icon={Cancel01Icon} size={16} color={colors.text} />
-          <Text style={[styles.actionButtonText, { color: colors.text }]}>
+          <Text style={[styles.actionButtonText, { color: colors.text }]}> 
             {t.templates.notNow}
           </Text>
         </Pressable>
@@ -214,7 +261,7 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
           ]}
         >
           <HugeiconsIcon icon={Tick02Icon} size={16} color="#fff" />
-          <Text style={[styles.actionButtonText, { color: "#fff" }]}>
+          <Text style={[styles.actionButtonText, { color: "#fff" }]}> 
             {t.form.save}
           </Text>
         </Pressable>
@@ -248,9 +295,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
-  },
-  iconEmoji: {
-    fontSize: 20,
   },
   headerText: {
     flex: 1,
@@ -300,6 +344,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
+    minHeight: 44,
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 8,

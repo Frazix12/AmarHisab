@@ -35,7 +35,7 @@ export const ActionMenuModal: React.FC<ActionMenuModalProps> = ({
 }) => {
   const { colorScheme } = useApp();
   const colors = Colors[colorScheme];
-  const { animatedStyle, backdropStyle } = useModalAnimation(visible);
+  const { animatedStyle, backdropStyle, shouldRender } = useModalAnimation(visible);
 
   const handleActionPress = (action: ActionMenuItem) => {
     onClose();
@@ -43,9 +43,11 @@ export const ActionMenuModal: React.FC<ActionMenuModalProps> = ({
     setTimeout(() => action.onPress(), 200);
   };
 
+  if (!shouldRender) return null;
+
   return (
     <Modal
-      visible={visible}
+      visible={shouldRender}
       transparent
       animationType="none"
       onRequestClose={onClose}

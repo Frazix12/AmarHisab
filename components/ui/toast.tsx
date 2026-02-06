@@ -1,11 +1,22 @@
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
+import { useReducedMotionPreference } from "@/utils/animations";
 import { Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
-import React, { useEffect, useState } from "react";
-import { Animated, Platform, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Platform, StyleSheet, Text, View } from "react-native";
+import Animated, {
+  Easing,
+  Extrapolation,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 
 let toastTimeoutId: ReturnType<typeof setTimeout> | null = null;
+const TOAST_HIDE_DELAY_MS = 2200;
 
 interface ToastState {
   visible: boolean;
@@ -31,55 +42,21 @@ export const showToast = (message: string) => {
   toastTimeoutId = setTimeout(() => {
     toastState.visible = false;
     listeners.forEach((listener) => listener({ ...toastState }));
-  }, 2000);
-};
-
-const animateIn = (slideAnim: Animated.Value, opacityAnim: Animated.Value) => {
-  Animated.parallel([
-    Animated.spring(slideAnim, {
-      toValue: 0,
-      tension: 80,
-      friction: 10,
-      useNativeDriver: true,
-    }),
-    Animated.timing(opacityAnim, {
-      toValue: 1,
-      duration: 200,
-      useNativeDriver: true,
-    }),
-  ]).start();
-};
-
-const animateOut = (slideAnim: Animated.Value, opacityAnim: Animated.Value) => {
-  Animated.parallel([
-    Animated.timing(slideAnim, {
-      toValue: 100,
-      duration: 200,
-      useNativeDriver: true,
-    }),
-    Animated.timing(opacityAnim, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: true,
-    }),
-  ]).start();
+  }, TOAST_HIDE_DELAY_MS);
 };
 
 export const Toast: React.FC = () => {
   const { colorScheme } = useApp();
   const colors = Colors[colorScheme];
+  const reduceMotion = useReducedMotionPreference();
   const [state, setState] = useState<ToastState>(toastState);
-  const slideAnim = useState(new Animated.Value(100))[0];
-  const opacityAnim = useState(new Animated.Value(0))[0];
+  const [shouldRender, setShouldRender] = useState(toastState.visible);
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const progress = useSharedValue(toastState.visible ? 1 : 0);
 
   useEffect(() => {
     const listener = (newState: ToastState) => {
       setState(newState);
-      if (newState.visible) {
-        animateIn(slideAnim, opacityAnim);
-      } else {
-        animateOut(slideAnim, opacityAnim);
-      }
     };
 
     listeners.push(listener);
@@ -89,18 +66,66 @@ export const Toast: React.FC = () => {
         listeners.splice(index, 1);
       }
     };
-  }, [slideAnim, opacityAnim]);
+  }, []);
 
-  if (!state.visible) return null;
+  useEffect(() => {
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+
+    if (state.visible) {
+      setShouldRender(true);
+      progress.value = reduceMotion
+        ? withTiming(1, { duration: 0 })
+        : withSpring(1, {
+            damping: 18,
+            stiffness: 240,
+            mass: 0.8,
+          });
+      return;
+    }
+
+    progress.value = withTiming(0, {
+      duration: reduceMotion ? 0 : 170,
+      easing: Easing.in(Easing.cubic),
+    });
+
+    if (reduceMotion) {
+      setShouldRender(false);
+      return;
+    }
+
+    hideTimeoutRef.current = setTimeout(() => {
+      setShouldRender(false);
+    }, 170);
+
+    return () => {
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+      }
+    };
+  }, [progress, reduceMotion, state.visible]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [
+      {
+        translateY: interpolate(progress.value, [0, 1], [16, 0], Extrapolation.CLAMP),
+      },
+      {
+        scale: interpolate(progress.value, [0, 1], [0.98, 1], Extrapolation.CLAMP),
+      },
+    ],
+  }));
+
+  if (!shouldRender) return null;
 
   return (
     <Animated.View
       style={[
         styles.container,
-        {
-          transform: [{ translateY: slideAnim }],
-          opacity: opacityAnim,
-        },
+        animatedStyle,
       ]}
       pointerEvents="none"
     >

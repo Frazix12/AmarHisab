@@ -45,7 +45,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
     formatNumber,
   } = useApp();
   const colors = Colors[colorScheme];
-  const { animatedStyle, backdropStyle } = useModalAnimation(visible);
+  const { animatedStyle, backdropStyle, shouldRender } = useModalAnimation(visible);
 
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -160,9 +160,11 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
     onClose();
   };
 
+  if (!shouldRender) return null;
+
   return (
     <Modal
-      visible={visible}
+      visible={shouldRender}
       transparent
       animationType="none"
       onRequestClose={onClose}
@@ -242,7 +244,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                 <Text
                   style={[styles.templateHint, { color: colors.textSecondary }]}
                 >
-                  💡 {matchingTemplates[0].template.productNameDisplay} •{" "}
+                  {t.helpers.aiSuggested}: {matchingTemplates[0].template.productNameDisplay} •{" "}
                   {settings.currency.symbol}
                   {formatNumber(
                     matchingTemplates[0].template.defaultPrice.toFixed(2),
