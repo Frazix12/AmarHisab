@@ -55,7 +55,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
   // Reset form when modal opens/closes
   useEffect(() => {
     if (visible && item) {
-      setPrice(item.price > 0 ? item.price.toString() : "");
+      setPrice(item.price !== null ? item.price.toString() : "");
       setImageUri(item.imageUri);
       setError("");
       setIsPriceFocused(false);
@@ -124,8 +124,8 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
       if (!result.canceled && result.assets[0]) {
         setImageUri(result.assets[0].uri);
       }
-    } catch (error) {
-      console.error("Error picking image:", error);
+    } catch (err) {
+      console.error("Error picking image:", err);
       Alert.alert(t.alerts.errorTitle, t.alerts.pickImageFailed);
     }
   };
@@ -151,8 +151,8 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
       if (!result.canceled && result.assets[0]) {
         setImageUri(result.assets[0].uri);
       }
-    } catch (error) {
-      console.error("Error capturing image:", error);
+    } catch (err) {
+      console.error("Error capturing image:", err);
       Alert.alert(t.alerts.errorTitle, t.alerts.captureImageFailed);
     }
   };
@@ -264,8 +264,8 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
                   setPriceInputY(event.nativeEvent.layout.y);
                 }}
               >
-                <Text style={[styles.label, { color: colors.text }]}> 
-                  {t.form.price}{" "}
+                <Text style={[styles.label, { color: colors.text }]}>
+                  {t.form.price}
                   <Text style={{ color: colors.error || "#DC2626" }}>*</Text>
                 </Text>
                 <BanglaNumberInput

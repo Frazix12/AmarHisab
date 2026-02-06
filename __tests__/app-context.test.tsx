@@ -64,6 +64,10 @@ describe("AppProvider", () => {
     (loadSettings as jest.Mock).mockResolvedValue(defaultSettings);
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it("loads stored data and computes totals", async () => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date(2025, 0, 15, 12));
@@ -124,6 +128,9 @@ describe("AppProvider", () => {
   });
 
   it("toggles grocery items with price into expenses", async () => {
+    jest.useFakeTimers("modern" as any);
+    jest.setSystemTime(new Date(2025, 0, 15, 12));
+
     const groceryItems: GroceryItem[] = [
       {
         id: "g1",
@@ -151,6 +158,7 @@ describe("AppProvider", () => {
       expect(result.current.groceryItems[0].checked).toBe(true),
     );
     expect(result.current.expenses).toHaveLength(1);
+    expect(result.current.expenses[0].amount).toBe(groceryItems[0].price);
     expect(result.current.groceryItems[0].expenseId).toBeTruthy();
     expect(TemplateLearner.trackGroceryItem).not.toHaveBeenCalled();
   });

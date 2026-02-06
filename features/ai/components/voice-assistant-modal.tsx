@@ -341,7 +341,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
       addGroceryItem({
         name: item.name,
         quantity: item.quantity || "",
-        price: item.price ?? 0,
+        price: item.price ?? null,
         category: item.category || "other",
         checked: false,
         aiDetected: true,

@@ -25,7 +25,7 @@ export interface GroceryTemplate {
 export interface LearningTelemetry {
   userId: string;
   productNameNormalized: string;
-  seenCount30d: number; // Times seen in last 30 days
+  totalSeenCount: number; // Total times seen
   lastSeenAt: Date; // Last occurrence
   lastSuggestedAt: Date | null; // When we last suggested
   dismissedForever: boolean; // User chose "Never for this item"

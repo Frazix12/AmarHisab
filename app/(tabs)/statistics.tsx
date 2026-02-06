@@ -266,7 +266,12 @@ export default function StatisticsScreen() {
                   </Text>
                 </View>
                 <View style={styles.categoryAmountContainer}>
-                  <View style={styles.categoryBarContainer}>
+                  <View
+                    style={[
+                      styles.categoryBarContainer,
+                      { backgroundColor: colors.outline },
+                    ]}
+                  >
                     <View
                       style={[
                         styles.categoryBar,
@@ -437,7 +442,6 @@ const styles = StyleSheet.create({
   categoryBarContainer: {
     flex: 1,
     height: 8,
-    backgroundColor: "#E0E0E0",
     borderRadius: 4,
     marginRight: 12,
     overflow: "hidden",

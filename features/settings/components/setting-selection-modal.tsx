@@ -128,8 +128,6 @@ export const SettingSelectionModal = ({
     [colors, currentValue, onClose, onSelect],
   );
 
-  if (!visible) return null;
-
   return (
     <Modal
       transparent

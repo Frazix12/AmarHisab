@@ -14,7 +14,7 @@ export interface GroceryItem {
   name: string;
   nameNormalized: string; // For template matching
   quantity: string;
-  price: number; // 0 = "no price set"
+  price: number | null; // null = "no price set", 0 = free item
   checked: boolean;
   category: GroceryCategory;
   templateId?: string; // Track which template was used

@@ -75,7 +75,8 @@ export default function EditTemplateScreen() {
       newErrors.productName = t.alerts.requiredProductName;
     }
 
-    const priceNum = parseFloat(price);
+    const normalizedPrice = parseBanglaNumber(price).trim();
+    const priceNum = Number.parseFloat(normalizedPrice);
     if (!price || isNaN(priceNum) || priceNum < 0) {
       newErrors.price = t.alerts.requiredValidPrice;
     }
@@ -89,11 +90,15 @@ export default function EditTemplateScreen() {
 
     setLoading(true);
     try {
+      const normalizedPrice = parseBanglaNumber(price).trim();
+      const parsedPrice = Number.parseFloat(normalizedPrice);
+      const safePrice = Number.isNaN(parsedPrice) ? 0 : parsedPrice;
+
       await updateTemplate(id, {
         productNameDisplay: productName.trim(),
         productNameNormalized: normalizeProductName(productName),
         defaultQuantity: quantity.trim(),
-        defaultPrice: parseFloat(price),
+        defaultPrice: safePrice,
         category,
       });
 

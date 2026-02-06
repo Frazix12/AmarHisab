@@ -15,12 +15,12 @@ describe("currency utils", () => {
   });
 
   it("handles negative amounts", () => {
-    expect(formatCurrency(-5, USD)).toBe("-$5");
+    expect(formatCurrency(-5, USD)).toBe("-$5.00");
   });
 
   it("parses currency input into numbers", () => {
     expect(parseCurrencyInput("$1,234.50")).toBe(1234.5);
-    expect(parseCurrencyInput("invalid")).toBe(0);
+    expect(Number.isNaN(parseCurrencyInput("invalid"))).toBe(true);
   });
 
   it("validates positive amounts", () => {

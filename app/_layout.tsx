@@ -6,7 +6,7 @@ import {
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
-import React from "react";
+import React, { useEffect } from "react";
 
 import { AppProvider, useApp } from "@/contexts/app-context";
 import {
@@ -21,8 +21,13 @@ export const unstable_settings = {
 const RootLayoutContent = () => {
   const { colorScheme, settings } = useApp();
 
-  ensureTextMetricsPatched();
-  setTextMetricsLanguage(settings.language);
+  useEffect(() => {
+    ensureTextMetricsPatched();
+  }, []);
+
+  useEffect(() => {
+    setTextMetricsLanguage(settings.language);
+  }, [settings.language]);
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>

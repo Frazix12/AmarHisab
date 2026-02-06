@@ -52,6 +52,12 @@ export const ExpenseCard = React.memo(
     onLongPress,
   }: ExpenseCardProps) => {
     const icon = getCategoryIcon(expense.category);
+    const categoryLabel = Object.prototype.hasOwnProperty.call(
+      t.categories,
+      expense.category,
+    )
+      ? t.categories[expense.category as keyof typeof t.categories]
+      : expense.category || t.categories.other || "Unknown";
     const handlePress = onPress ? () => onPress(expense) : undefined;
     const handleLongPress = onLongPress ? () => onLongPress(expense) : undefined;
 
@@ -99,7 +105,7 @@ export const ExpenseCard = React.memo(
           style={[styles.category, { color: colors.text }]}
           numberOfLines={1}
         >
-          {t.categories[expense.category as keyof typeof t.categories]}
+          {categoryLabel}
         </Text>
         {expense.description ? (
           <Text

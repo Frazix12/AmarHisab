@@ -101,7 +101,7 @@ export const GroceryItemComponent = React.memo(
                 {formatNumber(item.quantity)}
               </Text>
             ) : null}
-            {item.price > 0 ? (
+            {item.price !== null ? (
               <Text
                 style={[
                   styles.price,
@@ -123,7 +123,7 @@ export const GroceryItemComponent = React.memo(
                 item.category ||
                 t.categories.other}
             </Text>
-            {!item.checked && item.price === 0 && (
+            {!item.checked && item.price === null && (
               <View
                 style={[
                   styles.badge,

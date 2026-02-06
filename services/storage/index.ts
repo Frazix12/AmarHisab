@@ -12,7 +12,17 @@ const API_KEY_STORAGE_KEY = "amar_hisab_gemini_api_key";
  * Helper to handle SecureStore on web (where it's not supported)
  */
 const setSecureItem = async (key: string, value: string) => {
-  if (Platform.OS === "web") return; // SecureStore not supported on web
+  if (Platform.OS === "web") {
+    console.warn(
+      "SecureStore is unavailable on web; falling back to AsyncStorage for sensitive data.",
+    );
+    try {
+      await AsyncStorage.setItem(key, value);
+    } catch (e) {
+      console.error("Error saving web fallback secure item:", e);
+    }
+    return;
+  }
   try {
     await SecureStore.setItemAsync(key, value);
   } catch (e) {
@@ -21,7 +31,17 @@ const setSecureItem = async (key: string, value: string) => {
 };
 
 const getSecureItem = async (key: string) => {
-  if (Platform.OS === "web") return null;
+  if (Platform.OS === "web") {
+    console.warn(
+      "SecureStore is unavailable on web; reading sensitive data from AsyncStorage fallback.",
+    );
+    try {
+      return await AsyncStorage.getItem(key);
+    } catch (e) {
+      console.error("Error reading web fallback secure item:", e);
+      return null;
+    }
+  }
   try {
     return await SecureStore.getItemAsync(key);
   } catch (e) {
@@ -31,7 +51,14 @@ const getSecureItem = async (key: string) => {
 };
 
 const deleteSecureItem = async (key: string) => {
-  if (Platform.OS === "web") return;
+  if (Platform.OS === "web") {
+    try {
+      await AsyncStorage.removeItem(key);
+    } catch (e) {
+      console.error("Error deleting web fallback secure item:", e);
+    }
+    return;
+  }
   try {
     await SecureStore.deleteItemAsync(key);
   } catch (e) {
@@ -82,6 +109,12 @@ export const loadGroceryItems = async (): Promise<GroceryItem[]> => {
       // Convert date strings back to Date objects and add missing fields for legacy data
       return items.map((item: any) => ({
         ...item,
+        price:
+          typeof item.price === "number"
+            ? item.price === 0
+              ? null
+              : item.price
+            : null,
         createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
         nameNormalized: item.nameNormalized || item.name.toLowerCase().trim(),
       }));

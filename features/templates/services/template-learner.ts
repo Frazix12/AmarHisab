@@ -85,7 +85,9 @@ export const TemplateLearner = {
       if (categoryConsistency < 0.7) continue;
 
       // Calculate defaults using robust statistics
-      const prices = items.map((i) => i.price).filter((p) => p > 0);
+      const prices = items
+        .map((i) => i.price)
+        .filter((p): p is number => p !== null && p > 0);
       const quantities = items
         .map((i) => i.quantity)
         .filter((q) => q && q.trim() !== "");
@@ -128,7 +130,7 @@ export const TemplateLearner = {
 
     if (telemetry) {
       // Update existing telemetry
-      telemetry.seenCount30d += 1;
+      telemetry.totalSeenCount += 1;
       telemetry.lastSeenAt = now;
 
       // Update category frequency
@@ -139,7 +141,7 @@ export const TemplateLearner = {
         (telemetry.categoryFrequency[item.category] || 0) + 1;
 
       // Update price history (keep last 10)
-      if (item.price > 0) {
+       if (item.price !== null && item.price > 0) {
         telemetry.priceHistory = [...telemetry.priceHistory, item.price].slice(
           -10,
         );
@@ -159,7 +161,7 @@ export const TemplateLearner = {
       const newTelemetry: LearningTelemetry = {
         userId: "default",
         productNameNormalized: item.nameNormalized,
-        seenCount30d: 1,
+        totalSeenCount: 1,
         lastSeenAt: now,
         lastSuggestedAt: null,
         dismissedForever: false,
@@ -167,7 +169,7 @@ export const TemplateLearner = {
           GroceryCategory,
           number
         >,
-        priceHistory: item.price > 0 ? [item.price] : [],
+        priceHistory: item.price !== null && item.price > 0 ? [item.price] : [],
         quantityHistory: item.quantity ? [item.quantity] : [],
       };
 

@@ -134,22 +134,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   // Load data on mount
   useEffect(() => {
     const loadData = async () => {
-      const [loadedExpenses, loadedGrocery, loadedSettings, loadedTemplates] =
-        await Promise.all([
-          loadExpenses(),
-          loadGroceryItems(),
-          loadSettings(),
-          TemplateStorage.getAll(),
-        ]);
+      try {
+        const [loadedExpenses, loadedGrocery, loadedSettings, loadedTemplates] =
+          await Promise.all([
+            loadExpenses(),
+            loadGroceryItems(),
+            loadSettings(),
+            TemplateStorage.getAll(),
+          ]);
 
-      setExpenses(loadedExpenses);
-      setGroceryItems(loadedGrocery);
-      setSettings(loadedSettings || DEFAULT_SETTINGS);
-      if (loadedSettings?.geminiApiKey) {
-        setGeminiApiKey(loadedSettings.geminiApiKey);
+        setExpenses(loadedExpenses);
+        setGroceryItems(loadedGrocery);
+        setSettings(loadedSettings || DEFAULT_SETTINGS);
+        setTemplates(loadedTemplates);
+
+        if (loadedSettings?.geminiApiKey) {
+          setGeminiApiKey(loadedSettings.geminiApiKey);
+        }
+      } catch (error) {
+        console.error("Failed to load app data:", error);
+        setExpenses([]);
+        setGroceryItems([]);
+        setSettings(DEFAULT_SETTINGS);
+        setTemplates([]);
+      } finally {
+        setIsLoaded(true);
       }
-      setTemplates(loadedTemplates);
-      setIsLoaded(true);
     };
 
     loadData();
@@ -226,7 +236,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
             const expenseUpdates: Partial<Expense> = {};
 
             // Sync price change
-            if (updates.price !== undefined && updates.price !== item.price) {
+            if (
+              updates.price !== undefined &&
+              updates.price !== null &&
+              updates.price !== item.price
+            ) {
               expenseUpdates.amount = updates.price;
             }
 
@@ -259,7 +273,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     if (!item) return;
 
     // Intercept: If checking item without price, trigger completion modal
-    if (!item.checked && item.price === 0) {
+    if (!item.checked && item.price === null) {
       setItemPendingCompletion(item);
       return; // Don't toggle yet
     }
@@ -270,7 +284,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         if (item.id === id) {
           const newCheckedState = !item.checked;
 
-          if (newCheckedState && item.price > 0) {
+          if (newCheckedState && item.price !== null) {
             // Checking: Add expense and store its ID
             const newExpense = {
               amount: item.price,
@@ -353,13 +367,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   const updateLanguage = (language: string) => {
     const newSettings = { ...settings, language };
     setSettings(newSettings);
-    saveSettings(newSettings);
   };
 
   const updateApiKey = (apiKey: string) => {
     const newSettings = { ...settings, geminiApiKey: apiKey };
     setSettings(newSettings);
-    saveSettings(newSettings);
     setGeminiApiKey(apiKey);
   };
 
@@ -467,6 +479,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   const clearAllData = () => {
     setExpenses([]);
     setGroceryItems([]);
+    void (async () => {
+      try {
+        if (typeof TemplateStorage.clear === "function") {
+          await TemplateStorage.clear();
+        } else {
+          const allTemplates = await TemplateStorage.getAll();
+          await Promise.all(
+            allTemplates.map((template) => TemplateStorage.delete(template.id)),
+          );
+        }
+      } catch (error) {
+        console.error("Failed to clear templates:", error);
+      }
+    })();
     setTemplates([]);
   };
 

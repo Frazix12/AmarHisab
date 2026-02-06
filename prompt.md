@@ -294,7 +294,7 @@ interface GroceryItem {
   name: string;
   nameNormalized: string;     // Lowercase for template matching
   quantity: string;
-  price: number;              // 0 = no price set
+  price: number | null;       // null = no price set, 0 = free item
   checked: boolean;
   category: GroceryCategory;
   templateId?: string;        // Linked template
@@ -434,7 +434,7 @@ interface AppContextType {
 #### Grocery-to-Expense Link
 
 When a grocery item is checked:
-1. If `price === 0`, show completion modal requiring price
+1. If `price === null`, show completion modal requiring price
 2. Create expense with same description, amount, category="food", imageUri
 3. Store `expenseId` on grocery item for bidirectional sync
 4. When grocery item is edited, sync changes to linked expense
@@ -444,15 +444,16 @@ When a grocery item is checked:
 const toggleGroceryItem = (id: string) => {
   const item = groceryItems.find((i) => i.id === id);
   if (!item) return;
+  const newCheckedState = !item.checked;
 
   // Intercept: If checking item without price, trigger completion modal
-  if (!item.checked && item.price === 0) {
+  if (newCheckedState && item.price === null) {
     setItemPendingCompletion(item);
     return;
   }
 
   // Normal toggle logic
-  if (newCheckedState && item.price > 0) {
+  if (newCheckedState && item.price !== null) {
     // Create expense and link
     const expenseId = addExpense({...});
     updateItem({ checked: true, expenseId, checkedAt: new Date() });
@@ -1114,9 +1115,15 @@ npm install @hugeicons/react-native @hugeicons/core-free-icons
 ## Environment Variables
 
 ```bash
-# .env.local
+# .env.local (DO NOT COMMIT - for local development/testing only)
 EXPO_PUBLIC_GEMINI_API_KEY=your_gemini_api_key_here
 ```
+
+Security note:
+- `EXPO_PUBLIC_GEMINI_API_KEY` is embedded in the client bundle and can be extracted, so do not use it for production secrets.
+- In production, users should provide their own API key from the Settings screen.
+- Store user keys using the Storage Layer secure approach (SecureStore on native, with documented web fallback constraints).
+- The `.env.local` pattern above is only for local testing.
 
 ---
 

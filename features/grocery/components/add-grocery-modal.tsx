@@ -81,12 +81,16 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
     const detectCategory = async () => {
       if (name.trim().length >= 2 && !appliedTemplateId) {
         setAiDetecting(true);
-        const detectedCategory = await detectItemCategory(name);
-        setAiDetecting(false);
-
-        if (detectedCategory) {
-          setCategory(detectedCategory);
-          setAiDetectedCategory(true);
+        try {
+          const detectedCategory = await detectItemCategory(name);
+          if (detectedCategory) {
+            setCategory(detectedCategory);
+            setAiDetectedCategory(true);
+          }
+        } catch (error) {
+          console.error("Error detecting grocery category:", error);
+        } finally {
+          setAiDetecting(false);
         }
       }
     };
@@ -118,7 +122,9 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
     if (data) {
       if (data.name) setName(data.name);
       if (data.quantity) setQuantity(data.quantity);
-      if (data.price !== undefined) setPrice(data.price.toString());
+      if (data.price !== undefined && data.price !== null) {
+        setPrice(data.price.toString());
+      }
       if (data.category) setCategory(data.category);
       setAppliedTemplateId(idToUse);
     }
@@ -131,17 +137,18 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
       return;
     }
 
-    // Allow price to be 0 (no price set) or any positive number
-    const numPrice = price.trim() ? parseFloat(price) : 0;
-    if (isNaN(numPrice) || numPrice < 0) {
-      Alert.alert(t.alerts.errorTitle, t.alerts.priceNegative);
+    const normalizedPrice = parseBanglaNumber(price).trim();
+    const hasPrice = normalizedPrice.length > 0;
+    const parsedPrice = hasPrice ? Number.parseFloat(normalizedPrice) : null;
+    if (hasPrice && (parsedPrice === null || isNaN(parsedPrice) || parsedPrice < 0)) {
+      Alert.alert(t.alerts.errorTitle, t.alerts.invalidPrice);
       return;
     }
 
     addGroceryItem({
       name: name.trim(),
       quantity: quantity.trim(),
-      price: numPrice,
+      price: parsedPrice,
       category,
       checked: false,
       templateId: appliedTemplateId || undefined,
@@ -178,7 +185,9 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
           ]}
         >
           {/* Header */}
-          <View style={styles.modalHeader}>
+          <View
+            style={[styles.modalHeader, { borderBottomColor: colors.outline }]}
+          >
             <Text style={[styles.modalTitle, { color: colors.text }]}>
               {t.grocery.addItem}
             </Text>
@@ -530,7 +539,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
   },
   modalTitle: {
     fontSize: 20,

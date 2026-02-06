@@ -55,7 +55,7 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
     if (visible && item) {
       setName(item.name);
       setQuantity(item.quantity);
-      setPrice(item.price.toString());
+      setPrice(item.price !== null ? item.price.toString() : "");
       setCategory(item.category);
       setUpdateTemplateChecked(false);
     }
@@ -67,8 +67,10 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
       return;
     }
 
-    const numPrice = parseFloat(price);
-    if (isNaN(numPrice) || numPrice < 0) {
+    const normalizedPrice = parseBanglaNumber(price).trim();
+    const hasPrice = normalizedPrice.length > 0;
+    const numPrice = hasPrice ? Number.parseFloat(normalizedPrice) : null;
+    if (hasPrice && (numPrice === null || isNaN(numPrice) || numPrice < 0)) {
       Alert.alert(t.alerts.errorTitle, t.alerts.invalidPrice);
       return;
     }
@@ -85,7 +87,7 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
     if (updateTemplateChecked && item.templateId) {
       await updateTemplate(item.templateId, {
         defaultQuantity: quantity.trim(),
-        defaultPrice: numPrice,
+        defaultPrice: numPrice ?? 0,
         category,
       });
     }
@@ -112,7 +114,9 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
           ]}
         >
           {/* Header */}
-          <View style={styles.modalHeader}>
+          <View
+            style={[styles.modalHeader, { borderBottomColor: colors.outline }]}
+          >
             <Text style={[styles.modalTitle, { color: colors.text }]}>
               {t.grocery.editItem || "Edit Item"}
             </Text>
@@ -336,7 +340,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
   },
   modalTitle: {
     fontSize: 20,

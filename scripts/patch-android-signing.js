@@ -10,6 +10,45 @@ if (!fs.existsSync(gradlePath)) {
 
 let content = fs.readFileSync(gradlePath, "utf8");
 
+const findMatchingBrace = (text, openBraceIndex) => {
+  let depth = 0;
+
+  for (let i = openBraceIndex; i < text.length; i += 1) {
+    const char = text[i];
+    if (char === "{") depth += 1;
+    if (char === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return i;
+      }
+    }
+  }
+
+  return -1;
+};
+
+const findBlock = (text, blockName, fromIndex = 0) => {
+  const blockStart = text.indexOf(blockName, fromIndex);
+  if (blockStart === -1) return null;
+
+  const openBraceIndex = text.indexOf("{", blockStart);
+  if (openBraceIndex === -1) return null;
+
+  const closeBraceIndex = findMatchingBrace(text, openBraceIndex);
+  if (closeBraceIndex === -1) return null;
+
+  return {
+    start: blockStart,
+    openBraceIndex,
+    end: closeBraceIndex + 1,
+    block: text.slice(blockStart, closeBraceIndex + 1),
+  };
+};
+
+const replaceRange = (text, start, end, replacement) => {
+  return text.slice(0, start) + replacement + text.slice(end);
+};
+
 // Idempotency marker
 const MARK = "// CI_SIGNING_PATCH";
 if (!content.includes(MARK)) {
@@ -62,23 +101,18 @@ ${releaseSigningConfig}
   content = content.slice(0, insertPos) + signingBlock + content.slice(insertPos);
 } else {
   // 2) signingConfigs exists: ensure it contains "release {"
-  const signingConfigsRegex = /signingConfigs\s*\{([\s\S]*?)\n\s*\}/m;
-  const match = content.match(signingConfigsRegex);
-  if (!match) {
+  const signingConfigsBlock = findBlock(content, "signingConfigs");
+  if (!signingConfigsBlock) {
     console.error("❌ Found `signingConfigs {` but couldn't parse its block.");
     process.exit(1);
   }
 
-  const fullBlock = match[0];
-  const inner = match[1];
-
-  if (!/release\s*\{/.test(inner)) {
-    // Insert release config near top of signingConfigs block
-    const patched = fullBlock.replace(
-      /signingConfigs\s*\{/,
-      `signingConfigs {\n${releaseSigningConfig}`
-    );
-    content = content.replace(fullBlock, patched);
+  if (!/release\s*\{/.test(signingConfigsBlock.block)) {
+    const insertAt = signingConfigsBlock.openBraceIndex + 1;
+    content =
+      content.slice(0, insertAt) +
+      `\n${releaseSigningConfig}` +
+      content.slice(insertAt);
   }
 }
 
@@ -87,45 +121,66 @@ ${releaseSigningConfig}
 const wantedLine = `signingConfig signingConfigs.getByName("release")`;
 
 if (content.includes("buildTypes {")) {
-  const buildTypesRegex = /buildTypes\s*\{([\s\S]*?)\n\s*\}/m;
-  const btMatch = content.match(buildTypesRegex);
-  if (!btMatch) {
+  const buildTypesBlock = findBlock(content, "buildTypes");
+  if (!buildTypesBlock) {
     console.error("❌ Found buildTypes but couldn't parse it.");
     process.exit(1);
   }
 
-  const btBlock = btMatch[0];
+  let patchedBuildTypes = buildTypesBlock.block;
 
   // If there's a release { ... } block, ensure the wantedLine exists inside it
-  const releaseRegex = /release\s*\{([\s\S]*?)\n\s*\}/m;
-  const relMatch = btBlock.match(releaseRegex);
+  const releaseBlock = findBlock(patchedBuildTypes, "release");
 
-  if (relMatch) {
-    if (!relMatch[0].includes("signingConfig")) {
-      const patchedRelease = relMatch[0].replace(
+  if (releaseBlock) {
+    let patchedRelease = releaseBlock.block;
+
+    if (!patchedRelease.includes("signingConfig")) {
+      patchedRelease = patchedRelease.replace(
         /release\s*\{/,
-        `release {\n            ${wantedLine}`
+        `release {\n            ${wantedLine}`,
       );
-      content = content.replace(relMatch[0], patchedRelease);
-    } else if (!relMatch[0].includes(wantedLine)) {
+    } else if (!patchedRelease.includes(wantedLine)) {
       // Replace any existing signingConfig line with ours
-      const patchedRelease = relMatch[0].replace(
+      patchedRelease = patchedRelease.replace(
         /signingConfig\s+[^\n]+/g,
-        wantedLine
+        wantedLine,
       );
-      content = content.replace(relMatch[0], patchedRelease);
+    }
+
+    if (patchedRelease !== releaseBlock.block) {
+      patchedBuildTypes = replaceRange(
+        patchedBuildTypes,
+        releaseBlock.start,
+        releaseBlock.end,
+        patchedRelease,
+      );
     }
   } else {
     // No release block: insert one
-    const patchedBt = btBlock.replace(
+    patchedBuildTypes = patchedBuildTypes.replace(
       /buildTypes\s*\{/,
-      `buildTypes {\n        release {\n            ${wantedLine}\n        }\n`
+      `buildTypes {\n        release {\n            ${wantedLine}\n        }\n`,
     );
-    content = content.replace(btBlock, patchedBt);
+  }
+
+  if (patchedBuildTypes !== buildTypesBlock.block) {
+    content = replaceRange(
+      content,
+      buildTypesBlock.start,
+      buildTypesBlock.end,
+      patchedBuildTypes,
+    );
   }
 } else {
   // No buildTypes at all: add minimal inside android
-  const insertPos = androidIdx + "android {".length;
+  const freshAndroidIdx = content.indexOf("android {");
+  if (freshAndroidIdx === -1) {
+    console.error("❌ Could not find `android {` block in build.gradle");
+    process.exit(1);
+  }
+
+  const insertPos = freshAndroidIdx + "android {".length;
   const btBlock = `
     buildTypes {
         release {

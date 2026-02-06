@@ -3,6 +3,24 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { calculateMatchConfidence } from "./template-utils";
 
 const TEMPLATES_KEY = "@amarhisab:templates";
+let operationLock: Promise<void> = Promise.resolve();
+
+const withLock = async <T>(operation: () => Promise<T>): Promise<T> => {
+  const previousLock = operationLock;
+  let releaseLock: () => void = () => {};
+
+  operationLock = new Promise<void>((resolve) => {
+    releaseLock = resolve;
+  });
+
+  await previousLock;
+
+  try {
+    return await operation();
+  } finally {
+    releaseLock();
+  }
+};
 
 /**
  * Storage operations for grocery templates
@@ -46,58 +64,81 @@ export const TemplateStorage = {
       "id" | "createdAt" | "lastUsedAt" | "usageCount"
     >,
   ): Promise<GroceryTemplate> {
-    const templates = await this.getAll();
+    return withLock(async () => {
+      const templates = await this.getAll();
 
-    const newTemplate: GroceryTemplate = {
-      ...template,
-      id: `template_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      usageCount: 0,
-      lastUsedAt: new Date(),
-      createdAt: new Date(),
-    };
+      const newTemplate: GroceryTemplate = {
+        ...template,
+        id: `template_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        usageCount: 0,
+        lastUsedAt: new Date(),
+        createdAt: new Date(),
+      };
 
-    templates.push(newTemplate);
-    await AsyncStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
+      templates.push(newTemplate);
+      await AsyncStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
 
-    return newTemplate;
+      return newTemplate;
+    });
   },
 
   /**
    * Update existing template
    */
   async update(id: string, updates: Partial<GroceryTemplate>): Promise<void> {
-    const templates = await this.getAll();
-    const index = templates.findIndex((t) => t.id === id);
+    return withLock(async () => {
+      const templates = await this.getAll();
+      const index = templates.findIndex((t) => t.id === id);
 
-    if (index === -1) {
-      throw new Error(`Template ${id} not found`);
-    }
+      if (index === -1) {
+        throw new Error(`Template not found: ${id}`);
+      }
 
-    templates[index] = { ...templates[index], ...updates };
-    await AsyncStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
+      const {
+        id: _ignoredId,
+        createdAt: _ignoredCreatedAt,
+        usageCount: _ignoredUsageCount,
+        userId: _ignoredUserId,
+        ...sanitizedUpdates
+      } = updates;
+
+      templates[index] = { ...templates[index], ...sanitizedUpdates };
+      await AsyncStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
+    });
   },
 
   /**
    * Delete template
    */
   async delete(id: string): Promise<void> {
-    const templates = await this.getAll();
-    const filtered = templates.filter((t) => t.id !== id);
-    await AsyncStorage.setItem(TEMPLATES_KEY, JSON.stringify(filtered));
+    return withLock(async () => {
+      const templates = await this.getAll();
+      const filtered = templates.filter((t) => t.id !== id);
+
+      if (filtered.length === templates.length) {
+        throw new Error(`Template not found: ${id}`);
+      }
+
+      await AsyncStorage.setItem(TEMPLATES_KEY, JSON.stringify(filtered));
+    });
   },
 
   /**
    * Increment usage count and update last used timestamp
    */
   async incrementUsage(id: string): Promise<void> {
-    const templates = await this.getAll();
-    const index = templates.findIndex((t) => t.id === id);
+    return withLock(async () => {
+      const templates = await this.getAll();
+      const index = templates.findIndex((t) => t.id === id);
 
-    if (index !== -1) {
+      if (index === -1) {
+        throw new Error(`Template not found: ${id}`);
+      }
+
       templates[index].usageCount += 1;
       templates[index].lastUsedAt = new Date();
       await AsyncStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
-    }
+    });
   },
 
   /**

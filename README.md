@@ -38,7 +38,7 @@ _A beautiful, minimalistic expense tracker with integrated grocery list manageme
   - Modify name, quantity, price, and category
   - Optional template update (opt-in to update linked templates)
   - Action menu for quick access to edit/delete
-- **Check \ Track** - Mark items as purchased while shopping
+- **Check / Track** - Mark items as purchased while shopping
 - **Auto-Expense Creation** - Checked items automatically become expense entries
 - **Price Tracking** - Monitor your grocery spending in real-time
 - **Category Organization** - Organize items by Fruits, Vegetables, Dairy, Meat, Snacks, Beverages, and more
@@ -59,7 +59,7 @@ _A beautiful, minimalistic expense tracker with integrated grocery list manageme
 - **Smooth Animations** - 60fps animations powered by React Native Reanimated
   - Bouncy modal slide-ups
   - Animated tab navigation with icon scaling and label transitions
-  - Haptic feedback on iOS
+  - Haptic feedback on iOS and Android (Expo Haptics `impactAsync`; vibration feel may vary by device/OS)
   - Fluid interactions throughout
 - **HugeIcons** - Consistent, professional iconography
 
@@ -79,7 +79,6 @@ _A beautiful, minimalistic expense tracker with integrated grocery list manageme
   - Helpful tips for new features (e.g., "Long-press to edit or delete")
   - Auto-dismiss after 10 seconds
   - Persistent dismissal (won't show again once dismissed)
-- **Haptic Feedback** - Tactile response on Android for better UX
 
 ### 🌐 Comprehensive Localization
 

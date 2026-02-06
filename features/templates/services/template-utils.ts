@@ -58,18 +58,22 @@ export function calculateMatchConfidence(
 export function mode<T>(arr: T[]): T | undefined {
   if (arr.length === 0) return undefined;
 
-  const freq = arr.reduce(
-    (acc, val) => {
-      const key = String(val);
-      acc[key] = (acc[key] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>,
-  );
+  const freq = new Map<T, number>();
+  for (const value of arr) {
+    freq.set(value, (freq.get(value) || 0) + 1);
+  }
 
-  const mostFrequent = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
+  let mostFrequent: T | undefined;
+  let highestCount = 0;
 
-  return mostFrequent ? (mostFrequent[0] as unknown as T) : undefined;
+  for (const [value, count] of freq.entries()) {
+    if (count > highestCount) {
+      highestCount = count;
+      mostFrequent = value;
+    }
+  }
+
+  return mostFrequent;
 }
 
 /**

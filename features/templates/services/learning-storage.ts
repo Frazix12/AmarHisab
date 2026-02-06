@@ -20,6 +20,10 @@ export const LearningStorage = {
 
       // Convert date strings back to Date objects
       Object.keys(telemetry).forEach((key) => {
+        if (telemetry[key].totalSeenCount === undefined) {
+          telemetry[key].totalSeenCount = telemetry[key].seenCount30d ?? 0;
+          delete telemetry[key].seenCount30d;
+        }
         telemetry[key].lastSeenAt = new Date(telemetry[key].lastSeenAt);
         if (telemetry[key].lastSuggestedAt) {
           telemetry[key].lastSuggestedAt = new Date(
@@ -68,7 +72,7 @@ export const LearningStorage = {
       await this.updateTelemetry({
         userId: "default", // Will be updated when multi-user support added
         productNameNormalized: normalizedName,
-        seenCount30d: 0,
+        totalSeenCount: 0,
         lastSeenAt: new Date(),
         lastSuggestedAt: null,
         dismissedForever: true,

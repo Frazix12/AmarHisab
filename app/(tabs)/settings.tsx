@@ -121,7 +121,13 @@ export default function Settings() {
   const pageTransitionStyle = usePageTransition();
 
   const handleApiKeySave = () => {
-    updateApiKey(apiKeyInput);
+    const trimmedApiKey = apiKeyInput.trim();
+    if (!trimmedApiKey) {
+      Alert.alert(t.alerts.errorTitle, t.settings.invalidApiKey);
+      return;
+    }
+
+    updateApiKey(trimmedApiKey);
     setIsApiKeyModalVisible(false);
     Alert.alert(t.alerts.successTitle, t.settings.apiKeySaved);
   };

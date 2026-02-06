@@ -158,18 +158,7 @@ export async function detectExpenseCategory(
       model: "gemini-flash-latest",
     });
 
-    // Expense categories list
-    const expenseCategories = [
-      "food",
-      "transport",
-      "shopping",
-      "entertainment",
-      "healthcare",
-      "bills",
-      "education",
-      "other",
-    ];
-    const categoryList = expenseCategories.join(", ");
+    const categoryList = EXPENSE_CATEGORIES.map((cat) => cat.value).join(", ");
 
     const prompt = `You are an expense categorization assistant. Given an expense description, classify it into ONE of these categories: ${categoryList}.
 
@@ -205,7 +194,7 @@ Category:`;
     const text = response.text().trim().toLowerCase();
 
     // Validate the response is a valid category
-    if (expenseCategories.includes(text)) {
+    if (EXPENSE_CATEGORIES.some((category) => category.value === text)) {
       // Cache the result
       categoryCache.set(`exp_${normalizedDesc}`, {
         category: text as any,
