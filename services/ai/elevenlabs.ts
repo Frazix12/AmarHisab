@@ -115,16 +115,10 @@ export const transcribeAudioFile = async (
 
 export function setElevenLabsApiKey(apiKey: string): void {
   if (apiKey) {
-    console.log("Setting custom ElevenLabs API key");
     elevenLabsApiKey = apiKey;
     return;
   }
 
-  if (ENV_API_KEY) {
-    console.log("Reverting to environment ElevenLabs API key");
-  } else {
-    console.log("Removing ElevenLabs API key");
-  }
   elevenLabsApiKey = ENV_API_KEY;
 }
 

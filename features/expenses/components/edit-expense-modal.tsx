@@ -4,7 +4,6 @@ import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
 import { EXPENSE_CATEGORIES, Expense, ExpenseCategory } from "@/types";
 import { useModalAnimation } from "@/utils/animations";
-import { triggerLightHaptic } from "@/utils/haptics";
 import {
   Camera01Icon,
   Cancel01Icon,
@@ -254,7 +253,6 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                   ]}
                   value={description}
                   onChangeText={setDescription}
-                  onKeyPress={triggerLightHaptic}
                   placeholder={t.placeholders.expenseDescription}
                   placeholderTextColor={colors.textSecondary}
                   multiline

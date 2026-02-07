@@ -20,6 +20,13 @@ export function Collapsible({
       <Pressable
         style={({ pressed }) => [styles.heading, { opacity: pressed ? 0.8 : 1 }]}
         onPress={() => setIsOpen((value) => !value)}
+        accessible
+        accessibilityRole="button"
+        accessibilityState={{ expanded: isOpen }}
+        accessibilityLabel={`${title} section`}
+        accessibilityHint={
+          isOpen ? "Double tap to collapse" : "Double tap to expand"
+        }
       >
         <IconSymbol
           name="chevron.right"

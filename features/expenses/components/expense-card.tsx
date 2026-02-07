@@ -16,9 +16,8 @@ import {
     ShoppingBag01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
-  GestureResponderEvent,
   Image,
   Modal,
   StyleSheet,
@@ -61,6 +60,7 @@ export const ExpenseCard = React.memo(
     onLongPress,
   }: ExpenseCardProps) => {
     const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
+    const thumbnailPressedRef = useRef(false);
     const icon = getCategoryIcon(expense.category);
     const categoryLabel = Object.prototype.hasOwnProperty.call(
       t.categories,
@@ -68,13 +68,25 @@ export const ExpenseCard = React.memo(
     )
       ? t.categories[expense.category as keyof typeof t.categories]
       : expense.category || t.categories.other || "Unknown";
-    const handlePress = onPress ? () => onPress(expense) : undefined;
+    const handlePress = useCallback(() => {
+      if (thumbnailPressedRef.current || !onPress) return;
+      onPress(expense);
+    }, [expense, onPress]);
     const handleLongPress = onLongPress ? () => onLongPress(expense) : undefined;
-    const handleThumbnailPress = useCallback((event: GestureResponderEvent) => {
-      event.stopPropagation();
+    const handleThumbnailPressIn = useCallback(() => {
+      thumbnailPressedRef.current = true;
+    }, []);
+    const handleThumbnailPressOut = useCallback(() => {
+      requestAnimationFrame(() => {
+        thumbnailPressedRef.current = false;
+      });
+    }, []);
+    const handleThumbnailPress = useCallback(() => {
+      thumbnailPressedRef.current = true;
       setIsImageViewerVisible(true);
     }, []);
     const closeImageViewer = useCallback(() => {
+      thumbnailPressedRef.current = false;
       setIsImageViewerVisible(false);
     }, []);
 
@@ -105,6 +117,8 @@ export const ExpenseCard = React.memo(
           >
             {expense.imageUri ? (
               <Pressable
+                onPressIn={handleThumbnailPressIn}
+                onPressOut={handleThumbnailPressOut}
                 onPress={handleThumbnailPress}
                 accessibilityRole="button"
                 accessibilityLabel={t.form.attachment || "View attached image"}
@@ -260,7 +274,7 @@ const styles = StyleSheet.create({
   },
   viewerImage: {
     width: "100%",
-    height: "82%",
+    height: "100%",
   },
   viewerCloseButton: {
     position: "absolute",

@@ -225,7 +225,7 @@ export default function AiSettings() {
                 placeholderTextColor={colors.textSecondary}
                 value={apiKeyInput}
                 onChangeText={setApiKeyInput}
-                onKeyPress={triggerLightHaptic}
+                onKeyPress={() => triggerLightHaptic()}
                 secureTextEntry
                 autoCapitalize="none"
                 autoCorrect={false}

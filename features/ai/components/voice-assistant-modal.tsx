@@ -1090,7 +1090,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                 ]}
                 value={description}
                 onChangeText={setDescription}
-                onKeyPress={triggerLightHaptic}
+                onFocus={() => triggerLightHaptic()}
                 multiline
                 numberOfLines={3}
               />
@@ -1271,7 +1271,7 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                   setName(text);
                   if (nameError && text.trim()) setNameError(null);
                 }}
-                onKeyPress={triggerLightHaptic}
+                onFocus={() => triggerLightHaptic()}
               />
               {nameError ? (
                 <Text style={[styles.inputErrorText, { color: colors.error }]}>
@@ -1298,7 +1298,7 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                     onChangeText={(text) =>
                       setQuantity(parseBanglaNumber(text))
                     }
-                    onKeyPress={triggerLightHaptic}
+                    onFocus={() => triggerLightHaptic()}
                   />
                 </View>
                 <View style={{ flex: 1 }}>

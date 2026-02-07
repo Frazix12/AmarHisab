@@ -25,10 +25,10 @@ import { HugeiconsIcon } from "@hugeicons/react-native";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
-  Dimensions,
   SectionList,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import Animated from "react-native-reanimated";
@@ -40,7 +40,6 @@ const FAB_BOTTOM = 20;
 const ADD_MODAL_HEIGHT_RATIO = 0.82;
 const FAB_TO_CLOSE_X = -8;
 const FAB_CLOSE_CENTER_Y = 44;
-const SCREEN_HEIGHT = Dimensions.get("screen").height;
 
 const GROCERY_CATEGORY_ORDER: GroceryCategory[] = [
   "vegetables",
@@ -86,6 +85,7 @@ export default function GroceryScreen() {
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const insets = useSafeAreaInsets();
+  const { height: screenHeight } = useWindowDimensions();
 
   // Check for suggestions after adding an item
   useEffect(() => {
@@ -148,9 +148,9 @@ export default function GroceryScreen() {
     setModalVisible((prev) => !prev);
   }, []);
 
-  const fabStartCenterY = SCREEN_HEIGHT - insets.bottom - FAB_BOTTOM - FAB_SIZE / 2;
+  const fabStartCenterY = screenHeight - insets.bottom - FAB_BOTTOM - FAB_SIZE / 2;
   const fabTargetCenterY =
-    SCREEN_HEIGHT * (1 - ADD_MODAL_HEIGHT_RATIO) + FAB_CLOSE_CENTER_Y;
+    screenHeight * (1 - ADD_MODAL_HEIGHT_RATIO) + FAB_CLOSE_CENTER_Y;
   const fabTravelY = fabTargetCenterY - fabStartCenterY;
   const { fabStyle, iconStyle } = useMorphingFabAnimation(modalVisible, {
     travelY: fabTravelY,

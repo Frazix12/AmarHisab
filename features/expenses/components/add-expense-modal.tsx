@@ -32,7 +32,6 @@ import {
     View,
 } from "react-native";
 import Animated from "react-native-reanimated";
-import { triggerLightHaptic } from "@/utils/haptics";
 
 interface AddExpenseModalProps {
   visible: boolean;
@@ -225,7 +224,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             style={[styles.modalContent, contentStyle]}
           >
             {/* Header */}
-            <View style={styles.modalHeader}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.outline }]}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
                 {t.expenses.addExpense}
               </Text>
@@ -275,7 +274,6 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                   ]}
                   value={description}
                   onChangeText={setDescription}
-                  onKeyPress={triggerLightHaptic}
                   placeholder={t.placeholders.expenseDescription}
                   placeholderTextColor={colors.textSecondary}
                   multiline
@@ -501,7 +499,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
   },
   closeAnchorSpacer: {
     width: 24,

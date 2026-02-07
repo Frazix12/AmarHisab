@@ -20,6 +20,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 type ActiveModalType = "none" | "currency" | "theme" | "language";
 type ThemeType = "light" | "dark" | "system";
+const THEME_VALUES = new Set(["light", "dark", "system"]);
+
+const isThemeType = (value: string): value is ThemeType =>
+  THEME_VALUES.has(value);
 
 export default function CustomizationSettings() {
   const {
@@ -154,7 +158,11 @@ export default function CustomizationSettings() {
           title={t.settings.theme}
           options={themeOptions}
           currentValue={settings.theme}
-          onSelect={(value) => updateTheme(value as ThemeType)}
+          onSelect={(value) => {
+            if (isThemeType(value)) {
+              updateTheme(value);
+            }
+          }}
         />
 
         <SettingSelectionModal
