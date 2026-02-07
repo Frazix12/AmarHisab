@@ -23,12 +23,10 @@ import { HugeiconsIcon } from "@hugeicons/react-native";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   Alert,
-  Platform,
   RefreshControl,
   SectionList,
   StyleSheet,
   Text,
-  Vibration,
   View,
 } from "react-native";
 import Animated from "react-native-reanimated";
@@ -87,9 +85,6 @@ export default function StatisticsScreen() {
   }, []);
 
   const handleExpenseLongPress = useCallback((expense: Expense) => {
-    if (Platform.OS === "android") {
-      Vibration.vibrate(50);
-    }
     setSelectedExpense(expense);
     setShowActionMenu(true);
   }, []);

@@ -1,10 +1,11 @@
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
+import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
+import { triggerLightHaptic } from "@/utils/haptics";
 import { formatNumber, parseBanglaNumber } from "@/utils/format";
 import React, { forwardRef, useMemo, useRef, useState } from "react";
 import {
   Modal,
-  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -122,6 +123,7 @@ export const BanglaNumberInput = forwardRef<TextInput, BanglaNumberInputProps>(
           ref={setRef}
           value={displayValue}
           onChangeText={(text) => onChangeText(sanitizeNumericValue(text))}
+          onKeyPress={triggerLightHaptic}
           onFocus={(event) => {
             setIsFocused(true);
             onFocus?.(event);
@@ -145,6 +147,7 @@ export const BanglaNumberInput = forwardRef<TextInput, BanglaNumberInputProps>(
         >
           <View style={styles.keyboardRoot}>
             <Pressable
+              haptic="none"
               style={styles.keyboardDismissArea}
               onPress={() => inputRef.current?.blur()}
             />
@@ -161,6 +164,7 @@ export const BanglaNumberInput = forwardRef<TextInput, BanglaNumberInputProps>(
                 <View key={`row-${rowIndex}`} style={styles.keypadRow}>
                   {row.map((key) => (
                     <Pressable
+                      haptic="light"
                       key={key.label}
                       onPress={() => handleKeyPress(key.value)}
                       style={({ pressed }) => [
@@ -182,6 +186,7 @@ export const BanglaNumberInput = forwardRef<TextInput, BanglaNumberInputProps>(
 
               <View style={styles.actionsRow}>
                 <Pressable
+                  haptic="light"
                   onPress={() => onChangeText("")}
                   style={({ pressed }) => [
                     styles.actionButton,
@@ -195,6 +200,7 @@ export const BanglaNumberInput = forwardRef<TextInput, BanglaNumberInputProps>(
                   <Text style={[styles.actionButtonText, { color: colors.text }]}>মুছুন</Text>
                 </Pressable>
                 <Pressable
+                  haptic="light"
                   onPress={() => inputRef.current?.blur()}
                   style={({ pressed }) => [
                     styles.actionButton,

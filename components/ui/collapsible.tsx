@@ -1,6 +1,7 @@
 import { PropsWithChildren, useState } from "react";
-import { StyleSheet, TouchableOpacity } from "react-native";
+import { StyleSheet } from "react-native";
 
+import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemedText } from "@/components/ui/themed-text";
 import { ThemedView } from "@/components/ui/themed-view";
@@ -16,10 +17,9 @@ export function Collapsible({
 
   return (
     <ThemedView>
-      <TouchableOpacity
-        style={styles.heading}
+      <Pressable
+        style={({ pressed }) => [styles.heading, { opacity: pressed ? 0.8 : 1 }]}
         onPress={() => setIsOpen((value) => !value)}
-        activeOpacity={0.8}
       >
         <IconSymbol
           name="chevron.right"
@@ -30,7 +30,7 @@ export function Collapsible({
         />
 
         <ThemedText type="defaultSemiBold">{title}</ThemedText>
-      </TouchableOpacity>
+      </Pressable>
       {isOpen && <ThemedView style={styles.content}>{children}</ThemedView>}
     </ThemedView>
   );

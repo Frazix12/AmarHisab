@@ -1,16 +1,17 @@
 import { BanglaNumberInput } from "@/components/shared/bangla-number-input";
+import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
 import { normalizeProductName } from "@/features/templates/services/template-utils";
 import { GROCERY_CATEGORIES, GroceryCategory } from "@/types";
 import { parseBanglaNumber } from "@/utils/format";
+import { triggerLightHaptic } from "@/utils/haptics";
 import { Cancel01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
     Alert,
-    Pressable,
     ScrollView,
     StyleSheet,
     Text,
@@ -101,6 +102,7 @@ export default function AddTemplateScreen() {
             }}
             placeholder={t.placeholders.templateName}
             placeholderTextColor={colors.textSecondary}
+            onKeyPress={triggerLightHaptic}
             style={[
               styles.input,
               {
@@ -127,6 +129,7 @@ export default function AddTemplateScreen() {
             onChangeText={(text) => setQuantity(parseBanglaNumber(text))}
             placeholder={t.placeholders.templateQuantity}
             placeholderTextColor={colors.textSecondary}
+            onKeyPress={triggerLightHaptic}
             style={[
               styles.input,
               {

@@ -141,5 +141,4 @@ export const createElevenLabsRealtimeConnection = (
   };
 };
 
-export const getElevenLabsApiKey = () =>
-  process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY || "";
+export { getElevenLabsApiKey } from "@/services/ai/elevenlabs";

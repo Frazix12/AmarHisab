@@ -1,4 +1,5 @@
 import { AnimatedTabButton } from "@/components/navigation/animated-tab-button";
+import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { VoiceAssistantModal } from "@/features/ai/components/voice-assistant-modal";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
@@ -11,7 +12,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import React, { useState } from "react";
-import { Platform, Pressable, StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -43,7 +44,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
       style={[
         styles.container,
         {
-          backgroundColor: colors.background,
+          backgroundColor: colors.surface,
           borderTopColor: colors.outline,
           paddingBottom: Platform.OS === "ios" ? insets.bottom : 8,
         },
@@ -75,6 +76,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
             {index === middleIndex && (
               <View style={styles.voiceButtonWrapper}>
                 <Pressable
+                  haptic="none"
                   onPress={() => setVoiceModalVisible(true)}
                   style={({ pressed }) => [
                     styles.voiceButton,

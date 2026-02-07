@@ -1,4 +1,5 @@
 import { BanglaNumberInput } from "@/components/shared/bangla-number-input";
+import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
 import { GroceryItem } from "@/types";
@@ -19,7 +20,6 @@ import {
     KeyboardAvoidingView,
     Modal,
     Platform,
-    Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -202,7 +202,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
               <Text style={[styles.modalTitle, { color: colors.text }]}>
                 {t.grocery?.completeItem || "Complete Item"}
               </Text>
-              <Pressable onPress={onClose}>
+              <Pressable onPress={onClose} style={styles.closeButton}>
                 <HugeiconsIcon
                   icon={Cancel01Icon}
                   size={24}
@@ -459,6 +459,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     lineHeight: 26,
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
   },
   formContainer: {
     padding: 20,

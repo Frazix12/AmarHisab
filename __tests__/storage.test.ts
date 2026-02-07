@@ -58,20 +58,24 @@ describe("storage service", () => {
     expect(loaded[0].nameNormalized).toBe("milk");
   });
 
-  it("saves and loads settings with secure api key", async () => {
+  it("saves and loads settings with secure api keys", async () => {
     const settings: UserSettings = {
       currency: { code: "USD", symbol: "$", name: "US Dollar" },
       theme: "system",
       language: "en",
       geminiApiKey: "secret",
+      elevenLabsApiKey: "voice-secret",
     };
 
     await saveSettings(settings);
-    (SecureStore.getItemAsync as jest.Mock).mockResolvedValue("secret");
+    (SecureStore.getItemAsync as jest.Mock)
+      .mockResolvedValueOnce("secret")
+      .mockResolvedValueOnce("voice-secret");
 
     const loaded = await loadSettings();
     expect(loaded?.geminiApiKey).toBe("secret");
-    expect(SecureStore.setItemAsync).toHaveBeenCalled();
+    expect(loaded?.elevenLabsApiKey).toBe("voice-secret");
+    expect(SecureStore.setItemAsync).toHaveBeenCalledTimes(2);
   });
 
   it("clears all stored data", async () => {

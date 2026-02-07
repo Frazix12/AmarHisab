@@ -1,4 +1,5 @@
 import { BanglaNumberInput } from "@/components/shared/bangla-number-input";
+import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { showToast } from "@/components/ui/toast";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
@@ -20,6 +21,7 @@ import {
 } from "@/types";
 import { parseBanglaNumber } from "@/utils/format";
 import { useModalAnimation } from "@/utils/animations";
+import { triggerLightHaptic } from "@/utils/haptics";
 import {
   Cancel01Icon,
   AiMicIcon,
@@ -33,7 +35,6 @@ import {
   Modal,
   PermissionsAndroid,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -45,6 +46,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
+  withSequence,
   withTiming,
 } from "react-native-reanimated";
 
@@ -99,6 +101,11 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
   const isListeningRef = useRef(false);
   const readyPulse = useSharedValue(1);
   const readyOpacity = useSharedValue(0.55);
+  const recordingDotScale = useSharedValue(1);
+  const recordingDotOpacity = useSharedValue(0.6);
+  const waveBarOne = useSharedValue(0.35);
+  const waveBarTwo = useSharedValue(0.35);
+  const waveBarThree = useSharedValue(0.35);
 
   useEffect(() => {
     if (status === "idle" && visible) {
@@ -124,9 +131,114 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
     }
   }, [status, visible, readyPulse, readyOpacity]);
 
+  useEffect(() => {
+    if (status === "listening" && visible) {
+      recordingDotScale.value = withRepeat(
+        withTiming(1.24, {
+          duration: 520,
+          easing: Easing.inOut(Easing.ease),
+        }),
+        -1,
+        true,
+      );
+      recordingDotOpacity.value = withRepeat(
+        withTiming(1, {
+          duration: 520,
+          easing: Easing.inOut(Easing.ease),
+        }),
+        -1,
+        true,
+      );
+
+      waveBarOne.value = withRepeat(
+        withSequence(
+          withTiming(1, {
+            duration: 250,
+            easing: Easing.inOut(Easing.ease),
+          }),
+          withTiming(0.35, {
+            duration: 260,
+            easing: Easing.inOut(Easing.ease),
+          }),
+        ),
+        -1,
+        false,
+      );
+
+      waveBarTwo.value = withRepeat(
+        withSequence(
+          withTiming(0.6, {
+            duration: 140,
+            easing: Easing.inOut(Easing.ease),
+          }),
+          withTiming(1, {
+            duration: 250,
+            easing: Easing.inOut(Easing.ease),
+          }),
+          withTiming(0.35, {
+            duration: 260,
+            easing: Easing.inOut(Easing.ease),
+          }),
+        ),
+        -1,
+        false,
+      );
+
+      waveBarThree.value = withRepeat(
+        withSequence(
+          withTiming(0.45, {
+            duration: 220,
+            easing: Easing.inOut(Easing.ease),
+          }),
+          withTiming(1, {
+            duration: 250,
+            easing: Easing.inOut(Easing.ease),
+          }),
+          withTiming(0.35, {
+            duration: 260,
+            easing: Easing.inOut(Easing.ease),
+          }),
+        ),
+        -1,
+        false,
+      );
+    } else {
+      recordingDotScale.value = withTiming(1, { duration: 180 });
+      recordingDotOpacity.value = withTiming(0.6, { duration: 180 });
+      waveBarOne.value = withTiming(0.35, { duration: 180 });
+      waveBarTwo.value = withTiming(0.35, { duration: 180 });
+      waveBarThree.value = withTiming(0.35, { duration: 180 });
+    }
+  }, [
+    status,
+    visible,
+    recordingDotScale,
+    recordingDotOpacity,
+    waveBarOne,
+    waveBarTwo,
+    waveBarThree,
+  ]);
+
   const readyPulseStyle = useAnimatedStyle(() => ({
     opacity: readyOpacity.value,
     transform: [{ scale: readyPulse.value }],
+  }));
+
+  const recordingDotStyle = useAnimatedStyle(() => ({
+    opacity: recordingDotOpacity.value,
+    transform: [{ scale: recordingDotScale.value }],
+  }));
+
+  const waveBarOneStyle = useAnimatedStyle(() => ({
+    height: 7 + waveBarOne.value * 14,
+  }));
+
+  const waveBarTwoStyle = useAnimatedStyle(() => ({
+    height: 7 + waveBarTwo.value * 14,
+  }));
+
+  const waveBarThreeStyle = useAnimatedStyle(() => ({
+    height: 7 + waveBarThree.value * 14,
   }));
 
   const displayTranscript = useMemo(() => {
@@ -399,7 +511,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
           <View
             style={[styles.modalHeader, { borderBottomColor: colors.outline }]}
           >
-            <View>
+            <View style={styles.modalTitleContainer}>
               <Text style={[styles.modalTitle, { color: colors.text }]}
                 numberOfLines={1}
               >
@@ -414,7 +526,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
                 {t.voice.subtitle}
               </Text>
             </View>
-            <Pressable onPress={onClose}>
+            <Pressable onPress={onClose} style={styles.closeButton}>
               <HugeiconsIcon
                 icon={Cancel01Icon}
                 size={22}
@@ -505,6 +617,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
                   const isActive = languageMode === option.value;
                   return (
                     <Pressable
+                      haptic="medium"
                       key={option.value}
                       onPress={() => setLanguageMode(option.value)}
                       style={[
@@ -553,6 +666,58 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
                       ? t.voice.processing
                       : "...")}
               </Text>
+
+              {status === "listening" ? (
+                <View
+                  style={[
+                    styles.recordingIndicator,
+                    {
+                      backgroundColor: colors.primary + "14",
+                      borderColor: colors.primary + "40",
+                    },
+                  ]}
+                >
+                  <Animated.View
+                    style={[
+                      styles.recordingDot,
+                      recordingDotStyle,
+                      {
+                        backgroundColor: colors.error,
+                        shadowColor: colors.error,
+                      },
+                    ]}
+                  />
+                  <Text
+                    style={[styles.recordingText, { color: colors.text }]}
+                    numberOfLines={1}
+                  >
+                    {t.voice.listening}
+                  </Text>
+                  <View style={styles.recordingWave}>
+                    <Animated.View
+                      style={[
+                        styles.recordingWaveBar,
+                        { backgroundColor: colors.primary },
+                        waveBarOneStyle,
+                      ]}
+                    />
+                    <Animated.View
+                      style={[
+                        styles.recordingWaveBar,
+                        { backgroundColor: colors.primary },
+                        waveBarTwoStyle,
+                      ]}
+                    />
+                    <Animated.View
+                      style={[
+                        styles.recordingWaveBar,
+                        { backgroundColor: colors.primary },
+                        waveBarThreeStyle,
+                      ]}
+                    />
+                  </View>
+                </View>
+              ) : null}
             </View>
 
             {status === "idle" && (
@@ -872,7 +1037,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
               >
                 {t.expenses.editExpense}
               </Text>
-              <Pressable onPress={onClose}>
+              <Pressable onPress={onClose} style={styles.closeButton}>
                 <HugeiconsIcon
                   icon={Cancel01Icon}
                   size={20}
@@ -925,6 +1090,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                 ]}
                 value={description}
                 onChangeText={setDescription}
+                onKeyPress={triggerLightHaptic}
                 multiline
                 numberOfLines={3}
               />
@@ -1076,7 +1242,7 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
               >
                 {t.grocery.editItem}
               </Text>
-              <Pressable onPress={onClose}>
+              <Pressable onPress={onClose} style={styles.closeButton}>
                 <HugeiconsIcon
                   icon={Cancel01Icon}
                   size={20}
@@ -1105,6 +1271,7 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                   setName(text);
                   if (nameError && text.trim()) setNameError(null);
                 }}
+                onKeyPress={triggerLightHaptic}
               />
               {nameError ? (
                 <Text style={[styles.inputErrorText, { color: colors.error }]}>
@@ -1131,6 +1298,7 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                     onChangeText={(text) =>
                       setQuantity(parseBanglaNumber(text))
                     }
+                    onKeyPress={triggerLightHaptic}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -1264,9 +1432,13 @@ const styles = StyleSheet.create({
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
+  },
+  modalTitleContainer: {
+    flex: 1,
+    marginRight: 12,
   },
   modalTitle: {
     fontSize: 20,
@@ -1385,6 +1557,42 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
+  recordingIndicator: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  recordingDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 999,
+    shadowOpacity: 0.55,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 2,
+  },
+  recordingText: {
+    fontSize: 12,
+    fontWeight: "600",
+    lineHeight: 16,
+    flex: 1,
+  },
+  recordingWave: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 3,
+    height: 22,
+  },
+  recordingWaveBar: {
+    width: 4,
+    borderRadius: 4,
+    minHeight: 7,
+  },
   primaryButton: {
     marginTop: 20,
     flexDirection: "row",
@@ -1502,6 +1710,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
   },
   editTitle: {
     fontSize: 18,

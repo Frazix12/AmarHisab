@@ -56,6 +56,14 @@ const RootLayoutContent = () => {
             animationDuration: 240,
           }}
         />
+        <Stack.Screen
+          name="settings"
+          options={{
+            headerShown: false,
+            animation: "slide_from_right",
+            animationDuration: 240,
+          }}
+        />
       </Stack>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
     </ThemeProvider>

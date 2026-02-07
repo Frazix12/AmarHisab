@@ -13,7 +13,10 @@ interface TranscribeAudioOptions {
 
 const DEFAULT_MODEL_ID =
   process.env.EXPO_PUBLIC_ELEVENLABS_STT_MODEL_ID || "scribe_v2";
+const ENV_API_KEY = process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY || "";
 const API_URL = "https://api.elevenlabs.io/v1/speech-to-text";
+
+let elevenLabsApiKey = ENV_API_KEY;
 
 const getFileName = (uri: string) => {
   const normalized = uri.split("?")[0];
@@ -110,5 +113,19 @@ export const transcribeAudioFile = async (
   };
 };
 
-export const getElevenLabsApiKey = () =>
-  process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY || "";
+export function setElevenLabsApiKey(apiKey: string): void {
+  if (apiKey) {
+    console.log("Setting custom ElevenLabs API key");
+    elevenLabsApiKey = apiKey;
+    return;
+  }
+
+  if (ENV_API_KEY) {
+    console.log("Reverting to environment ElevenLabs API key");
+  } else {
+    console.log("Removing ElevenLabs API key");
+  }
+  elevenLabsApiKey = ENV_API_KEY;
+}
+
+export const getElevenLabsApiKey = () => elevenLabsApiKey;

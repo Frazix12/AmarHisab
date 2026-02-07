@@ -4,6 +4,7 @@ import {
 } from "@/components/shared/action-menu-modal";
 import { OnboardingTip } from "@/components/shared/onboarding-tip";
 import { showToast, Toast } from "@/components/ui/toast";
+import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
 import { AddGroceryModal } from "@/features/grocery/components/add-grocery-modal";
@@ -13,7 +14,7 @@ import { GroceryItemComponent } from "@/features/grocery/components/grocery-item
 import { TemplateSuggestionCard } from "@/features/templates/components/template-suggestion-card";
 import { GroceryCategory, GroceryItem } from "@/types";
 import { LearningCandidate } from "@/types/template";
-import { usePageTransition } from "@/utils/animations";
+import { useMorphingFabAnimation, usePageTransition } from "@/utils/animations";
 import {
     Add01Icon,
     Delete02Icon,
@@ -24,16 +25,22 @@ import { HugeiconsIcon } from "@hugeicons/react-native";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
-  Platform,
-  Pressable,
+  Dimensions,
   SectionList,
   StyleSheet,
   Text,
-  Vibration,
   View,
 } from "react-native";
 import Animated from "react-native-reanimated";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+
+const FAB_SIZE = 60;
+const FAB_RIGHT = 20;
+const FAB_BOTTOM = 20;
+const ADD_MODAL_HEIGHT_RATIO = 0.82;
+const FAB_TO_CLOSE_X = -8;
+const FAB_CLOSE_CENTER_Y = 44;
+const SCREEN_HEIGHT = Dimensions.get("screen").height;
 
 const GROCERY_CATEGORY_ORDER: GroceryCategory[] = [
   "vegetables",
@@ -78,6 +85,7 @@ export default function GroceryScreen() {
   const [selectedItem, setSelectedItem] = useState<GroceryItem | null>(null);
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const insets = useSafeAreaInsets();
 
   // Check for suggestions after adding an item
   useEffect(() => {
@@ -137,8 +145,18 @@ export default function GroceryScreen() {
   );
 
   const handleAddItem = useCallback(() => {
-    setModalVisible(true);
+    setModalVisible((prev) => !prev);
   }, []);
+
+  const fabStartCenterY = SCREEN_HEIGHT - insets.bottom - FAB_BOTTOM - FAB_SIZE / 2;
+  const fabTargetCenterY =
+    SCREEN_HEIGHT * (1 - ADD_MODAL_HEIGHT_RATIO) + FAB_CLOSE_CENTER_Y;
+  const fabTravelY = fabTargetCenterY - fabStartCenterY;
+  const { fabStyle, iconStyle } = useMorphingFabAnimation(modalVisible, {
+    travelY: fabTravelY,
+    travelX: FAB_TO_CLOSE_X,
+    activeScale: 0.8,
+  });
 
   const handleToggleItem = useCallback(
     (itemId: string) => {
@@ -148,10 +166,6 @@ export default function GroceryScreen() {
   );
 
   const handleItemLongPress = useCallback((item: GroceryItem) => {
-    // Haptic feedback on Android
-    if (Platform.OS === "android") {
-      Vibration.vibrate(50);
-    }
     setSelectedItem(item);
     setShowActionMenu(true);
   }, []);
@@ -357,31 +371,52 @@ export default function GroceryScreen() {
         stickySectionHeadersEnabled={false}
       />
 
-      {/* Floating Action Button */}
-      <Pressable
-        onPress={handleAddItem}
-        style={({ pressed }) => [
-          styles.fab,
-          {
-            backgroundColor: colors.primary,
-            shadowColor: colors.shadow,
-            opacity: pressed ? 0.9 : 1,
-          },
-        ]}
-      >
-        <HugeiconsIcon
-          icon={Add01Icon}
-          size={28}
-          color={colors.onPrimary}
-          strokeWidth={2.5}
-        />
-      </Pressable>
-
       {/* Add Grocery Modal */}
       <AddGroceryModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
+        fabConfig={{
+          fabSize: FAB_SIZE,
+          fabRight: FAB_RIGHT,
+          fabBottom: FAB_BOTTOM,
+          modalHeightRatio: ADD_MODAL_HEIGHT_RATIO,
+        }}
       />
+
+      {/* Floating Action Button */}
+      <Animated.View
+        style={[
+          styles.fab,
+          {
+            backgroundColor: modalVisible ? colors.error : colors.primary,
+            shadowColor: modalVisible ? colors.error : colors.shadow,
+          },
+          fabStyle,
+        ]}
+      >
+        <Pressable
+          onPress={handleAddItem}
+          style={({ pressed }) => [
+            styles.fabPressable,
+            {
+              opacity: pressed ? 0.9 : 1,
+            },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={
+            modalVisible ? t.form.cancel || "Close add item" : t.grocery.addItem
+          }
+        >
+          <Animated.View style={iconStyle}>
+            <HugeiconsIcon
+              icon={Add01Icon}
+              size={28}
+              color={colors.onPrimary}
+              strokeWidth={2.5}
+            />
+          </Animated.View>
+        </Pressable>
+      </Animated.View>
 
       {/* Complete Grocery Modal */}
       <CompleteGroceryModal
@@ -509,16 +544,23 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: "absolute",
-    right: 20,
-    bottom: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    right: FAB_RIGHT,
+    bottom: FAB_BOTTOM,
+    width: FAB_SIZE,
+    height: FAB_SIZE,
+    borderRadius: FAB_SIZE / 2,
     justifyContent: "center",
     alignItems: "center",
     elevation: 8,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
+    zIndex: 60,
+  },
+  fabPressable: {
+    width: "100%",
+    height: "100%",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

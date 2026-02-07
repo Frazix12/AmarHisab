@@ -1,9 +1,13 @@
 import { BanglaNumberInput } from "@/components/shared/bangla-number-input";
+import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
 import { detectExpenseCategory } from "@/services/ai/gemini";
 import { EXPENSE_CATEGORIES, ExpenseCategory } from "@/types";
-import { useModalAnimation } from "@/utils/animations";
+import {
+  MorphingModalOptions,
+  useMorphingModalAnimation,
+} from "@/utils/animations";
 import {
     Camera01Icon,
     Cancel01Icon,
@@ -16,31 +20,48 @@ import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
 import {
     Alert,
+    BackHandler,
     Image,
     KeyboardAvoidingView,
-    Modal,
     Platform,
-    Pressable,
     ScrollView,
     StyleSheet,
     Text,
     TextInput,
+    useWindowDimensions,
     View,
 } from "react-native";
 import Animated from "react-native-reanimated";
+import { triggerLightHaptic } from "@/utils/haptics";
 
 interface AddExpenseModalProps {
   visible: boolean;
   onClose: () => void;
+  fabConfig?: Pick<
+    MorphingModalOptions,
+    "fabSize" | "fabRight" | "fabBottom" | "modalHeightRatio"
+  >;
 }
 
 export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   visible,
   onClose,
+  fabConfig,
 }) => {
   const { addExpense, settings, colorScheme, t } = useApp();
   const colors = Colors[colorScheme];
-  const { animatedStyle, backdropStyle, shouldRender } = useModalAnimation(visible);
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const { shellStyle, backdropStyle, contentStyle, shouldRender } =
+    useMorphingModalAnimation(visible, {
+      screenWidth: windowWidth,
+      screenHeight: windowHeight,
+      fabSize: fabConfig?.fabSize ?? 60,
+      fabRight: fabConfig?.fabRight ?? 20,
+      fabBottom: fabConfig?.fabBottom ?? 20,
+      modalHeightRatio: fabConfig?.modalHeightRatio ?? 0.82,
+      contentStartProgress: 0.84,
+      contentFadeDuration: 160,
+    });
 
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<ExpenseCategory>("food");
@@ -60,6 +81,22 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
       setAiDetectedCategory(false);
     }
   }, [visible]);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    const subscription = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        onClose();
+        return true;
+      },
+    );
+
+    return () => {
+      subscription.remove();
+    };
+  }, [onClose, visible]);
 
   // AI Category Detection
   useEffect(() => {
@@ -170,40 +207,35 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   if (!shouldRender) return null;
 
   return (
-    <Modal
-      visible={shouldRender}
-      transparent
-      animationType="none"
-      onRequestClose={onClose}
-    >
-      <Animated.View style={[styles.modalOverlay, backdropStyle]}>
+    <View style={styles.rootOverlay} pointerEvents="box-none">
+      <Pressable haptic="none" style={StyleSheet.absoluteFill} onPress={onClose}>
+        <Animated.View style={[styles.modalOverlay, backdropStyle]} />
+      </Pressable>
+      <Animated.View
+        renderToHardwareTextureAndroid
+        shouldRasterizeIOS
+        style={[styles.growContainer, { backgroundColor: colors.surface }, shellStyle]}
+      >
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          behavior="padding"
+          enabled={Platform.OS === "ios"}
           style={styles.keyboardAvoid}
         >
           <Animated.View
-            style={[
-              styles.modalContent,
-              { backgroundColor: colors.surface },
-              animatedStyle,
-            ]}
+            style={[styles.modalContent, contentStyle]}
           >
             {/* Header */}
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
                 {t.expenses.addExpense}
               </Text>
-              <Pressable onPress={onClose}>
-                <HugeiconsIcon
-                  icon={Cancel01Icon}
-                  size={24}
-                  color={colors.text}
-                  strokeWidth={2}
-                />
-              </Pressable>
+              <View style={styles.closeAnchorSpacer} />
             </View>
 
-            <ScrollView style={styles.formContainer}>
+            <ScrollView
+              style={styles.formContainer}
+              keyboardShouldPersistTaps="handled"
+            >
               {/* Amount Input */}
               <View style={styles.inputGroup}>
                 <Text style={[styles.label, { color: colors.text }]}>
@@ -243,6 +275,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                   ]}
                   value={description}
                   onChangeText={setDescription}
+                  onKeyPress={triggerLightHaptic}
                   placeholder={t.placeholders.expenseDescription}
                   placeholderTextColor={colors.textSecondary}
                   multiline
@@ -418,32 +451,19 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             {/* Footer Buttons */}
             <View style={styles.modalFooter}>
               <Pressable
-                onPress={onClose}
-                style={[
-                  styles.button,
-                  styles.cancelButton,
-                  { backgroundColor: colors.surfaceVariant },
-                ]}
-              >
-                <Text style={[styles.buttonText, { color: colors.text }]}>
-                  {t.form.cancel}
-                </Text>
-              </Pressable>
-              <Pressable
                 onPress={handleSave}
                 style={[
                   styles.button,
-                  styles.saveButton,
-                  { backgroundColor: colors.primary },
+                  { backgroundColor: colors.success },
                 ]}
               >
                 <HugeiconsIcon
                   icon={Tick02Icon}
                   size={20}
-                  color={colors.onPrimary}
+                  color={colors.onSuccess}
                   strokeWidth={2.5}
                 />
-                <Text style={[styles.buttonText, { color: colors.onPrimary }]}>
+                <Text style={[styles.buttonText, { color: colors.onSuccess }]}>
                   {t.form.save}
                 </Text>
               </Pressable>
@@ -451,24 +471,28 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
           </Animated.View>
         </KeyboardAvoidingView>
       </Animated.View>
-    </Modal>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  rootOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 40,
+  },
   modalOverlay: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
+  },
+  growContainer: {
+    position: "absolute",
+    overflow: "hidden",
   },
   keyboardAvoid: {
     flex: 1,
-    justifyContent: "flex-end",
   },
   modalContent: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: "90%",
+    flex: 1,
     paddingBottom: Platform.OS === "ios" ? 30 : 20,
   },
   modalHeader: {
@@ -478,6 +502,10 @@ const styles = StyleSheet.create({
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: "#E0E0E0",
+  },
+  closeAnchorSpacer: {
+    width: 24,
+    height: 24,
   },
   modalTitle: {
     fontSize: 20,
@@ -524,13 +552,11 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   modalFooter: {
-    flexDirection: "row",
-    gap: 12,
     paddingHorizontal: 20,
     paddingTop: 20,
   },
   button: {
-    flex: 1,
+    width: "100%",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -538,8 +564,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 8,
   },
-  cancelButton: {},
-  saveButton: {},
   buttonText: {
     fontSize: 16,
     fontWeight: "600",

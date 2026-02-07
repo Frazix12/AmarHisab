@@ -10,6 +10,7 @@ import {
   loadGroceryItems,
   loadSettings,
 } from "@/services/storage";
+import { setElevenLabsApiKey } from "@/services/ai/elevenlabs";
 import { setGeminiApiKey } from "@/services/ai/gemini";
 
 jest.mock("@/services/storage", () => ({
@@ -43,6 +44,10 @@ jest.mock("@/features/templates/services/template-learner", () => ({
 
 jest.mock("@/services/ai/gemini", () => ({
   setGeminiApiKey: jest.fn(),
+}));
+
+jest.mock("@/services/ai/elevenlabs", () => ({
+  setElevenLabsApiKey: jest.fn(),
 }));
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -100,6 +105,7 @@ describe("AppProvider", () => {
     expect(result.current.totalExpenses).toBe(30);
     expect(result.current.todayExpenses).toBe(10);
     expect(setGeminiApiKey).not.toHaveBeenCalled();
+    expect(setElevenLabsApiKey).not.toHaveBeenCalled();
 
     jest.useRealTimers();
   });

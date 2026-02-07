@@ -1,12 +1,12 @@
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
+import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { useModalAnimation } from "@/utils/animations";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import React from "react";
 import {
     Modal,
     Platform,
-    Pressable,
     StyleSheet,
     Text,
     View,
@@ -84,7 +84,7 @@ export const ActionMenuModal: React.FC<ActionMenuModalProps> = ({
       accessibilityLabel={`Actions for ${itemTitle}`}
     >
       <Animated.View style={[styles.modalOverlay, backdropStyle]}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
+        <Pressable haptic="none" style={styles.backdrop} onPress={onClose} />
         <Animated.View
           style={[
             styles.menuContent,
@@ -108,6 +108,7 @@ export const ActionMenuModal: React.FC<ActionMenuModalProps> = ({
 
               return (
                 <Pressable
+                  haptic="medium"
                   key={index}
                   onPress={() => handleActionPress(action)}
                   style={({ pressed }) => [

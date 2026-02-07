@@ -1,9 +1,11 @@
 import { BanglaNumberInput } from "@/components/shared/bangla-number-input";
+import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
 import { GROCERY_CATEGORIES, GroceryCategory, GroceryItem } from "@/types";
 import { useModalAnimation } from "@/utils/animations";
 import { parseBanglaNumber } from "@/utils/format";
+import { triggerLightHaptic } from "@/utils/haptics";
 import { Cancel01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import React, { useEffect, useState } from "react";
@@ -11,7 +13,6 @@ import {
     Alert,
     Modal,
     Platform,
-    Pressable,
     ScrollView,
     StyleSheet,
     Text,
@@ -120,7 +121,7 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
             <Text style={[styles.modalTitle, { color: colors.text }]}>
               {t.grocery.editItem || "Edit Item"}
             </Text>
-            <Pressable onPress={onClose}>
+            <Pressable onPress={onClose} style={styles.closeButton}>
               <HugeiconsIcon
                 icon={Cancel01Icon}
                 size={24}
@@ -147,6 +148,7 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                 ]}
                 value={name}
                 onChangeText={setName}
+                onKeyPress={triggerLightHaptic}
                 placeholder={t.placeholders.groceryName}
                 placeholderTextColor={colors.textSecondary}
               />
@@ -169,6 +171,7 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                   ]}
                   value={formatNumber(quantity)}
                   onChangeText={(text) => setQuantity(parseBanglaNumber(text))}
+                  onKeyPress={triggerLightHaptic}
                   placeholder={t.placeholders.groceryQuantity}
                   placeholderTextColor={colors.textSecondary}
                 />
@@ -345,6 +348,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     lineHeight: 26,
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
   },
   formContainer: {
     padding: 20,

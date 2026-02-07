@@ -1,10 +1,10 @@
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
+import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { useReducedMotionPreference } from "@/utils/animations";
 import { HugeiconsIcon } from "@hugeicons/react-native";
-import * as Haptics from "expo-haptics";
 import React, { useEffect } from "react";
-import { Platform, Pressable, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
 import Animated, {
   Easing,
   Extrapolation,
@@ -71,16 +71,10 @@ export const AnimatedTabButton: React.FC<AnimatedTabButtonProps> = ({
     ],
   }));
 
-  const handlePress = () => {
-    if (Platform.OS === "ios") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-    onPress();
-  };
-
   return (
     <Pressable
-      onPress={handlePress}
+      haptic="none"
+      onPress={onPress}
       style={styles.container}
       hitSlop={8}
       accessibilityRole="tab"

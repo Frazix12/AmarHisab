@@ -1,5 +1,6 @@
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
+import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { LearningCandidate } from "@/types/template";
 import { useReducedMotionPreference } from "@/utils/animations";
 import {
@@ -10,7 +11,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import React, { useEffect, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import Animated, {
   Easing,
   Extrapolation,

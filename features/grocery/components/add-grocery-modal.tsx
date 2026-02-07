@@ -1,13 +1,16 @@
 import { BanglaNumberInput } from "@/components/shared/bangla-number-input";
+import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
 import { detectItemCategory } from "@/services/ai/gemini";
 import { GROCERY_CATEGORIES, GroceryCategory } from "@/types";
 import { TemplateMatch } from "@/types/template";
-import { useModalAnimation } from "@/utils/animations";
+import {
+  MorphingModalOptions,
+  useMorphingModalAnimation,
+} from "@/utils/animations";
 import { parseBanglaNumber } from "@/utils/format";
 import {
-    Cancel01Icon,
     Sun03Icon,
     Tick02Icon,
 } from "@hugeicons/core-free-icons";
@@ -15,25 +18,31 @@ import { HugeiconsIcon } from "@hugeicons/react-native";
 import React, { useEffect, useState } from "react";
 import {
     Alert,
-    Modal,
+    BackHandler,
     Platform,
-    Pressable,
     ScrollView,
     StyleSheet,
     Text,
     TextInput,
+    useWindowDimensions,
     View,
 } from "react-native";
 import Animated from "react-native-reanimated";
+import { triggerLightHaptic } from "@/utils/haptics";
 
 interface AddGroceryModalProps {
   visible: boolean;
   onClose: () => void;
+  fabConfig?: Pick<
+    MorphingModalOptions,
+    "fabSize" | "fabRight" | "fabBottom" | "modalHeightRatio"
+  >;
 }
 
 export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
   visible,
   onClose,
+  fabConfig,
 }) => {
   const {
     addGroceryItem,
@@ -45,7 +54,18 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
     formatNumber,
   } = useApp();
   const colors = Colors[colorScheme];
-  const { animatedStyle, backdropStyle, shouldRender } = useModalAnimation(visible);
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const { shellStyle, backdropStyle, contentStyle, shouldRender } =
+    useMorphingModalAnimation(visible, {
+      screenWidth: windowWidth,
+      screenHeight: windowHeight,
+      fabSize: fabConfig?.fabSize ?? 60,
+      fabRight: fabConfig?.fabRight ?? 20,
+      fabBottom: fabConfig?.fabBottom ?? 20,
+      modalHeightRatio: fabConfig?.modalHeightRatio ?? 0.82,
+      contentStartProgress: 0.84,
+      contentFadeDuration: 160,
+    });
 
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -114,6 +134,22 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
     }
   }, [visible]);
 
+  useEffect(() => {
+    if (!visible) return;
+
+    const subscription = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        onClose();
+        return true;
+      },
+    );
+
+    return () => {
+      subscription.remove();
+    };
+  }, [onClose, visible]);
+
   const handleAutofill = async (templateId?: string) => {
     const idToUse = templateId || matchingTemplates[0]?.template.id;
     if (!idToUse) return;
@@ -170,19 +206,17 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
   if (!shouldRender) return null;
 
   return (
-    <Modal
-      visible={shouldRender}
-      transparent
-      animationType="none"
-      onRequestClose={onClose}
-    >
-      <Animated.View style={[styles.modalOverlay, backdropStyle]}>
+    <View style={styles.rootOverlay} pointerEvents="box-none">
+      <Pressable haptic="none" style={StyleSheet.absoluteFill} onPress={onClose}>
+        <Animated.View style={[styles.modalOverlay, backdropStyle]} />
+      </Pressable>
+      <Animated.View
+        renderToHardwareTextureAndroid
+        shouldRasterizeIOS
+        style={[styles.growContainer, { backgroundColor: colors.surface }, shellStyle]}
+      >
         <Animated.View
-          style={[
-            styles.modalContent,
-            { backgroundColor: colors.surface },
-            animatedStyle,
-          ]}
+          style={[styles.modalContent, contentStyle]}
         >
           {/* Header */}
           <View
@@ -191,17 +225,13 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
             <Text style={[styles.modalTitle, { color: colors.text }]}>
               {t.grocery.addItem}
             </Text>
-            <Pressable onPress={onClose}>
-              <HugeiconsIcon
-                icon={Cancel01Icon}
-                size={24}
-                color={colors.text}
-                strokeWidth={2}
-              />
-            </Pressable>
+            <View style={styles.closeAnchorSpacer} />
           </View>
 
-          <ScrollView style={styles.formContainer}>
+          <ScrollView
+            style={styles.formContainer}
+            keyboardShouldPersistTaps="handled"
+          >
             {/* Name Input */}
             <View style={styles.inputGroup}>
               <View style={styles.labelRow}>
@@ -210,6 +240,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                 </Text>
                 {matchingTemplates.length > 0 && (
                   <Pressable
+                    haptic="medium"
                     onPress={() =>
                       matchingTemplates.length === 1
                         ? handleAutofill()
@@ -246,6 +277,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                 ]}
                 value={name}
                 onChangeText={setName}
+                onKeyPress={triggerLightHaptic}
                 placeholder={t.placeholders.groceryName}
                 placeholderTextColor={colors.textSecondary}
               />
@@ -284,6 +316,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                   ]}
                   value={formatNumber(quantity)}
                   onChangeText={(text) => setQuantity(parseBanglaNumber(text))}
+                  onKeyPress={triggerLightHaptic}
                   placeholder={t.placeholders.groceryQuantity}
                   placeholderTextColor={colors.textSecondary}
                 />
@@ -400,32 +433,19 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
           {/* Footer Buttons */}
           <View style={styles.modalFooter}>
             <Pressable
-              onPress={onClose}
-              style={[
-                styles.button,
-                styles.cancelButton,
-                { backgroundColor: colors.surfaceVariant },
-              ]}
-            >
-              <Text style={[styles.buttonText, { color: colors.text }]}>
-                {t.form.cancel}
-              </Text>
-            </Pressable>
-            <Pressable
               onPress={handleSave}
               style={[
                 styles.button,
-                styles.saveButton,
-                { backgroundColor: colors.primary },
+                { backgroundColor: colors.success },
               ]}
             >
               <HugeiconsIcon
                 icon={Tick02Icon}
                 size={20}
-                color={colors.onPrimary}
+                color={colors.onSuccess}
                 strokeWidth={2.5}
               />
-              <Text style={[styles.buttonText, { color: colors.onPrimary }]}>
+              <Text style={[styles.buttonText, { color: colors.onSuccess }]}>
                 {t.form.save}
               </Text>
             </Pressable>
@@ -435,6 +455,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
         {/* Template Picker Modal */}
         {showTemplatePicker && matchingTemplates.length > 1 && (
           <Pressable
+            haptic="none"
             style={styles.pickerOverlay}
             onPress={() => setShowTemplatePicker(false)}
           >
@@ -451,6 +472,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
               <ScrollView style={styles.pickerList}>
                 {matchingTemplates.map((match) => (
                   <Pressable
+                    haptic="medium"
                     key={match.template.id}
                     onPress={() => handleAutofill(match.template.id)}
                     style={[
@@ -517,20 +539,25 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
           </Pressable>
         )}
       </Animated.View>
-    </Modal>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  rootOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 40,
+  },
   modalOverlay: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
+  },
+  growContainer: {
+    position: "absolute",
+    overflow: "hidden",
   },
   modalContent: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: "90%",
+    flex: 1,
     paddingBottom: Platform.OS === "ios" ? 30 : 20,
   },
   modalHeader: {
@@ -539,6 +566,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
+  },
+  closeAnchorSpacer: {
+    width: 24,
+    height: 24,
   },
   modalTitle: {
     fontSize: 20,
@@ -587,13 +618,11 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   modalFooter: {
-    flexDirection: "row",
-    gap: 12,
     paddingHorizontal: 20,
     paddingTop: 20,
   },
   button: {
-    flex: 1,
+    width: "100%",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -601,8 +630,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 8,
   },
-  cancelButton: {},
-  saveButton: {},
   buttonText: {
     fontSize: 16,
     fontWeight: "600",

@@ -35,6 +35,12 @@ export interface UserSettings {
    * It is excluded from logs, analytics, and backups.
    */
   geminiApiKey?: string;
+  /**
+   * Custom ElevenLabs API Key.
+   * SECURITY: This is stored in platform SecureStore (Keychain/Keystore), NOT in AsyncStorage.
+   * It is excluded from logs, analytics, and backups.
+   */
+  elevenLabsApiKey?: string;
 }
 
 export type ExpenseCategory =

@@ -1,4 +1,5 @@
 import { Colors } from "@/constants/theme";
+import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { TranslationKey } from "@/services/i18n";
 import { GroceryItem, UserSettings } from "@/types";
 import { Tick02Icon } from "@hugeicons/core-free-icons";
@@ -6,7 +7,6 @@ import { HugeiconsIcon } from "@hugeicons/react-native";
 import React from "react";
 import {
   GestureResponderEvent,
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -51,6 +51,7 @@ export const GroceryItemComponent = React.memo(
 
     return (
       <Pressable
+        longPressHaptic="medium"
         onPress={handlePress}
         onLongPress={handleLongPress}
         style={({ pressed }) => [

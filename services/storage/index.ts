@@ -6,7 +6,8 @@ import { Platform } from "react-native";
 const EXPENSES_KEY = "@amar_hisab_expenses";
 const GROCERY_KEY = "@amar_hisab_grocery";
 const SETTINGS_KEY = "@amar_hisab_settings";
-const API_KEY_STORAGE_KEY = "amar_hisab_gemini_api_key";
+const GEMINI_API_KEY_STORAGE_KEY = "amar_hisab_gemini_api_key";
+const ELEVENLABS_API_KEY_STORAGE_KEY = "amar_hisab_elevenlabs_api_key";
 
 /**
  * Helper to handle SecureStore on web (where it's not supported)
@@ -130,7 +131,7 @@ export const loadGroceryItems = async (): Promise<GroceryItem[]> => {
 export const saveSettings = async (settings: UserSettings): Promise<void> => {
   try {
     // Separate sensitive data from public settings
-    const { geminiApiKey, ...publicSettings } = settings;
+    const { geminiApiKey, elevenLabsApiKey, ...publicSettings } = settings;
 
     // Save public settings to AsyncStorage
     const jsonValue = JSON.stringify(publicSettings);
@@ -138,9 +139,15 @@ export const saveSettings = async (settings: UserSettings): Promise<void> => {
 
     // Save sensitive data to SecureStore
     if (geminiApiKey) {
-      await setSecureItem(API_KEY_STORAGE_KEY, geminiApiKey);
+      await setSecureItem(GEMINI_API_KEY_STORAGE_KEY, geminiApiKey);
     } else {
-      await deleteSecureItem(API_KEY_STORAGE_KEY);
+      await deleteSecureItem(GEMINI_API_KEY_STORAGE_KEY);
+    }
+
+    if (elevenLabsApiKey) {
+      await setSecureItem(ELEVENLABS_API_KEY_STORAGE_KEY, elevenLabsApiKey);
+    } else {
+      await deleteSecureItem(ELEVENLABS_API_KEY_STORAGE_KEY);
     }
   } catch (e) {
     console.error("Error saving settings:", e);
@@ -156,12 +163,16 @@ export const loadSettings = async (): Promise<UserSettings | null> => {
     if (!publicSettings) return null;
 
     // Load sensitive data
-    const apiKey = await getSecureItem(API_KEY_STORAGE_KEY);
+    const [geminiApiKey, elevenLabsApiKey] = await Promise.all([
+      getSecureItem(GEMINI_API_KEY_STORAGE_KEY),
+      getSecureItem(ELEVENLABS_API_KEY_STORAGE_KEY),
+    ]);
 
     // Merge and return
     return {
       ...publicSettings,
-      geminiApiKey: apiKey || undefined,
+      geminiApiKey: geminiApiKey || undefined,
+      elevenLabsApiKey: elevenLabsApiKey || undefined,
     };
   } catch (e) {
     console.error("Error loading settings:", e);
@@ -173,7 +184,10 @@ export const loadSettings = async (): Promise<UserSettings | null> => {
 export const clearAllData = async (): Promise<void> => {
   try {
     await AsyncStorage.multiRemove([EXPENSES_KEY, GROCERY_KEY, SETTINGS_KEY]);
-    await deleteSecureItem(API_KEY_STORAGE_KEY);
+    await Promise.all([
+      deleteSecureItem(GEMINI_API_KEY_STORAGE_KEY),
+      deleteSecureItem(ELEVENLABS_API_KEY_STORAGE_KEY),
+    ]);
   } catch (e) {
     console.error("Error clearing data:", e);
   }

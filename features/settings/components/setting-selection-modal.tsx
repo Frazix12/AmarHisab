@@ -1,5 +1,6 @@
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
+import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { useReducedMotionPreference } from "@/utils/animations";
 import { Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
@@ -7,7 +8,6 @@ import React, { useCallback } from "react";
 import {
   FlatList,
   Modal,
-  Pressable,
   StyleSheet,
   Text,
   TouchableWithoutFeedback,
@@ -65,6 +65,7 @@ export const SettingSelectionModal = ({
       const isSelected = option.value === currentValue;
       return (
         <Pressable
+          haptic="medium"
           onPress={() => {
             onSelect(option.value);
             onClose();

@@ -1,5 +1,6 @@
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
+import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import {
   Add01Icon,
   Delete02Icon,
@@ -11,7 +12,6 @@ import React, { useCallback, useMemo, useState } from "react";
 import {
   FlatList,
   Modal,
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -238,6 +238,7 @@ export default function TemplatesScreen() {
       {/* Filter Tabs */}
       <View style={styles.filterContainer}>
         <Pressable
+          haptic="medium"
           onPress={() => setFilter("all")}
           style={[
             styles.filterTab,
@@ -254,6 +255,7 @@ export default function TemplatesScreen() {
           </Text>
         </Pressable>
         <Pressable
+          haptic="medium"
           onPress={() => setFilter("manual")}
           style={[
             styles.filterTab,
@@ -270,6 +272,7 @@ export default function TemplatesScreen() {
           </Text>
         </Pressable>
         <Pressable
+          haptic="medium"
           onPress={() => setFilter("learned")}
           style={[
             styles.filterTab,
@@ -305,6 +308,7 @@ export default function TemplatesScreen() {
         onRequestClose={() => setDeleteConfirm(null)}
       >
         <Pressable
+          haptic="none"
           style={styles.modalOverlay}
           onPress={() => setDeleteConfirm(null)}
         >

@@ -1,6 +1,7 @@
 import { TemplateLearner } from "@/features/templates/services/template-learner";
 import { TemplateStorage } from "@/features/templates/services/template-storage";
 import { normalizeProductName } from "@/features/templates/services/template-utils";
+import { setElevenLabsApiKey } from "@/services/ai/elevenlabs";
 import { setGeminiApiKey } from "@/services/ai/gemini";
 import { getTranslation, TranslationKey } from "@/services/i18n";
 import {
@@ -61,6 +62,7 @@ interface AppContextType {
   updateTheme: (theme: "light" | "dark" | "system") => void;
   updateLanguage: (language: string) => void;
   updateApiKey: (apiKey: string) => void;
+  updateElevenLabsApiKey: (apiKey: string) => void;
 
   // Computed
   totalExpenses: number;
@@ -150,6 +152,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
 
         if (loadedSettings?.geminiApiKey) {
           setGeminiApiKey(loadedSettings.geminiApiKey);
+        }
+
+        if (loadedSettings?.elevenLabsApiKey) {
+          setElevenLabsApiKey(loadedSettings.elevenLabsApiKey);
         }
       } catch (error) {
         console.error("Failed to load app data:", error);
@@ -373,6 +379,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     const newSettings = { ...settings, geminiApiKey: apiKey };
     setSettings(newSettings);
     setGeminiApiKey(apiKey);
+  };
+
+  const updateElevenLabsApiKey = (apiKey: string) => {
+    const newSettings = { ...settings, elevenLabsApiKey: apiKey };
+    setSettings(newSettings);
+    setElevenLabsApiKey(apiKey);
   };
 
   // Template functions
@@ -611,6 +623,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     updateTheme,
     updateLanguage,
     updateApiKey,
+    updateElevenLabsApiKey,
     totalExpenses,
     todayExpenses,
     monthExpenses,
