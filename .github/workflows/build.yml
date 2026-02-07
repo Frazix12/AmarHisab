@@ -1,4 +1,4 @@
-name: eas-android-local-build
+name: eas-android-local-build-bun
 
 on:
   push:
@@ -7,49 +7,49 @@ on:
 jobs:
   build-android:
     runs-on: ubuntu-latest
+
     env:
-      # EAS auth (create in Expo account, add to GitHub Secrets as EXPO_TOKEN)
+      # Expo / EAS authentication (robot token)
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      # Your runtime envs (these are fine as-is)
+      # App runtime env vars
       EXPO_PUBLIC_ELEVENLABS_API_KEY: ${{ secrets.EXPO_PUBLIC_ELEVENLABS_API_KEY }}
       EXPO_PUBLIC_GEMINI_API_KEY: ${{ secrets.EXPO_PUBLIC_GEMINI_API_KEY }}
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Node is required for Expo/EAS tooling
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
       # Java is required for Android builds
-      - name: Setup Java
+      - name: Setup Java (Temurin 17)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      # Android SDK (so local build can actually compile)
+      # Android SDK (no Android Studio needed)
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # Install deps (swap to bun if you want; keeping npm here since your workflow uses it)
-      - name: Install dependencies
-        run: npm ci
+      # Install Bun
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
-      # Install EAS CLI
+      # Install JS dependencies via Bun
+      - name: Install dependencies (Bun)
+        run: bun install --frozen-lockfile
+
+      # Install EAS CLI (global)
       - name: Install EAS CLI
-        run: npm i -g eas-cli
+        run: bun add -g eas-cli
 
-      # OPTIONAL but helpful for CI stability
-      - name: Expo doctor (optional)
-        run: npx expo-doctor || true
+      # Optional sanity check (won’t fail the build)
+      - name: Expo doctor
+        run: bunx expo-doctor || true
 
-      # Local EAS build (outputs to a known path)
+      # Local Android build via EAS
       - name: EAS Build (Android, local)
         run: |
           eas build \
@@ -59,6 +59,7 @@ jobs:
             --non-interactive \
             --output ${{ github.workspace }}/app-release.apk
 
+      # Upload the generated APK
       - name: Upload APK artifact
         uses: actions/upload-artifact@v6
         with:
