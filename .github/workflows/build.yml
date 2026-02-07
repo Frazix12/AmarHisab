@@ -1,32 +1,66 @@
-name: react-native-android-build-apk
+name: eas-android-local-build
+
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+
 jobs:
-  install-and-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install npm dependencies
-        run: |
-          npm install
   build-android:
-    needs: install-and-test
     runs-on: ubuntu-latest
     env:
+      # EAS auth (create in Expo account, add to GitHub Secrets as EXPO_TOKEN)
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      # Your runtime envs (these are fine as-is)
       EXPO_PUBLIC_ELEVENLABS_API_KEY: ${{ secrets.EXPO_PUBLIC_ELEVENLABS_API_KEY }}
       EXPO_PUBLIC_GEMINI_API_KEY: ${{ secrets.EXPO_PUBLIC_GEMINI_API_KEY }}
-    steps: 
-      - uses: actions/checkout@v3
-      - name: Install npm dependencies
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Node is required for Expo/EAS tooling
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # Java is required for Android builds
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # Android SDK (so local build can actually compile)
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # Install deps (swap to bun if you want; keeping npm here since your workflow uses it)
+      - name: Install dependencies
+        run: npm ci
+
+      # Install EAS CLI
+      - name: Install EAS CLI
+        run: npm i -g eas-cli
+
+      # OPTIONAL but helpful for CI stability
+      - name: Expo doctor (optional)
+        run: npx expo-doctor || true
+
+      # Local EAS build (outputs to a known path)
+      - name: EAS Build (Android, local)
         run: |
-          npm install
-      - name: Build Android Release
-        run: |
-          cd android && ./gradlew assembleRelease
-      - name: Upload Artifact
+          eas build \
+            --platform android \
+            --profile preview \
+            --local \
+            --non-interactive \
+            --output ${{ github.workspace }}/app-release.apk
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v6
         with:
           name: app-release.apk
-          path: android/app/build/outputs/apk/release/
+          path: app-release.apk
