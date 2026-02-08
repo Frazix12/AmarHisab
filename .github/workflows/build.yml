@@ -4,63 +4,85 @@ on:
   push:
     branches: [main]
 
+# Cancel in-progress runs when a new run is triggered
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-android:
     runs-on: ubuntu-latest
 
     env:
-      # Expo / EAS authentication (robot token)
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
-      # App runtime env vars
       EXPO_PUBLIC_ELEVENLABS_API_KEY: ${{ secrets.EXPO_PUBLIC_ELEVENLABS_API_KEY }}
       EXPO_PUBLIC_GEMINI_API_KEY: ${{ secrets.EXPO_PUBLIC_GEMINI_API_KEY }}
+      # Gradle optimization flags
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true -Dorg.gradle.configureondemand=true"
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Java is required for Android builds
+      # Java with Gradle cache built-in
       - name: Setup Java (Temurin 17)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
+          cache: gradle
 
-      # Android SDK (no Android Studio needed)
+      # Android SDK
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # Accept all Android SDK licenses explicitly
       - name: Accept Android SDK licenses
         run: yes | sdkmanager --licenses || true
 
-      # Install Bun
+      # Bun with built-in caching
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      # Install JS dependencies via Bun
-      - name: Install dependencies (Bun)
+      # Cache node_modules
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      # Cache EAS local build artifacts
+      - name: Cache EAS build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.expo
+            android/.gradle
+            android/build
+            android/app/build
+          key: ${{ runner.os }}-eas-android-${{ hashFiles('app.json', 'package.json', 'android/**/*.gradle*') }}
+          restore-keys: |
+            ${{ runner.os }}-eas-android-
+
+      # Install dependencies (fast with cache)
+      - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      # Install EAS CLI (global)
+      # Install EAS CLI globally
       - name: Install EAS CLI
         run: bun add -g eas-cli
 
-      # Optional sanity check (won’t fail the build)
-      - name: Expo doctor
-        run: bunx expo-doctor || true
-
       # Local Android build via EAS
       - name: EAS Build (Android, local)
-        run: |
-          eas build --platform android --profile preview --local --non-interactive --output ${{ github.workspace }}/app-release.apk
+        run: eas build --platform android --profile preview --local --non-interactive --output ${{ github.workspace }}/app-release.apk
 
-      # Upload the generated APK
+      # Upload APK
       - name: Upload APK artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: app-release.apk
           path: app-release.apk
+          retention-days: 7
