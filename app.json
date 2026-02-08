@@ -70,15 +70,14 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.2.1",
     "updates": {
       "url": "https://u.expo.dev/2ce841f2-fa83-44d0-abf2-e356f89aa8dc"
     },
