@@ -42,9 +42,9 @@ yarn-error.*
 app-example
 
 # generated native folders
-/ios
-/android/build
-/android/app
+# /ios
+# /android/build
+# /android/app
 
 # agent
 .agents/
