@@ -64,7 +64,7 @@ jobs:
       # These will be embedded into the JS bundle (by design for EXPO_PUBLIC_ vars).
       - name: Build APK locally with EAS (preview)
         env:
-          EAS_TOKEN: ${{ secrets.EAS_TOKEN }}
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EXPO_PUBLIC_ELEVENLABS_API_KEY: ${{ secrets.EXPO_PUBLIC_ELEVENLABS_API_KEY }}
           EXPO_PUBLIC_GEMINI_API_KEY: ${{ secrets.EXPO_PUBLIC_GEMINI_API_KEY }}
         run: |
