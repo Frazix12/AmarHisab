@@ -31,6 +31,10 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      # Accept all Android SDK licenses explicitly
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses || true
+
       # Install Bun
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -52,12 +56,7 @@ jobs:
       # Local Android build via EAS
       - name: EAS Build (Android, local)
         run: |
-          eas build \
-            --platform android \
-            --profile preview \
-            --local \
-            --non-interactive \
-            --output ${{ github.workspace }}/app-release.apk
+          eas build --platform android --profile preview --local --non-interactive --output ${{ github.workspace }}/app-release.apk
 
       # Upload the generated APK
       - name: Upload APK artifact
