@@ -1,5 +1,3 @@
-import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { triggerLightHaptic } from "@/utils/haptics";
 import { formatNumber, parseBanglaNumber } from "@/utils/format";
@@ -62,6 +60,12 @@ const sanitizeNumericValue = (value: string) => {
   const normalized = parseBanglaNumber(value);
   let nextValue = "";
   let hasDecimal = false;
+  const hasLeadingMinus =
+    value.trimStart().startsWith("-") || normalized.trimStart().startsWith("-");
+
+  if (hasLeadingMinus) {
+    nextValue = "-";
+  }
 
   for (let i = 0; i < normalized.length; i++) {
     const char = normalized[i];
@@ -91,8 +95,6 @@ export const BanglaNumberInput = forwardRef<TextInput, BanglaNumberInputProps>(
   },
     forwardedRef,
   ) => {
-    const { colorScheme } = useApp();
-    const colors = Colors[colorScheme];
     const [isFocused, setIsFocused] = useState(false);
     const inputRef = useRef<TextInput | null>(null);
 

@@ -29,6 +29,36 @@ interface TemplateSuggestionCardProps {
   visible: boolean;
 }
 
+const withAlpha = (color: string, alpha: number): string => {
+  const normalizedAlpha = Math.max(0, Math.min(1, alpha));
+
+  const hexMatch = color.trim().match(/^#([0-9a-f]{6}|[0-9a-f]{8})$/i);
+  if (hexMatch) {
+    const hex = hexMatch[1];
+    const r = Number.parseInt(hex.slice(0, 2), 16);
+    const g = Number.parseInt(hex.slice(2, 4), 16);
+    const b = Number.parseInt(hex.slice(4, 6), 16);
+
+    if (hex.length === 8) {
+      const existingAlpha = Number.parseInt(hex.slice(6, 8), 16) / 255;
+      return `rgba(${r}, ${g}, ${b}, ${existingAlpha * normalizedAlpha})`;
+    }
+
+    return `rgba(${r}, ${g}, ${b}, ${normalizedAlpha})`;
+  }
+
+  const rgbMatch = color
+    .trim()
+    .match(/^rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\)$/i);
+  if (rgbMatch) {
+    const [, r, g, b, a] = rgbMatch;
+    const existingAlpha = a ? Number.parseFloat(a) : 1;
+    return `rgba(${r}, ${g}, ${b}, ${existingAlpha * normalizedAlpha})`;
+  }
+
+  return color;
+};
+
 export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
   suggestion,
   onSave,
@@ -171,7 +201,7 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
     >
       <View style={styles.header}>
         <View
-          style={[styles.iconBadge, { backgroundColor: colors.primary + "20" }]}
+          style={[styles.iconBadge, { backgroundColor: withAlpha(colors.primary, 0.125) }]}
         >
           <HugeiconsIcon
             icon={ArtificialIntelligence04Icon}

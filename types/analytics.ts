@@ -61,7 +61,8 @@ export interface ExpenseEventProperties extends PostHogProperties {
 
 /**
  * Grocery event properties
- * Note: item_name intentionally omitted to avoid PII in analytics
+ * Note: item_name exists for backward compatibility but is deprecated to
+ * reduce PII collection. Prefer category and other non-PII metadata.
  */
 export interface GroceryEventProperties extends PostHogProperties {
   item_id?: string;

@@ -90,8 +90,9 @@ export async function retryWithBackoff<T>(
     }
     
     try {
+      const result = await fn();
       recordRequest();
-      return await fn();
+      return result;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       

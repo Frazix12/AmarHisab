@@ -69,6 +69,10 @@ const extractLanguage = (data: any): string | undefined => {
 export const transcribeAudioFile = async (
   options: TranscribeAudioOptions,
 ): Promise<ElevenLabsTranscriptionResult> => {
+  if (!options.apiKey || !options.apiKey.trim()) {
+    throw new Error("ElevenLabs API key is required (options.apiKey)");
+  }
+
   const form = new FormData();
   const fileName = getFileName(options.fileUri);
   const mimeType = getMimeType(fileName);
@@ -97,7 +101,12 @@ export const transcribeAudioFile = async (
   let data: any = null;
   try {
     data = rawText ? JSON.parse(rawText) : null;
-  } catch {
+  } catch (error) {
+    console.error("Failed to parse ElevenLabs transcription response JSON", {
+      error,
+      rawText,
+      status: response.status,
+    });
     data = null;
   }
 

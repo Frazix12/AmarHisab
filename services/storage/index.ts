@@ -26,19 +26,6 @@ const validateStorageSize = (data: string): boolean => {
 };
 
 /**
- * Sanitize data before storage to remove potentially dangerous content
- */
-const sanitizeStoredData = <T extends object>(data: T): T => {
-  const jsonString = JSON.stringify(data);
-  // Remove any potential XSS vectors that might have slipped through
-  const sanitized = jsonString
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/javascript:/gi, '')
-    .replace(/on\w+\s*=/gi, '');
-  return JSON.parse(sanitized);
-};
-
-/**
  * Helper to handle SecureStore on web (where it's not supported)
  * With improved security options for native platforms
  */
@@ -107,22 +94,31 @@ const deleteSecureItem = async (key: string) => {
 };
 
 // Expenses
-export const saveExpenses = async (expenses: Expense[]): Promise<void> => {
-  try {
-    // Limit the number of expenses to prevent abuse
-    const limitedExpenses = expenses.slice(-MAX_EXPENSES);
-    const sanitized = sanitizeStoredData(limitedExpenses);
-    const jsonValue = JSON.stringify(sanitized);
-    
-    if (!validateStorageSize(jsonValue)) {
-      console.error("Expenses data too large to save");
-      return;
-    }
-    
-    await AsyncStorage.setItem(EXPENSES_KEY, jsonValue);
-  } catch (e) {
-    console.error("Error saving expenses:", e);
+export interface SaveExpensesResult {
+  savedCount: number;
+  totalCount: number;
+  truncated: boolean;
+}
+
+export const saveExpenses = async (expenses: Expense[]): Promise<SaveExpensesResult> => {
+  if (expenses.length > MAX_EXPENSES) {
+    throw new Error(
+      `Cannot save expenses: received ${expenses.length} items, maximum is ${MAX_EXPENSES}.`,
+    );
   }
+
+  const jsonValue = JSON.stringify(expenses);
+  if (!validateStorageSize(jsonValue)) {
+    throw new Error("Cannot save expenses: payload exceeds storage size limit.");
+  }
+
+  await AsyncStorage.setItem(EXPENSES_KEY, jsonValue);
+
+  return {
+    savedCount: expenses.length,
+    totalCount: expenses.length,
+    truncated: false,
+  };
 };
 
 export const loadExpenses = async (): Promise<Expense[]> => {
@@ -145,8 +141,7 @@ export const saveGroceryItems = async (items: GroceryItem[]): Promise<void> => {
   try {
     // Limit the number of items to prevent abuse
     const limitedItems = items.slice(-MAX_GROCERY_ITEMS);
-    const sanitized = sanitizeStoredData(limitedItems);
-    const jsonValue = JSON.stringify(sanitized);
+    const jsonValue = JSON.stringify(limitedItems);
     
     if (!validateStorageSize(jsonValue)) {
       console.error("Grocery items data too large to save");

@@ -1,3 +1,5 @@
+import WebSocket, { RawData } from "ws";
+
 export interface ElevenLabsRealtimeConfig {
   apiKey: string;
   modelId?: string;
@@ -21,6 +23,13 @@ export interface ElevenLabsRealtimeConnection {
 const DEFAULT_MODEL_ID = "scribe_v2_realtime";
 const DEFAULT_AUDIO_FORMAT = "pcm_16000" as const;
 const BASE_URL = "wss://api.elevenlabs.io/v1/speech-to-text/realtime";
+const KNOWN_ERROR_TYPES = new Set([
+  "error",
+  "transcription_error",
+  "session_error",
+  "audio_error",
+  "internal_error",
+]);
 
 const resolveSampleRate = (audioFormat: string) => {
   const match = audioFormat.match(/pcm_(\d+)/);
@@ -57,17 +66,17 @@ export const createElevenLabsRealtimeConnection = (
   const audioFormat = config.audioFormat ?? DEFAULT_AUDIO_FORMAT;
   const url = buildRealtimeUrl({ ...config, audioFormat });
   const sampleRate = resolveSampleRate(audioFormat);
-  const ws = new (WebSocket as any)(url, undefined, {
+  const ws = new WebSocket(url, {
     headers: {
       "xi-api-key": config.apiKey,
     },
-  }) as WebSocket;
+  });
 
-  ws.onopen = () => {};
+  ws.on("open", () => {});
 
-  ws.onmessage = (event) => {
-    if (typeof event.data !== "string") return;
-    const message = parseRealtimeMessage(event.data);
+  ws.on("message", (data: RawData) => {
+    const raw = typeof data === "string" ? data : data.toString();
+    const message = parseRealtimeMessage(raw);
     if (!message) return;
 
     const type = message.message_type || message.type;
@@ -94,16 +103,18 @@ export const createElevenLabsRealtimeConnection = (
       return;
     }
 
-    if (String(type).toLowerCase().includes("error") || message.error) {
+    const normalizedType = typeof type === "string" ? type.toLowerCase() : "";
+    if (KNOWN_ERROR_TYPES.has(normalizedType) || message.error) {
       const errorMessage =
         message.error?.message || message.message || "Realtime transcription error";
       config.onError?.(errorMessage);
     }
-  };
+  });
 
-  ws.onerror = () => {
-    config.onError?.("Realtime transcription connection error");
-  };
+  ws.on("error", (ev: Error) => {
+    const details = ev instanceof Error ? ev.message : JSON.stringify(ev);
+    config.onError?.(`Realtime transcription connection error: ${details}`);
+  });
 
   const sendAudioChunk = (base64Audio: string) => {
     if (ws.readyState !== WebSocket.OPEN) return;

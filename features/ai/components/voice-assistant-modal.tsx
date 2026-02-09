@@ -1201,7 +1201,7 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
   onClose,
   onSave,
 }) => {
-  const { colorScheme, t, settings, formatNumber } = useApp();
+  const { colorScheme, t, settings } = useApp();
   const colors = Colors[colorScheme];
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -1294,7 +1294,7 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                         color: colors.text,
                       },
                     ]}
-                    value={formatNumber(quantity)}
+                    value={quantity}
                     onChangeText={(text) =>
                       setQuantity(parseBanglaNumber(text))
                     }

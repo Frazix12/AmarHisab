@@ -8,6 +8,26 @@ import {
 } from "react-native";
 import { Colors } from "@/constants/theme";
 
+const getErrorBoundaryTheme = (scheme: "light" | "dark") => {
+  const fallback = Colors.light;
+  const theme = Colors[scheme] ?? fallback;
+
+  const colorOrFallback = (
+    color: string | undefined,
+    fallbackColor: string,
+  ): string => color ?? fallbackColor;
+
+  return {
+    surface: colorOrFallback(theme.surface, fallback.surface),
+    textSecondary: colorOrFallback(theme.textSecondary, fallback.textSecondary),
+    text: colorOrFallback(theme.text, fallback.text),
+    primary: colorOrFallback(theme.primary, fallback.primary),
+    onPrimary: colorOrFallback(theme.onPrimary, fallback.onPrimary),
+    surfaceVariant: colorOrFallback(theme.surfaceVariant, fallback.surfaceVariant),
+    error: colorOrFallback(theme.error, fallback.error),
+  };
+};
+
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
@@ -74,19 +94,19 @@ function ErrorFallback({
   onRetry: () => void;
 }) {
   const colorScheme = useColorScheme() ?? "light";
-  const colors = Colors[colorScheme];
+  const colors = getErrorBoundaryTheme(colorScheme);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
       <View style={styles.content}>
-        <Text style={[styles.title, { color: colors.error || "#DC2626" }]}>
+        <Text style={[styles.title, { color: colors.error }]}> 
           Something went wrong
         </Text>
-        <Text style={[styles.message, { color: colors.textSecondary }]}>
-          We're sorry, but something unexpected happened. Please try again.
+        <Text style={[styles.message, { color: colors.textSecondary }]}> 
+          We are sorry, but something unexpected happened. Please try again.
         </Text>
         {__DEV__ && error && (
-          <View style={[styles.errorBox, { backgroundColor: colors.surfaceVariant }]}>
+          <View style={[styles.errorBox, { backgroundColor: colors.surfaceVariant }]}> 
             <Text
               style={[styles.errorText, { color: colors.text }]}
               selectable
@@ -100,7 +120,7 @@ function ErrorFallback({
           onPress={onRetry}
           style={[styles.button, { backgroundColor: colors.primary }]}
         >
-          <Text style={[styles.buttonText, { color: colors.onPrimary || "#FFFFFF" }]}>
+          <Text style={[styles.buttonText, { color: colors.onPrimary }]}> 
             Try Again
           </Text>
         </Pressable>

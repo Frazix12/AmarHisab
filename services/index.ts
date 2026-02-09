@@ -27,6 +27,8 @@ export {
   containsMaliciousPatterns,
   checkRateLimit,
   clearRateLimit,
+  clearAllRateLimits,
+  stopRateLimitCleanup,
 } from "./validation";
 
 // i18n

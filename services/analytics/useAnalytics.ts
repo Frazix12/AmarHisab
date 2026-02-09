@@ -72,10 +72,7 @@ export const useAnalytics = (): UseAnalyticsReturn => {
       event: AnalyticsEventName | string,
       properties?: PostHogEventProperties
     ) => {
-      posthog.capture(event, {
-        ...properties,
-        timestamp: new Date().toISOString(),
-      });
+      posthog.capture(event, properties);
     },
     [posthog]
   );

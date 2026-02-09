@@ -14,6 +14,7 @@ import { AppProvider, useApp } from "@/contexts/app-context";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
 import {
   ensureTextMetricsPatched,
+  resetTextMetrics,
   setTextMetricsLanguage,
 } from "@/utils/text-metrics";
 import { flushEvents, setPostHogClient } from "@/services/analytics";
@@ -27,7 +28,12 @@ const RootLayoutContent = () => {
   const posthog = usePostHog();
 
   useEffect(() => {
+    resetTextMetrics();
     ensureTextMetricsPatched();
+
+    return () => {
+      resetTextMetrics();
+    };
   }, []);
 
   useEffect(() => {

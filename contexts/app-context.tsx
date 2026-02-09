@@ -176,7 +176,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   // Save expenses whenever they change
   useEffect(() => {
     if (isLoaded) {
-      saveExpenses(expenses);
+      Promise.resolve(saveExpenses(expenses)).catch((error) => {
+        console.error("Failed to save expenses:", error);
+        captureError(error, { context: "save_expenses" });
+      });
     }
   }, [expenses, isLoaded]);
 

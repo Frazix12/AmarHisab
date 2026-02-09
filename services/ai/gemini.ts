@@ -1,4 +1,5 @@
 import {
+  CURRENCIES,
   EXPENSE_CATEGORIES,
   ExpenseCategory,
   GROCERY_CATEGORIES,
@@ -287,6 +288,19 @@ const normalizeGroceryCategory = (
   return match?.value;
 };
 
+const ALLOWED_CURRENCY_CODES = new Set(CURRENCIES.map((currency) => currency.code));
+const ALLOWED_LANGUAGE_CODES = new Set(["en", "bn"]);
+
+const sanitizeCurrencyCode = (currencyCode: string): string => {
+  const normalized = currencyCode.trim().toUpperCase();
+  return ALLOWED_CURRENCY_CODES.has(normalized) ? normalized : "USD";
+};
+
+const sanitizeLanguageCode = (language: string): string => {
+  const normalized = language.trim().toLowerCase();
+  return ALLOWED_LANGUAGE_CODES.has(normalized) ? normalized : "en";
+};
+
 export async function parseVoiceInput(
   transcript: string,
   options: { currencyCode: string; language: string },
@@ -308,6 +322,8 @@ export async function parseVoiceInput(
 
     // Sanitize transcript to prevent prompt injection
     const sanitizedTranscript = sanitizeForAIPrompt(transcript, 1000);
+    const sanitizedCurrencyCode = sanitizeCurrencyCode(options.currencyCode);
+    const sanitizedLanguage = sanitizeLanguageCode(options.language);
 
     const prompt = `You are an assistant that extracts expenses and grocery items from speech transcripts.
 Return ONLY valid JSON with this exact shape:
@@ -337,7 +353,7 @@ Rules:
 - If category is unclear, use "other".
 - If amount or name is missing, omit the item.
 - Keep quantity as a short string (e.g., "10", "2kg", "1 liter").
-- The user's currency is ${options.currencyCode} and language is ${options.language}.
+- The user's currency is ${sanitizedCurrencyCode} and language is ${sanitizedLanguage}.
 
 Transcript:
 """

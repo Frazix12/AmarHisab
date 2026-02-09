@@ -20,7 +20,7 @@ const resolveRecordingOptions = (options?: AudioRecordOptions) => {
   const extensionMatch = options?.wavFile?.match(/\.[^/.]+$/);
   const requestedExtension = extensionMatch?.[0]?.toLowerCase();
   const extension =
-    requestedExtension && [".m4a", ".3gp", ".webm"].includes(requestedExtension)
+    requestedExtension && [".m4a", ".3gp", ".webm", ".wav"].includes(requestedExtension)
       ? requestedExtension
       : base.extension;
   const sampleRate = options?.sampleRate ?? base.sampleRate;

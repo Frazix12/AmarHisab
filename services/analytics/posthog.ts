@@ -34,6 +34,7 @@ type QueuedEvent = {
 type QueuedIdentity = {
   userId: string;
   properties?: PostHogEventProperties;
+  queuedAt: string;
 };
 
 // Queued screen event
@@ -69,11 +70,11 @@ export const setPostHogClient = (client: PostHog | null): void => {
   if (client) {
     // Flush identity queue first (so events are associated with user)
     if (identityQueue.length > 0) {
-      identityQueue.forEach(({ userId, properties }) => {
+      identityQueue.forEach(({ userId, properties, queuedAt }) => {
         client.identify(userId, {
           $set: properties ?? {},
           $set_once: {
-            first_seen_at: new Date().toISOString(),
+            first_seen_at: queuedAt,
           },
         });
       });
@@ -160,7 +161,11 @@ export const identifyUser = (
   if (!posthogClient) {
     // Queue identity operation - it will be sent once client connects
     if (identityQueue.length < MAX_IDENTITY_QUEUE) {
-      identityQueue.push({ userId, properties });
+      identityQueue.push({
+        userId,
+        properties,
+        queuedAt: new Date().toISOString(),
+      });
     }
     return;
   }

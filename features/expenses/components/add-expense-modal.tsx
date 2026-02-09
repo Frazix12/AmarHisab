@@ -192,10 +192,17 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     }
 
     // Validate description (optional but sanitized if provided)
-    const descriptionValidation = validateDescription(description || '', 200);
-    const sanitizedDescription = description.trim() 
-      ? (descriptionValidation.isValid ? descriptionValidation.sanitized : description.trim().slice(0, 200))
-      : '';
+    const descriptionValidation = validateDescription(description || "", 200);
+    if (!descriptionValidation.isValid) {
+      Alert.alert(
+        t.alerts.errorTitle,
+        descriptionValidation.error || "Invalid description",
+      );
+      return;
+    }
+    const sanitizedDescription = description.trim()
+      ? descriptionValidation.sanitized || ""
+      : "";
 
     const numAmount = parseFloat(amountValidation.sanitized || amount);
 

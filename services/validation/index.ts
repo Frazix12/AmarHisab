@@ -328,6 +328,38 @@ const submissionTimestamps = new Map<string, number[]>();
 const MAX_SUBMISSIONS_PER_MINUTE = 10;
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 
+// NOTE: This limiter is process-local. It does not work across multiple
+// instances/serverless invocations. Use Redis or another shared store for
+// distributed deployments.
+const RATE_LIMIT_CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+
+const cleanupRateLimitMap = () => {
+  const now = Date.now();
+  for (const [formId, timestamps] of submissionTimestamps.entries()) {
+    const recentTimestamps = timestamps.filter((timestamp) => now - timestamp < RATE_LIMIT_WINDOW);
+    if (recentTimestamps.length === 0) {
+      submissionTimestamps.delete(formId);
+      continue;
+    }
+    submissionTimestamps.set(formId, recentTimestamps);
+  }
+};
+
+const rateLimitCleanupInterval = setInterval(
+  cleanupRateLimitMap,
+  RATE_LIMIT_CLEANUP_INTERVAL_MS,
+);
+
+const maybeTimerWithUnref = rateLimitCleanupInterval as unknown;
+if (
+  typeof maybeTimerWithUnref === "object" &&
+  maybeTimerWithUnref !== null &&
+  "unref" in maybeTimerWithUnref &&
+  typeof maybeTimerWithUnref.unref === "function"
+) {
+  maybeTimerWithUnref.unref();
+}
+
 export function checkRateLimit(formId: string): boolean {
   const now = Date.now();
   const timestamps = submissionTimestamps.get(formId) || [];
@@ -351,4 +383,12 @@ export function checkRateLimit(formId: string): boolean {
  */
 export function clearRateLimit(formId: string): void {
   submissionTimestamps.delete(formId);
+}
+
+export function clearAllRateLimits(): void {
+  submissionTimestamps.clear();
+}
+
+export function stopRateLimitCleanup(): void {
+  clearInterval(rateLimitCleanupInterval);
 }
