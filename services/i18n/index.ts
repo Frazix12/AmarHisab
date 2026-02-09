@@ -248,7 +248,7 @@ export const translations = {
         "Are you sure you want to delete all expenses, grocery items, and templates? This action cannot be undone!",
       deleteAll: "Delete All",
       dataCleared: "All data has been cleared",
-      madeWith: "Made with ❤️ using Material Design 3 by",
+      madeWith: "Made with ❤️ by",
     },
 
     // Alerts
@@ -822,7 +822,7 @@ export const translations = {
         "সব খরচ, বাজার আইটেম ও টেমপ্লেট মুছে ফেলবেন? এটি ফেরানো যাবে না!",
       deleteAll: "সব মুছুন",
       dataCleared: "সব ডেটা মুছে গেছে",
-      madeWith: "ভালোবাসায় তৈরি • Material Design 3 •",
+      madeWith: "ভালোবাসায় তৈরি •",
     },
 
     // Alerts
