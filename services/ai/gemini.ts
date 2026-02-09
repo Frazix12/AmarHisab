@@ -5,6 +5,7 @@ import {
   GroceryCategory,
 } from "@/types";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { retryWithBackoff } from "./rate-limiter";
 
 // Initialize the Gemini API client
 let genAI: GoogleGenerativeAI | null = null;
@@ -85,13 +86,15 @@ Rules:
 
 Category:`;
 
-    // Generate content with timeout
-    const result = await Promise.race([
-      model.generateContent(prompt),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout")), 5000),
-      ),
-    ]);
+    // Generate content with timeout and retry
+    const result = await retryWithBackoff(async () => {
+      return await Promise.race([
+        model.generateContent(prompt),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout")), 5000),
+        ),
+      ]);
+    }, "detectItemCategory");
 
     // Extract the response
     const response = await result.response;
@@ -181,13 +184,15 @@ Examples:
 
 Category:`;
 
-    // Generate content with timeout
-    const result = await Promise.race([
-      model.generateContent(prompt),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout")), 5000),
-      ),
-    ]);
+    // Generate content with timeout and retry
+    const result = await retryWithBackoff(async () => {
+      return await Promise.race([
+        model.generateContent(prompt),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout")), 5000),
+        ),
+      ]);
+    }, "detectExpenseCategory");
 
     // Extract the response
     const response = await result.response;
@@ -330,12 +335,14 @@ Transcript:
 ${transcript}
 """`;
 
-    const result = await Promise.race([
-      model.generateContent(prompt),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout")), 12000),
-      ),
-    ]);
+    const result = await retryWithBackoff(async () => {
+      return await Promise.race([
+        model.generateContent(prompt),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout")), 12000),
+        ),
+      ]);
+    }, "parseVoiceInput");
 
     const response = await result.response;
     const rawText = response.text().trim();

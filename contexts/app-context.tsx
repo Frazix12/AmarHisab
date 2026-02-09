@@ -3,6 +3,7 @@ import { TemplateStorage } from "@/features/templates/services/template-storage"
 import { normalizeProductName } from "@/features/templates/services/template-utils";
 import { setElevenLabsApiKey } from "@/services/ai/elevenlabs";
 import { setGeminiApiKey } from "@/services/ai/gemini";
+import { trackEvent, captureError, AnalyticsEvents } from "@/services/analytics";
 import { getTranslation, TranslationKey } from "@/services/i18n";
 import {
   loadExpenses,
@@ -159,6 +160,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         }
       } catch (error) {
         console.error("Failed to load app data:", error);
+        captureError(error, { context: "load_app_data" });
         setExpenses([]);
         setGroceryItems([]);
         setSettings(DEFAULT_SETTINGS);
@@ -199,6 +201,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
     };
     setExpenses((prev) => [newExpense, ...prev]);
+
+    // Track expense added
+    trackEvent(AnalyticsEvents.EXPENSE_ADDED, {
+      expense_id: newExpense.id,
+      amount: newExpense.amount,
+      category: newExpense.category,
+      currency: newExpense.currency,
+      has_image: !!newExpense.imageUri,
+      ai_detected: !!newExpense.aiDetected,
+    });
+
     return newExpense.id;
   };
 
@@ -212,6 +225,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
 
   const deleteExpense = (id: string) => {
     setExpenses((prev) => prev.filter((expense) => expense.id !== id));
+
+    // Track expense deleted
+    trackEvent(AnalyticsEvents.EXPENSE_DELETED, { expense_id: id });
   };
 
   // Grocery functions
@@ -229,6 +245,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
 
     // Track for learning (async, don't await)
     TemplateLearner.trackGroceryItem(newItem);
+
+    // Track grocery item added
+    trackEvent(AnalyticsEvents.GROCERY_ITEM_ADDED, {
+      item_id: newItem.id,
+      item_name: newItem.name,
+      category: newItem.category,
+      price: newItem.price ?? 0,
+      has_template: !!newItem.templateId,
+      ai_detected: !!newItem.aiDetected,
+    });
   };
 
   const updateGroceryItem = (id: string, updates: Partial<GroceryItem>) => {
@@ -272,6 +298,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
 
   const deleteGroceryItem = (id: string) => {
     setGroceryItems((prev) => prev.filter((item) => item.id !== id));
+
+    // Track grocery item deleted
+    trackEvent(AnalyticsEvents.GROCERY_ITEM_DELETED, { item_id: id });
   };
 
   const toggleGroceryItem = (id: string) => {
@@ -358,21 +387,52 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       }),
     );
 
+    // Track grocery item completed
+    trackEvent(AnalyticsEvents.GROCERY_ITEM_COMPLETED, {
+      item_id: id,
+      price: price,
+      has_image: !!imageUri,
+    });
+
     setItemPendingCompletion(null);
   };
 
   // Settings functions
   const updateCurrency = (currency: Currency) => {
+    const oldCurrency = settings.currency.code;
     setSettings((prev) => ({ ...prev, currency }));
+
+    // Track currency change
+    trackEvent(AnalyticsEvents.CURRENCY_CHANGED, {
+      setting_name: "currency",
+      old_value: oldCurrency,
+      new_value: currency.code,
+    });
   };
 
   const updateTheme = (theme: "light" | "dark" | "system") => {
+    const oldTheme = settings.theme;
     setSettings((prev) => ({ ...prev, theme }));
+
+    // Track theme change
+    trackEvent(AnalyticsEvents.THEME_CHANGED, {
+      setting_name: "theme",
+      old_value: oldTheme,
+      new_value: theme,
+    });
   };
 
   const updateLanguage = (language: string) => {
+    const oldLanguage = settings.language;
     const newSettings = { ...settings, language };
     setSettings(newSettings);
+
+    // Track language change
+    trackEvent(AnalyticsEvents.LANGUAGE_CHANGED, {
+      setting_name: "language",
+      old_value: oldLanguage,
+      new_value: language,
+    });
   };
 
   const updateApiKey = (apiKey: string) => {
@@ -503,9 +563,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         }
       } catch (error) {
         console.error("Failed to clear templates:", error);
+        captureError(error, { context: "clear_templates" });
       }
     })();
     setTemplates([]);
+
+    // Track data cleared
+    trackEvent(AnalyticsEvents.DATA_CLEARED, {
+      action: "clear_all_data",
+    });
   };
 
   // Computed values
