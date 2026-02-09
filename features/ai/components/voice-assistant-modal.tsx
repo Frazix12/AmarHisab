@@ -324,12 +324,6 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
       return;
     }
 
-    const apiKey = getElevenLabsApiKey();
-    if (!apiKey) {
-      setErrorMessage(t.voice.missingApiKey);
-      return;
-    }
-
     if (!isAudioRecordAvailable()) {
       setErrorMessage(t.voice.missingRecorder);
       return;
@@ -411,12 +405,6 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
       }
 
       const apiKey = getElevenLabsApiKey();
-      if (!apiKey || !apiKey.trim()) {
-        setErrorMessage(t.voice.missingApiKey);
-        setStatus("idle");
-        return;
-      }
-
       const result = await transcribeAudioFile({
         fileUri: audioFileUri,
         apiKey,

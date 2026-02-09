@@ -6,7 +6,7 @@ export interface ElevenLabsTranscriptionResult {
 
 interface TranscribeAudioOptions {
   fileUri: string;
-  apiKey: string;
+  apiKey?: string;
   languageCode?: string;
   modelId?: string;
 }
@@ -69,8 +69,10 @@ const extractLanguage = (data: any): string | undefined => {
 export const transcribeAudioFile = async (
   options: TranscribeAudioOptions,
 ): Promise<ElevenLabsTranscriptionResult> => {
-  if (!options.apiKey || !options.apiKey.trim()) {
-    throw new Error("ElevenLabs API key is required (options.apiKey)");
+  const apiKey = options.apiKey?.trim() || elevenLabsApiKey.trim();
+
+  if (!apiKey) {
+    throw new Error("Voice transcription is unavailable right now.");
   }
 
   const form = new FormData();
@@ -92,7 +94,7 @@ export const transcribeAudioFile = async (
   const response = await fetch(API_URL, {
     method: "POST",
     headers: {
-      "xi-api-key": options.apiKey,
+      "xi-api-key": apiKey,
     },
     body: form,
   });

@@ -64,11 +64,6 @@ export default function AiSettings() {
 
   const handleApiKeySave = () => {
     const trimmedApiKey = apiKeyInput.trim();
-    if (!trimmedApiKey) {
-      Alert.alert(t.alerts.errorTitle, t.settings.invalidApiKey);
-      return;
-    }
-
     if (activeApiKeyType === "gemini") {
       updateApiKey(trimmedApiKey);
     } else {
@@ -76,7 +71,10 @@ export default function AiSettings() {
     }
 
     setIsApiKeyModalVisible(false);
-    Alert.alert(t.alerts.successTitle, t.settings.apiKeySaved);
+    Alert.alert(
+      t.alerts.successTitle,
+      trimmedApiKey ? t.settings.apiKeySaved : t.settings.usingBuiltInApi,
+    );
   };
 
   const handleApiKeyRemove = () => {
