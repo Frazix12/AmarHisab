@@ -3,6 +3,7 @@ import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
 import { detectExpenseCategory } from "@/services/ai/gemini";
+import { validateAmount, validateDescription, checkRateLimit } from "@/services/validation";
 import { EXPENSE_CATEGORIES, ExpenseCategory } from "@/types";
 import {
   MorphingModalOptions,
@@ -17,7 +18,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import * as ImagePicker from "expo-image-picker";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
     Alert,
     BackHandler,
@@ -176,18 +177,33 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     setImageUri(undefined);
   };
 
-  const handleSave = () => {
-    const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount <= 0) {
-      Alert.alert(t.alerts.errorTitle, t.alerts.invalidAmount);
+  const handleSave = useCallback(() => {
+    // Rate limiting check
+    if (!checkRateLimit('add-expense')) {
+      Alert.alert(t.alerts.errorTitle, t.alerts.tooManyRequests || 'Too many requests. Please wait a moment.');
       return;
     }
+
+    // Validate amount
+    const amountValidation = validateAmount(amount);
+    if (!amountValidation.isValid) {
+      Alert.alert(t.alerts.errorTitle, amountValidation.error || t.alerts.invalidAmount);
+      return;
+    }
+
+    // Validate description (optional but sanitized if provided)
+    const descriptionValidation = validateDescription(description || '', 200);
+    const sanitizedDescription = description.trim() 
+      ? (descriptionValidation.isValid ? descriptionValidation.sanitized : description.trim().slice(0, 200))
+      : '';
+
+    const numAmount = parseFloat(amountValidation.sanitized || amount);
 
     addExpense({
       amount: numAmount,
       category,
       date: new Date(),
-      description: description.trim(),
+      description: sanitizedDescription || '',
       currency: settings.currency.code,
       imageUri,
       aiDetected: aiDetectedCategory,
@@ -201,7 +217,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     setAiDetecting(false);
     setAiDetectedCategory(false);
     onClose();
-  };
+  }, [amount, description, category, settings.currency.code, imageUri, aiDetectedCategory, addExpense, onClose, t]);
 
   if (!shouldRender) return null;
 

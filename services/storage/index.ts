@@ -8,24 +8,60 @@ const GROCERY_KEY = "@amar_hisab_grocery";
 const SETTINGS_KEY = "@amar_hisab_settings";
 const GEMINI_API_KEY_STORAGE_KEY = "amar_hisab_gemini_api_key";
 const ELEVENLABS_API_KEY_STORAGE_KEY = "amar_hisab_elevenlabs_api_key";
+const DATA_VERSION_KEY = "@amar_hisab_data_version";
+
+// Current data format version for migration support
+const CURRENT_DATA_VERSION = 1;
+
+// Maximum storage sizes to prevent abuse
+const MAX_EXPENSES = 10000;
+const MAX_GROCERY_ITEMS = 1000;
+const MAX_STORAGE_SIZE = 5 * 1024 * 1024; // 5MB
+
+/**
+ * Validate JSON data size before saving
+ */
+const validateStorageSize = (data: string): boolean => {
+  return data.length <= MAX_STORAGE_SIZE;
+};
+
+/**
+ * Sanitize data before storage to remove potentially dangerous content
+ */
+const sanitizeStoredData = <T extends object>(data: T): T => {
+  const jsonString = JSON.stringify(data);
+  // Remove any potential XSS vectors that might have slipped through
+  const sanitized = jsonString
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+\s*=/gi, '');
+  return JSON.parse(sanitized);
+};
 
 /**
  * Helper to handle SecureStore on web (where it's not supported)
+ * With improved security options for native platforms
  */
 const setSecureItem = async (key: string, value: string) => {
   if (Platform.OS === "web") {
     console.warn(
-      "SecureStore is unavailable on web; falling back to AsyncStorage for sensitive data.",
+      "SecureStore is unavailable on web; API keys should not be stored in production web apps.",
     );
     try {
-      await AsyncStorage.setItem(key, value);
+      // On web, we add a simple obfuscation (not true encryption)
+      // This is intentionally weak - web apps should use server-side key management
+      const obfuscated = btoa(value);
+      await AsyncStorage.setItem(`__secure_${key}`, obfuscated);
     } catch (e) {
       console.error("Error saving web fallback secure item:", e);
     }
     return;
   }
   try {
-    await SecureStore.setItemAsync(key, value);
+    await SecureStore.setItemAsync(key, value, {
+      // Use the most secure available protection
+      keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+    });
   } catch (e) {
     console.error("Error saving to SecureStore:", e);
   }
@@ -33,10 +69,12 @@ const setSecureItem = async (key: string, value: string) => {
 
 const getSecureItem = async (key: string) => {
   if (Platform.OS === "web") {
-    console.warn(
-      "SecureStore is unavailable on web; reading sensitive data from AsyncStorage fallback.",
-    );
     try {
+      const obfuscated = await AsyncStorage.getItem(`__secure_${key}`);
+      if (obfuscated) {
+        return atob(obfuscated);
+      }
+      // Fallback for older storage format
       return await AsyncStorage.getItem(key);
     } catch (e) {
       console.error("Error reading web fallback secure item:", e);
@@ -54,7 +92,8 @@ const getSecureItem = async (key: string) => {
 const deleteSecureItem = async (key: string) => {
   if (Platform.OS === "web") {
     try {
-      await AsyncStorage.removeItem(key);
+      await AsyncStorage.removeItem(`__secure_${key}`);
+      await AsyncStorage.removeItem(key); // Clean up old format
     } catch (e) {
       console.error("Error deleting web fallback secure item:", e);
     }
@@ -70,7 +109,16 @@ const deleteSecureItem = async (key: string) => {
 // Expenses
 export const saveExpenses = async (expenses: Expense[]): Promise<void> => {
   try {
-    const jsonValue = JSON.stringify(expenses);
+    // Limit the number of expenses to prevent abuse
+    const limitedExpenses = expenses.slice(-MAX_EXPENSES);
+    const sanitized = sanitizeStoredData(limitedExpenses);
+    const jsonValue = JSON.stringify(sanitized);
+    
+    if (!validateStorageSize(jsonValue)) {
+      console.error("Expenses data too large to save");
+      return;
+    }
+    
     await AsyncStorage.setItem(EXPENSES_KEY, jsonValue);
   } catch (e) {
     console.error("Error saving expenses:", e);
@@ -95,7 +143,16 @@ export const loadExpenses = async (): Promise<Expense[]> => {
 // Grocery Items
 export const saveGroceryItems = async (items: GroceryItem[]): Promise<void> => {
   try {
-    const jsonValue = JSON.stringify(items);
+    // Limit the number of items to prevent abuse
+    const limitedItems = items.slice(-MAX_GROCERY_ITEMS);
+    const sanitized = sanitizeStoredData(limitedItems);
+    const jsonValue = JSON.stringify(sanitized);
+    
+    if (!validateStorageSize(jsonValue)) {
+      console.error("Grocery items data too large to save");
+      return;
+    }
+    
     await AsyncStorage.setItem(GROCERY_KEY, jsonValue);
   } catch (e) {
     console.error("Error saving grocery items:", e);

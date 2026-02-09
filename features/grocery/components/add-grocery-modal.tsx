@@ -3,6 +3,7 @@ import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
 import { detectItemCategory } from "@/services/ai/gemini";
+import { validateName, validateQuantity, validateAmount, checkRateLimit } from "@/services/validation";
 import { GROCERY_CATEGORIES, GroceryCategory } from "@/types";
 import { TemplateMatch } from "@/types/template";
 import {
@@ -15,7 +16,7 @@ import {
     Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
     Alert,
     BackHandler,
@@ -167,14 +168,39 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
     setShowTemplatePicker(false);
   };
 
-  const handleSave = () => {
-    if (!name.trim()) {
-      Alert.alert(t.alerts.errorTitle, t.alerts.requiredName);
+  const handleSave = useCallback(() => {
+    // Rate limiting check
+    if (!checkRateLimit('add-grocery')) {
+      Alert.alert(t.alerts.errorTitle, t.alerts.tooManyRequests || 'Too many requests. Please wait a moment.');
+      return;
+    }
+
+    // Validate name
+    const nameValidation = validateName(name, 100);
+    if (!nameValidation.isValid) {
+      Alert.alert(t.alerts.errorTitle, nameValidation.error || t.alerts.requiredName);
+      return;
+    }
+
+    // Validate quantity (optional)
+    const quantityValidation = validateQuantity(quantity);
+    if (!quantityValidation.isValid) {
+      Alert.alert(t.alerts.errorTitle, quantityValidation.error || t.alerts.invalidInput);
       return;
     }
 
     const normalizedPrice = parseBanglaNumber(price).trim();
     const hasPrice = normalizedPrice.length > 0;
+    
+    // Validate price if provided
+    if (hasPrice) {
+      const priceValidation = validateAmount(normalizedPrice);
+      if (!priceValidation.isValid) {
+        Alert.alert(t.alerts.errorTitle, priceValidation.error || t.alerts.invalidPrice);
+        return;
+      }
+    }
+    
     const parsedPrice = hasPrice ? Number.parseFloat(normalizedPrice) : null;
     if (hasPrice && (parsedPrice === null || isNaN(parsedPrice) || parsedPrice < 0)) {
       Alert.alert(t.alerts.errorTitle, t.alerts.invalidPrice);
@@ -182,8 +208,8 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
     }
 
     addGroceryItem({
-      name: name.trim(),
-      quantity: quantity.trim(),
+      name: nameValidation.sanitized || name.trim(),
+      quantity: quantityValidation.sanitized || quantity.trim(),
       price: parsedPrice,
       category,
       checked: false,
@@ -201,7 +227,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
     setAiDetecting(false);
     setAiDetectedCategory(false);
     onClose();
-  };
+  }, [name, quantity, price, category, appliedTemplateId, aiDetectedCategory, addGroceryItem, onClose, t]);
 
   if (!shouldRender) return null;
 

@@ -275,6 +275,8 @@ export const translations = {
       cameraPermission: "Please grant camera access to capture photos.",
       pickImageFailed: "Failed to pick image. Please try again.",
       captureImageFailed: "Failed to capture image. Please try again.",
+      tooManyRequests: "Too many requests. Please wait a moment.",
+      invalidInput: "Invalid input. Please check your entries.",
     },
 
     // Templates
@@ -846,6 +848,8 @@ export const translations = {
       cameraPermission: "ছবি তুলতে ক্যামেরা অনুমতি দিন।",
       pickImageFailed: "ছবি নেওয়া যায়নি, আবার চেষ্টা করুন।",
       captureImageFailed: "ছবি তোলা যায়নি, আবার চেষ্টা করুন।",
+      tooManyRequests: "অনেক বেশি রিকোয়েস্ট, একটু অপেক্ষা করুন।",
+      invalidInput: "ভুল ইনপুট, আবার চেষ্টা করুন।",
     },
 
     // Templates

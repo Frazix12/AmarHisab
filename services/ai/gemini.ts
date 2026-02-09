@@ -4,6 +4,7 @@ import {
   GROCERY_CATEGORIES,
   GroceryCategory,
 } from "@/types";
+import { sanitizeForAIPrompt } from "@/services/validation";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { retryWithBackoff } from "./rate-limiter";
 
@@ -73,10 +74,12 @@ export async function detectItemCategory(
     });
 
     // Create the prompt with available categories
+    // Sanitize user input to prevent prompt injection
+    const sanitizedItemName = sanitizeForAIPrompt(itemName, 100);
     const categoryList = GROCERY_CATEGORIES.map((cat) => cat.value).join(", ");
     const prompt = `You are a grocery categorization assistant. Given a grocery item name, classify it into ONE of these categories: ${categoryList}.
 
-Item name: "${itemName}"
+Item name: "${sanitizedItemName}"
 
 Rules:
 - Return ONLY the category name, nothing else
@@ -163,9 +166,12 @@ export async function detectExpenseCategory(
 
     const categoryList = EXPENSE_CATEGORIES.map((cat) => cat.value).join(", ");
 
+    // Sanitize user input to prevent prompt injection
+    const sanitizedDescription = sanitizeForAIPrompt(description, 200);
+
     const prompt = `You are an expense categorization assistant. Given an expense description, classify it into ONE of these categories: ${categoryList}.
 
-Description: "${description}"
+Description: "${sanitizedDescription}"
 
 Rules:
 - Return ONLY the category name, nothing else
@@ -300,6 +306,9 @@ export async function parseVoiceInput(
       ", ",
     );
 
+    // Sanitize transcript to prevent prompt injection
+    const sanitizedTranscript = sanitizeForAIPrompt(transcript, 1000);
+
     const prompt = `You are an assistant that extracts expenses and grocery items from speech transcripts.
 Return ONLY valid JSON with this exact shape:
 {
@@ -332,7 +341,7 @@ Rules:
 
 Transcript:
 """
-${transcript}
+${sanitizedTranscript}
 """`;
 
     const result = await retryWithBackoff(async () => {

@@ -3,7 +3,9 @@ import { useApp } from "@/contexts/app-context";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { triggerLightHaptic } from "@/utils/haptics";
 import { formatNumber, parseBanglaNumber } from "@/utils/format";
-import React, { forwardRef, useMemo, useRef, useState } from "react";
+import { Delete01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react-native";
+import React, { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Modal,
   StyleSheet,
@@ -20,28 +22,41 @@ interface BanglaNumberInputProps
   isBanglaMode: boolean;
 }
 
-const DIGIT_ROWS = [
+// Key types for styling different button variants
+type KeyType = "number" | "operator" | "action" | "done";
+
+interface KeyConfig {
+  label: string;
+  value: string;
+  type: KeyType;
+}
+
+const DIGIT_ROWS: KeyConfig[][] = [
   [
-    { label: "১", value: "1" },
-    { label: "২", value: "2" },
-    { label: "৩", value: "3" },
+    { label: "১", value: "1", type: "number" },
+    { label: "২", value: "2", type: "number" },
+    { label: "৩", value: "3", type: "number" },
+    { label: "−", value: "minus", type: "operator" },
   ],
   [
-    { label: "৪", value: "4" },
-    { label: "৫", value: "5" },
-    { label: "৬", value: "6" },
+    { label: "৪", value: "4", type: "number" },
+    { label: "৫", value: "5", type: "number" },
+    { label: "৬", value: "6", type: "number" },
+    { label: "␣", value: "space", type: "operator" },
   ],
   [
-    { label: "৭", value: "7" },
-    { label: "৮", value: "8" },
-    { label: "৯", value: "9" },
+    { label: "৭", value: "7", type: "number" },
+    { label: "৮", value: "8", type: "number" },
+    { label: "৯", value: "9", type: "number" },
+    { label: "", value: "backspace", type: "action" },
   ],
   [
-    { label: ".", value: "." },
-    { label: "০", value: "0" },
-    { label: "⌫", value: "backspace" },
+    { label: ",", value: ",", type: "operator" },
+    { label: "০", value: "0", type: "number" },
+    { label: ".", value: ".", type: "operator" },
+    { label: "", value: "done", type: "done" },
   ],
-] as const;
+];
 
 const sanitizeNumericValue = (value: string) => {
   const normalized = parseBanglaNumber(value);
@@ -74,7 +89,7 @@ export const BanglaNumberInput = forwardRef<TextInput, BanglaNumberInputProps>(
     keyboardType,
     ...textInputProps
   },
-  forwardedRef,
+    forwardedRef,
   ) => {
     const { colorScheme } = useApp();
     const colors = Colors[colorScheme];
@@ -95,6 +110,60 @@ export const BanglaNumberInput = forwardRef<TextInput, BanglaNumberInputProps>(
       }
     };
 
+    // Long-press backspace functionality
+    const backspaceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const valueRef = useRef(value);
+
+    // Keep valueRef in sync with value
+    useEffect(() => {
+      valueRef.current = value;
+    }, [value]);
+
+    const deleteOneChar = useCallback(() => {
+      onChangeText(valueRef.current.slice(0, -1));
+      triggerLightHaptic();
+    }, [onChangeText]);
+
+    const startBackspaceRepeat = useCallback(() => {
+      // Delete immediately on press
+      deleteOneChar();
+
+      // Start repeating after a short delay
+      const initialDelay = setTimeout(() => {
+        backspaceIntervalRef.current = setInterval(() => {
+          if (valueRef.current.length > 0) {
+            deleteOneChar();
+          } else {
+            // Stop when empty
+            if (backspaceIntervalRef.current) {
+              clearInterval(backspaceIntervalRef.current);
+              backspaceIntervalRef.current = null;
+            }
+          }
+        }, 75); // Repeat every 75ms for fast deletion
+      }, 400); // Wait 400ms before starting to repeat
+
+      // Store timeout ref to clear it if released early
+      backspaceIntervalRef.current = initialDelay as unknown as ReturnType<typeof setInterval>;
+    }, [deleteOneChar]);
+
+    const stopBackspaceRepeat = useCallback(() => {
+      if (backspaceIntervalRef.current) {
+        clearInterval(backspaceIntervalRef.current);
+        clearTimeout(backspaceIntervalRef.current as unknown as ReturnType<typeof setTimeout>);
+        backspaceIntervalRef.current = null;
+      }
+    }, []);
+
+    // Cleanup on unmount
+    useEffect(() => {
+      return () => {
+        if (backspaceIntervalRef.current) {
+          clearInterval(backspaceIntervalRef.current);
+        }
+      };
+    }, []);
+
     const appendValue = (nextChar: string) => {
       if (nextChar === ".") {
         if (value.includes(".")) return;
@@ -108,12 +177,25 @@ export const BanglaNumberInput = forwardRef<TextInput, BanglaNumberInputProps>(
     };
 
     const handleKeyPress = (keyValue: string) => {
-      if (keyValue === "backspace") {
-        onChangeText(value.slice(0, -1));
-        return;
+      switch (keyValue) {
+        case "done":
+          inputRef.current?.blur();
+          return;
+        case "backspace":
+          onChangeText(value.slice(0, -1));
+          return;
+        case "minus":
+          // Only allow minus at the start
+          if (value === "") {
+            onChangeText("-");
+          }
+          return;
+        case "space":
+          // Space typically ignored in number input
+          return;
+        default:
+          appendValue(keyValue);
       }
-
-      appendValue(keyValue);
     };
 
     return (
@@ -151,73 +233,58 @@ export const BanglaNumberInput = forwardRef<TextInput, BanglaNumberInputProps>(
               style={styles.keyboardDismissArea}
               onPress={() => inputRef.current?.blur()}
             />
-            <View
-              style={[
-                styles.keypad,
-                {
-                  borderTopColor: colors.outline,
-                  backgroundColor: colors.surfaceVariant,
-                },
-              ]}
-            >
+            <View style={styles.keypad}>
               {DIGIT_ROWS.map((row, rowIndex) => (
                 <View key={`row-${rowIndex}`} style={styles.keypadRow}>
-                  {row.map((key) => (
-                    <Pressable
-                      haptic="light"
-                      key={key.label}
-                      onPress={() => handleKeyPress(key.value)}
-                      style={({ pressed }) => [
-                        styles.key,
-                        {
-                          backgroundColor: colors.surface,
-                          borderColor: colors.outline,
-                          opacity: pressed ? 0.75 : 1,
-                        },
-                      ]}
-                    >
-                      <Text style={[styles.keyText, { color: colors.text }]}>
-                        {key.label}
-                      </Text>
-                    </Pressable>
-                  ))}
+                  {row.map((key) => {
+                    const isDone = key.type === "done";
+                    const isBackspace = key.value === "backspace";
+
+                    return (
+                      <Pressable
+                        haptic={isBackspace ? "none" : "light"}
+                        key={key.value}
+                        onPress={isBackspace ? undefined : () => handleKeyPress(key.value)}
+                        onPressIn={isBackspace ? startBackspaceRepeat : undefined}
+                        onPressOut={isBackspace ? stopBackspaceRepeat : undefined}
+                        style={({ pressed }) => [
+                          styles.key,
+                          isDone && styles.keyDone,
+                          {
+                            opacity: pressed ? 0.7 : 1,
+                            transform: [{ scale: pressed ? 0.96 : 1 }],
+                          },
+                        ]}
+                      >
+                        {isBackspace ? (
+                          <HugeiconsIcon
+                            icon={Delete01Icon}
+                            size={24}
+                            color="#FFFFFF"
+                            strokeWidth={2}
+                          />
+                        ) : isDone ? (
+                          <HugeiconsIcon
+                            icon={Tick02Icon}
+                            size={26}
+                            color="#FFFFFF"
+                            strokeWidth={2.5}
+                          />
+                        ) : (
+                          <Text
+                            style={[
+                              styles.keyText,
+                              isDone && styles.keyTextDone,
+                            ]}
+                          >
+                            {key.label}
+                          </Text>
+                        )}
+                      </Pressable>
+                    );
+                  })}
                 </View>
               ))}
-
-              <View style={styles.actionsRow}>
-                <Pressable
-                  haptic="light"
-                  onPress={() => onChangeText("")}
-                  style={({ pressed }) => [
-                    styles.actionButton,
-                    {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.outline,
-                      opacity: pressed ? 0.75 : 1,
-                    },
-                  ]}
-                >
-                  <Text style={[styles.actionButtonText, { color: colors.text }]}>মুছুন</Text>
-                </Pressable>
-                <Pressable
-                  haptic="light"
-                  onPress={() => inputRef.current?.blur()}
-                  style={({ pressed }) => [
-                    styles.actionButton,
-                    {
-                      backgroundColor: colors.primary,
-                      borderColor: colors.primary,
-                      opacity: pressed ? 0.8 : 1,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[styles.actionButtonText, { color: colors.onPrimary }]}
-                  >
-                    সম্পন্ন
-                  </Text>
-                </Pressable>
-              </View>
             </View>
           </View>
         </Modal>
@@ -235,50 +302,40 @@ const styles = StyleSheet.create({
   },
   keyboardDismissArea: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.08)",
+    backgroundColor: "transparent",
   },
   keypad: {
-    borderTopWidth: 1,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingHorizontal: 12,
+    backgroundColor: "#1C1C1C",
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    paddingHorizontal: 8,
     paddingTop: 12,
-    paddingBottom: 16,
+    paddingBottom: 24,
     gap: 8,
   },
   keypadRow: {
     flexDirection: "row",
-    gap: 8,
+    gap: 6,
   },
   key: {
     flex: 1,
-    minHeight: 44,
-    borderRadius: 10,
-    borderWidth: 1,
+    height: 56,
+    backgroundColor: "#3D3D3D",
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
+  },
+  keyDone: {
+    backgroundColor: "#5DADE2",
   },
   keyText: {
-    fontSize: 20,
-    fontWeight: "700",
-    lineHeight: 24,
+    fontSize: 26,
+    fontWeight: "400",
+    lineHeight: 32,
+    color: "#FFFFFF",
   },
-  actionsRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 2,
-  },
-  actionButton: {
-    flex: 1,
-    minHeight: 42,
-    borderRadius: 10,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  actionButtonText: {
-    fontSize: 14,
+  keyTextDone: {
+    fontSize: 28,
     fontWeight: "600",
-    lineHeight: 18,
   },
 });

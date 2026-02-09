@@ -245,3 +245,110 @@ export function validateQuantity(quantity: string): ValidationResult {
     sanitized: sanitizeText(trimmed, 50) 
   };
 }
+
+/**
+ * Sanitize text for safe inclusion in AI prompts
+ * Prevents prompt injection attacks
+ */
+export function sanitizeForAIPrompt(text: string, maxLength: number = 500): string {
+  if (!text || typeof text !== 'string') {
+    return '';
+  }
+
+  let sanitized = text.trim();
+  
+  // Enforce max length
+  if (sanitized.length > maxLength) {
+    sanitized = sanitized.slice(0, maxLength);
+  }
+  
+  // Remove null bytes and control characters
+  sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+  sanitized = sanitized.replace(/%00/gi, '');
+  
+  // Escape characters that could be used for prompt injection
+  // Replace triple quotes and backticks that could break out of string contexts
+  sanitized = sanitized
+    .replace(/"""/g, '"')
+    .replace(/```/g, '')
+    .replace(/\\/g, '\\\\')
+    .replace(/\n{3,}/g, '\n\n'); // Limit consecutive newlines
+  
+  // Remove potential instruction markers
+  sanitized = sanitized
+    .replace(/^(system|user|assistant|human|ai):\s*/gim, '')
+    .replace(/\[INST\]/gi, '')
+    .replace(/\[\/INST\]/gi, '')
+    .replace(/<\|.*?\|>/g, ''); // Remove special tokens like <|endoftext|>
+  
+  return sanitized;
+}
+
+/**
+ * Validate an API key format (basic validation)
+ */
+export function validateApiKey(key: string): ValidationResult {
+  if (!key || typeof key !== 'string') {
+    return { isValid: true, sanitized: '' }; // API key is optional
+  }
+  
+  const trimmed = key.trim();
+  
+  if (trimmed.length === 0) {
+    return { isValid: true, sanitized: '' };
+  }
+  
+  // API keys should only contain alphanumeric characters, dashes, and underscores
+  const validKeyPattern = /^[a-zA-Z0-9_-]+$/;
+  if (!validKeyPattern.test(trimmed)) {
+    return { 
+      isValid: false, 
+      error: 'Invalid API key format' 
+    };
+  }
+  
+  // Reasonable length limits for API keys
+  if (trimmed.length < 10 || trimmed.length > 200) {
+    return { 
+      isValid: false, 
+      error: 'API key length is invalid' 
+    };
+  }
+  
+  return { 
+    isValid: true, 
+    sanitized: trimmed 
+  };
+}
+
+/**
+ * Rate limiter for form submissions to prevent spam
+ */
+const submissionTimestamps = new Map<string, number[]>();
+const MAX_SUBMISSIONS_PER_MINUTE = 10;
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+
+export function checkRateLimit(formId: string): boolean {
+  const now = Date.now();
+  const timestamps = submissionTimestamps.get(formId) || [];
+  
+  // Remove old timestamps
+  const recentTimestamps = timestamps.filter(t => now - t < RATE_LIMIT_WINDOW);
+  
+  if (recentTimestamps.length >= MAX_SUBMISSIONS_PER_MINUTE) {
+    return false; // Rate limited
+  }
+  
+  // Add current timestamp
+  recentTimestamps.push(now);
+  submissionTimestamps.set(formId, recentTimestamps);
+  
+  return true; // Allowed
+}
+
+/**
+ * Clear rate limit for a specific form (e.g., after successful submission)
+ */
+export function clearRateLimit(formId: string): void {
+  submissionTimestamps.delete(formId);
+}

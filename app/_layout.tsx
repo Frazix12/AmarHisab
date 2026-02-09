@@ -11,6 +11,7 @@ import { AppState, AppStateStatus } from "react-native";
 import { PostHogProvider, usePostHog } from "posthog-react-native";
 
 import { AppProvider, useApp } from "@/contexts/app-context";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 import {
   ensureTextMetricsPatched,
   setTextMetricsLanguage,
@@ -115,45 +116,49 @@ export default function RootLayout() {
       );
     }
     return (
-      <AppProvider>
-        <RootLayoutContent />
-      </AppProvider>
+      <ErrorBoundary>
+        <AppProvider>
+          <RootLayoutContent />
+        </AppProvider>
+      </ErrorBoundary>
     );
   }
 
   return (
-    <PostHogProvider
-      apiKey={apiKey}
-      options={{
-        host: host,
-        // App lifecycle tracking
-        captureAppLifecycleEvents: true,
-        flushAt: 20,
-        flushInterval: 30000,
-        // Session replay
-        enableSessionReplay: true,
-        sessionReplayConfig: {
-          maskAllTextInputs: true,
-          maskAllImages: false,
-        },
-        // Error tracking - auto-capture all errors
-        errorTracking: {
-          autocapture: {
-            uncaughtExceptions: true,
-            unhandledRejections: true,
-            console: ["error", "warn"],
+    <ErrorBoundary>
+      <PostHogProvider
+        apiKey={apiKey}
+        options={{
+          host: host,
+          // App lifecycle tracking
+          captureAppLifecycleEvents: true,
+          flushAt: 20,
+          flushInterval: 30000,
+          // Session replay
+          enableSessionReplay: true,
+          sessionReplayConfig: {
+            maskAllTextInputs: true,
+            maskAllImages: false,
           },
-        },
-      }}
-      // Autocapture touches and screens
-      autocapture={{
-        captureTouches: true,
-        captureScreens: true,
-      }}
-    >
-      <AppProvider>
-        <RootLayoutContent />
-      </AppProvider>
-    </PostHogProvider>
+          // Error tracking - auto-capture all errors
+          errorTracking: {
+            autocapture: {
+              uncaughtExceptions: true,
+              unhandledRejections: true,
+              console: ["error", "warn"],
+            },
+          },
+        }}
+        // Autocapture touches and screens
+        autocapture={{
+          captureTouches: true,
+          captureScreens: true,
+        }}
+      >
+        <AppProvider>
+          <RootLayoutContent />
+        </AppProvider>
+      </PostHogProvider>
+    </ErrorBoundary>
   );
 }
