@@ -5,9 +5,10 @@ import {
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import * as NavigationBar from "expo-navigation-bar";
 import "react-native-reanimated";
 import React, { useEffect } from "react";
-import { AppState, AppStateStatus } from "react-native";
+import { AppState, AppStateStatus, Platform } from "react-native";
 import { PostHogProvider, usePostHog } from "posthog-react-native";
 
 import { AppProvider, useApp } from "@/contexts/app-context";
@@ -39,6 +40,20 @@ const RootLayoutContent = () => {
   useEffect(() => {
     setTextMetricsLanguage(settings.language);
   }, [settings.language]);
+
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+
+    const configureNavigationBar = async () => {
+      try {
+        await NavigationBar.setPositionAsync("relative");
+      } catch (error) {
+        console.warn("Failed to configure Android navigation bar", error);
+      }
+    };
+
+    void configureNavigationBar();
+  }, []);
 
   // Connect PostHog client to analytics service
   useEffect(() => {

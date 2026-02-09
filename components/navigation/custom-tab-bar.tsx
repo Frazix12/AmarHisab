@@ -32,6 +32,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
   const insets = useSafeAreaInsets();
   const [voiceModalVisible, setVoiceModalVisible] = useState(false);
   const middleIndex = Math.floor(state.routes.length / 2);
+  const androidBottomPadding = Math.max(insets.bottom, 8);
   const tabLabels = {
     index: t.tabs.expenses,
     list: t.tabs.grocery,
@@ -46,7 +47,8 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
         {
           backgroundColor: colors.surface,
           borderTopColor: colors.outline,
-          paddingBottom: Platform.OS === "ios" ? insets.bottom : 8,
+          paddingBottom:
+            Platform.OS === "ios" ? insets.bottom : androidBottomPadding,
         },
       ]}
     >
