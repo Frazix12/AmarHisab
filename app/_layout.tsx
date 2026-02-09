@@ -103,11 +103,29 @@ const RootLayoutContent = () => {
 };
 
 export default function RootLayout() {
+  // Validate PostHog environment variables before rendering provider
+  const apiKey = process.env.EXPO_PUBLIC_POSTHOG_API_KEY;
+  const host = process.env.EXPO_PUBLIC_POSTHOG_HOST;
+
+  // If env vars are missing, render app without PostHog (analytics disabled)
+  if (!apiKey || !host) {
+    if (__DEV__) {
+      console.warn(
+        "[PostHog] Missing EXPO_PUBLIC_POSTHOG_API_KEY or EXPO_PUBLIC_POSTHOG_HOST - analytics disabled"
+      );
+    }
+    return (
+      <AppProvider>
+        <RootLayoutContent />
+      </AppProvider>
+    );
+  }
+
   return (
     <PostHogProvider
-      apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY!}
+      apiKey={apiKey}
       options={{
-        host: process.env.EXPO_PUBLIC_POSTHOG_HOST!,
+        host: host,
         // App lifecycle tracking
         captureAppLifecycleEvents: true,
         flushAt: 20,

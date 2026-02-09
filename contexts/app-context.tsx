@@ -247,11 +247,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     TemplateLearner.trackGroceryItem(newItem);
 
     // Track grocery item added
+    // Privacy: item_name intentionally omitted to avoid PII in analytics.
+    // See AnalyticsEvents.GROCERY_ITEM_ADDED - only non-PII metadata is sent.
     trackEvent(AnalyticsEvents.GROCERY_ITEM_ADDED, {
       item_id: newItem.id,
-      item_name: newItem.name,
       category: newItem.category,
-      price: newItem.price ?? 0,
+      has_price: newItem.price !== null,
       has_template: !!newItem.templateId,
       ai_detected: !!newItem.aiDetected,
     });
@@ -548,30 +549,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     setSmartSuggestionsEnabled((prev) => !prev);
   };
 
-  const clearAllData = () => {
-    setExpenses([]);
-    setGroceryItems([]);
-    void (async () => {
-      try {
-        if (typeof TemplateStorage.clear === "function") {
-          await TemplateStorage.clear();
-        } else {
-          const allTemplates = await TemplateStorage.getAll();
-          await Promise.all(
-            allTemplates.map((template) => TemplateStorage.delete(template.id)),
-          );
-        }
-      } catch (error) {
-        console.error("Failed to clear templates:", error);
-        captureError(error, { context: "clear_templates" });
+  const clearAllData = async () => {
+    try {
+      // Clear template storage first - await before mutating state
+      if (typeof TemplateStorage.clear === "function") {
+        await TemplateStorage.clear();
+      } else {
+        const allTemplates = await TemplateStorage.getAll();
+        await Promise.all(
+          allTemplates.map((template) => TemplateStorage.delete(template.id)),
+        );
       }
-    })();
-    setTemplates([]);
 
-    // Track data cleared
-    trackEvent(AnalyticsEvents.DATA_CLEARED, {
-      action: "clear_all_data",
-    });
+      // Only update state after successful storage clearing
+      setExpenses([]);
+      setGroceryItems([]);
+      setTemplates([]);
+
+      // Track data cleared after successful operation
+      trackEvent(AnalyticsEvents.DATA_CLEARED, {
+        action: "clear_all_data",
+      });
+    } catch (error) {
+      // Don't mutate state on failure - log and capture error
+      console.error("Failed to clear data:", error);
+      captureError(error, { context: "clear_all_data" });
+    }
   };
 
   // Computed values

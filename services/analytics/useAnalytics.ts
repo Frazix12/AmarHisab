@@ -96,12 +96,21 @@ export const useAnalytics = (): UseAnalyticsReturn => {
 
   const captureError = useCallback(
     (error: Error | unknown, context?: PostHogEventProperties) => {
-      const errorData: PostHogEventProperties =
-        error instanceof Error
-          ? { error_message: error.message, error_stack: error.stack ?? "" }
-          : { error_message: String(error) };
+      // Normalize unknown to Error instance for safe handling
+      const normalizedError =
+        error instanceof Error ? error : new Error(String(error));
 
-      posthog.captureException(error as Error, {
+      const errorData: PostHogEventProperties = {
+        error_message: normalizedError.message,
+        error_stack: normalizedError.stack ?? "",
+      };
+
+      // Include original error info if it wasn't an Error instance
+      if (!(error instanceof Error)) {
+        errorData.original_error_type = typeof error;
+      }
+
+      posthog.captureException(normalizedError, {
         ...errorData,
         ...context,
       });
@@ -179,7 +188,8 @@ export const useAnalytics = (): UseAnalyticsReturn => {
 
   const trackSettingChanged = useCallback(
     (props: { setting_name: string; old_value?: string; new_value?: string }) => {
-      track(AnalyticsEvents.CURRENCY_CHANGED, {
+      // Use generic SETTING_CHANGED event for all setting changes
+      track(AnalyticsEvents.SETTING_CHANGED, {
         setting_name: props.setting_name,
         old_value: props.old_value ?? "",
         new_value: props.new_value ?? "",

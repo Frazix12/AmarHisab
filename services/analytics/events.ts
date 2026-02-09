@@ -36,6 +36,7 @@ export const AnalyticsEvents = {
   // ═══════════════════════════════════════════════════════════
   // SETTINGS
   // ═══════════════════════════════════════════════════════════
+  SETTING_CHANGED: "setting_changed", // Generic setting change
   CURRENCY_CHANGED: "currency_changed",
   THEME_CHANGED: "theme_changed",
   LANGUAGE_CHANGED: "language_changed",

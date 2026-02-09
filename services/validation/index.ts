@@ -4,35 +4,37 @@
  */
 
 // Dangerous patterns to detect and block
+// Note: No /g flag used - global flag makes RegExp.test() stateful which causes
+// inconsistent results when the same regex is tested multiple times.
 const DANGEROUS_PATTERNS = [
   // Script injection
-  /<script\b[^>]*>/gi,
-  /<\/script>/gi,
-  /javascript:/gi,
-  /on\w+\s*=/gi, // onclick=, onerror=, etc.
+  /<script\b[^>]*>/i,
+  /<\/script>/i,
+  /javascript:/i,
+  /on\w+\s*=/i, // onclick=, onerror=, etc.
   
   // SQL injection patterns
-  /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER|CREATE|TRUNCATE)\b.*\b(FROM|INTO|TABLE|WHERE|SET)\b)/gi,
-  /(['"])\s*;\s*--/gi, // SQL comment after quote
-  /\bOR\b\s+['"]?\d+['"]?\s*=\s*['"]?\d+['"]?/gi, // OR 1=1
-  /\bAND\b\s+['"]?\d+['"]?\s*=\s*['"]?\d+['"]?/gi, // AND 1=1
+  /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER|CREATE|TRUNCATE)\b.*\b(FROM|INTO|TABLE|WHERE|SET)\b)/i,
+  /(['"])\s*;\s*--/i, // SQL comment after quote
+  /\bOR\b\s+['"]?\d+['"]?\s*=\s*['"]?\d+['"]?/i, // OR 1=1
+  /\bAND\b\s+['"]?\d+['"]?\s*=\s*['"]?\d+['"]?/i, // AND 1=1
   
   // Code injection
-  /eval\s*\(/gi,
-  /Function\s*\(/gi,
-  /new\s+Function/gi,
-  /require\s*\(/gi,
-  /import\s*\(/gi,
-  /__proto__/gi,
-  /constructor\s*\[/gi,
+  /eval\s*\(/i,
+  /Function\s*\(/i,
+  /new\s+Function/i,
+  /require\s*\(/i,
+  /import\s*\(/i,
+  /__proto__/i,
+  /constructor\s*\[/i,
   
-  // Path traversal
-  /\.\.\//g,
-  /\.\.\\+/g,
+  // Path traversal (Unix and Windows)
+  /\.\.\//,      // ../
+  /\.\.\\/,      // ..\  (single backslash for Windows paths)
   
   // Null bytes (can bypass validation)
-  /\x00/g,
-  /%00/gi,
+  /\x00/,
+  /%00/i,
 ];
 
 // Characters to encode for safe display
