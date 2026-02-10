@@ -439,7 +439,18 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
     setErrorMessage(null);
     setParsedResult(null);
     setStatus("processing");
-    await processTranscript(normalized);
+
+    try {
+      await processTranscript(normalized);
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : t.voice.parseFailed;
+      setErrorMessage(message);
+      setParsedResult(null);
+      setStatus("idle");
+    }
   };
 
   const toggleMicrophone = () => {

@@ -36,12 +36,17 @@ export function setGeminiApiKey(apiKey: string): void {
   }
 }
 
-// Cache for recent predictions to reduce API calls
-const categoryCache = new Map<
+// Caches for recent predictions to reduce API calls
+const groceryCategoryCache = new Map<
   string,
   { category: GroceryCategory; timestamp: number }
 >();
+const expenseCategoryCache = new Map<
+  string,
+  { category: ExpenseCategory; timestamp: number }
+>();
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+const VOICE_PARSE_TIMEOUT_MS = 10_000;
 
 const GEMINI_MODEL_ID = "gemini-flash-lite-latest";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com";
@@ -151,7 +156,7 @@ export async function detectItemCategory(
     const normalizedName = itemName.trim().toLowerCase();
 
     // Check cache first
-    const cached = categoryCache.get(normalizedName);
+    const cached = groceryCategoryCache.get(normalizedName);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
       return cached.category;
     }
@@ -217,7 +222,7 @@ Category:`;
 
     if (category) {
       // Cache the result
-      categoryCache.set(normalizedName, {
+      groceryCategoryCache.set(normalizedName, {
         category,
         timestamp: Date.now(),
       });
@@ -247,7 +252,8 @@ Category:`;
  * Clears the category cache
  */
 export function clearCategoryCache(): void {
-  categoryCache.clear();
+  groceryCategoryCache.clear();
+  expenseCategoryCache.clear();
 }
 
 /**
@@ -271,9 +277,9 @@ export async function detectExpenseCategory(
     const normalizedDesc = description.trim().toLowerCase();
 
     // Check cache first
-    const cached = categoryCache.get(`exp_${normalizedDesc}`);
+    const cached = expenseCategoryCache.get(normalizedDesc);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      return cached.category as string;
+      return cached.category;
     }
 
     // Check if API key is configured
@@ -327,9 +333,10 @@ Category:`;
     const response = await result.response;
     const text = response.text().trim().toLowerCase();
 
-    const isValidCategory = EXPENSE_CATEGORIES.some(
+    const matchedCategory = EXPENSE_CATEGORIES.find(
       (category) => category.value === text,
-    );
+    )?.value;
+    const isValidCategory = Boolean(matchedCategory);
 
     trackGeminiGeneration({
       spanName,
@@ -345,13 +352,13 @@ Category:`;
     });
 
     // Validate the response is a valid category
-    if (isValidCategory) {
+    if (matchedCategory) {
       // Cache the result
-      categoryCache.set(`exp_${normalizedDesc}`, {
-        category: text as any,
+      expenseCategoryCache.set(normalizedDesc, {
+        category: matchedCategory,
         timestamp: Date.now(),
       });
-      return text;
+      return matchedCategory;
     }
 
     return null;
@@ -516,7 +523,12 @@ ${sanitizedTranscript}
 """`;
 
     const result = await retryWithBackoff(async () => {
-      return await model.generateContent(prompt);
+      return await Promise.race([
+        model.generateContent(prompt),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout")), VOICE_PARSE_TIMEOUT_MS),
+        ),
+      ]);
     }, "parseVoiceInput");
 
     const response = await result.response;

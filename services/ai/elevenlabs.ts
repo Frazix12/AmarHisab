@@ -15,12 +15,20 @@ interface TranscribeAudioOptions {
   apiKey?: string;
   languageCode?: string;
   modelId?: string;
+  timeoutMs?: number;
 }
 
 const DEFAULT_MODEL_ID =
   process.env.EXPO_PUBLIC_ELEVENLABS_STT_MODEL_ID || "scribe_v2";
 const ENV_API_KEY = process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY || "";
 const API_URL = "https://api.elevenlabs.io/v1/speech-to-text";
+const ENV_REQUEST_TIMEOUT_MS = Number(
+  process.env.EXPO_PUBLIC_ELEVENLABS_STT_TIMEOUT_MS,
+);
+const DEFAULT_REQUEST_TIMEOUT_MS =
+  Number.isFinite(ENV_REQUEST_TIMEOUT_MS) && ENV_REQUEST_TIMEOUT_MS > 0
+    ? ENV_REQUEST_TIMEOUT_MS
+    : 30_000;
 
 let elevenLabsApiKey = ENV_API_KEY;
 
@@ -79,6 +87,10 @@ export const transcribeAudioFile = async (
   const startedAt = Date.now();
   const modelId = options.modelId || DEFAULT_MODEL_ID;
   const fileName = getFileName(options.fileUri);
+  const timeoutMs =
+    typeof options.timeoutMs === "number" && options.timeoutMs > 0
+      ? options.timeoutMs
+      : DEFAULT_REQUEST_TIMEOUT_MS;
 
   try {
     const apiKey = options.apiKey?.trim() || elevenLabsApiKey.trim();
@@ -102,13 +114,31 @@ export const transcribeAudioFile = async (
       form.append("language_code", options.languageCode);
     }
 
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "xi-api-key": apiKey,
-      },
-      body: form,
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, timeoutMs);
+
+    let response: Response;
+    try {
+      response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "xi-api-key": apiKey,
+        },
+        body: form,
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error(
+          `Transcription request timed out after ${Math.round(timeoutMs / 1000)}s`,
+        );
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     const rawText = await response.text();
     let data: any = null;
