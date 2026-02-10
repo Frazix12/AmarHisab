@@ -25,6 +25,7 @@ import { triggerLightHaptic } from "@/utils/haptics";
 import {
   Cancel01Icon,
   AiMicIcon,
+  SentIcon,
   Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
@@ -246,6 +247,11 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
     return normalizeSpeechText(transcript);
   }, [transcript]);
 
+  const canSendText =
+    status !== "listening" &&
+    status !== "processing" &&
+    displayTranscript.length > 0;
+
   const resetState = () => {
     setStatus("idle");
     setTranscript("");
@@ -421,6 +427,32 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
       setErrorMessage(message);
       setStatus("idle");
     }
+  };
+
+  const sendTypedTranscript = async () => {
+    const normalized = normalizeSpeechText(transcript);
+    if (!normalized) {
+      setErrorMessage(t.voice.noSpeechDetected);
+      return;
+    }
+
+    setErrorMessage(null);
+    setParsedResult(null);
+    setStatus("processing");
+    await processTranscript(normalized);
+  };
+
+  const toggleMicrophone = () => {
+    if (status === "processing") {
+      return;
+    }
+
+    if (status === "listening") {
+      void stopListening();
+      return;
+    }
+
+    void startListening();
   };
 
   const handleConfirm = () => {
@@ -634,26 +666,94 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
               </View>
             </View>
 
-            <View
-              style={[
-                styles.transcriptCard,
-                { backgroundColor: colors.surfaceVariant, borderColor: colors.outline },
-              ]}
-            >
-              <Text style={[styles.transcriptLabel, { color: colors.text }]}
-              >
-                {t.voice.transcript}
-              </Text>
-              <Text
-                style={[styles.transcriptText, { color: colors.textSecondary }]}
-              >
-                {displayTranscript ||
-                  (status === "listening"
-                    ? t.voice.listening
-                    : status === "processing"
-                      ? t.voice.processing
-                      : "...")}
-              </Text>
+            <View style={styles.textEntrySection}>
+              <View style={styles.inputActionRow}>
+                <TextInput
+                  style={[
+                    styles.transcriptInput,
+                    {
+                      color: colors.text,
+                      borderColor: colors.outline,
+                      backgroundColor: colors.surface,
+                    },
+                  ]}
+                  placeholder={
+                    status === "listening"
+                      ? t.voice.listening
+                      : status === "processing"
+                        ? t.voice.processing
+                        : t.voice.transcriptPlaceholder
+                  }
+                  placeholderTextColor={colors.textSecondary}
+                  multiline={false}
+                  editable={status !== "listening" && status !== "processing"}
+                  value={transcript}
+                  returnKeyType="send"
+                  onSubmitEditing={() => {
+                    if (canSendText) {
+                      void sendTypedTranscript();
+                    }
+                  }}
+                  onChangeText={(text) => {
+                    setTranscript(text);
+                    if (errorMessage) {
+                      setErrorMessage(null);
+                    }
+                  }}
+                />
+
+                <Pressable
+                  onPress={sendTypedTranscript}
+                  disabled={!canSendText}
+                  style={[
+                    styles.circleActionButton,
+                    {
+                      backgroundColor: canSendText ? colors.primary : colors.surface,
+                      borderColor: canSendText ? colors.primary : colors.outline,
+                      opacity: canSendText ? 1 : 0.55,
+                    },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={t.voice.sendText}
+                >
+                  <HugeiconsIcon
+                    icon={SentIcon}
+                    size={18}
+                    color={canSendText ? colors.onPrimary : colors.textSecondary}
+                    strokeWidth={2.2}
+                  />
+                </Pressable>
+
+                <Pressable
+                  onPress={toggleMicrophone}
+                  disabled={status === "processing"}
+                  style={[
+                    styles.circleActionButton,
+                    {
+                      backgroundColor:
+                        status === "listening" ? colors.error + "18" : colors.surface,
+                      borderColor:
+                        status === "listening" ? colors.error : colors.outline,
+                      opacity: status === "processing" ? 0.55 : 1,
+                    },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    status === "listening"
+                      ? t.voice.stopListening
+                      : t.voice.startListening
+                  }
+                >
+                  <HugeiconsIcon
+                    icon={AiMicIcon}
+                    size={18}
+                    color={
+                      status === "listening" ? colors.error : colors.textSecondary
+                    }
+                    strokeWidth={2.2}
+                  />
+                </Pressable>
+              </View>
 
               {status === "listening" ? (
                 <View
@@ -707,44 +807,6 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
                 </View>
               ) : null}
             </View>
-
-            {status === "idle" && (
-              <Pressable
-                onPress={startListening}
-                style={[
-                  styles.primaryButton,
-                  { backgroundColor: colors.primary },
-                ]}
-              >
-                <HugeiconsIcon
-                  icon={AiMicIcon}
-                  size={20}
-                  color={colors.onPrimary}
-                  strokeWidth={2.2}
-                />
-                <Text
-                  style={[styles.primaryButtonText, { color: colors.onPrimary }]}
-                >
-                  {t.voice.startListening}
-                </Text>
-              </Pressable>
-            )}
-
-            {status === "listening" && (
-              <Pressable
-                onPress={stopListening}
-                style={[
-                  styles.primaryButton,
-                  { backgroundColor: colors.primary },
-                ]}
-              >
-                <Text
-                  style={[styles.primaryButtonText, { color: colors.onPrimary }]}
-                >
-                  {t.voice.stopListening}
-                </Text>
-              </Pressable>
-            )}
 
             {status === "processing" && (
               <View style={styles.processingRow}>
@@ -1530,20 +1592,32 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     lineHeight: 16,
   },
-  transcriptCard: {
+  textEntrySection: {
     marginTop: 16,
-    borderRadius: 16,
+  },
+  inputActionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  circleActionButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 1,
-    padding: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
-  transcriptLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  transcriptText: {
-    fontSize: 15,
-    lineHeight: 22,
+  transcriptInput: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 18,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 0,
+    height: 40,
   },
   recordingIndicator: {
     marginTop: 12,

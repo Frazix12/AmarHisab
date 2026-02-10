@@ -1,3 +1,9 @@
+import {
+  createLlmTraceId,
+  extractHttpStatusCode,
+  trackLlmGeneration,
+} from "@/services/analytics/llm";
+
 export interface ElevenLabsTranscriptionResult {
   text: string;
   language?: string;
@@ -69,59 +75,104 @@ const extractLanguage = (data: any): string | undefined => {
 export const transcribeAudioFile = async (
   options: TranscribeAudioOptions,
 ): Promise<ElevenLabsTranscriptionResult> => {
-  const apiKey = options.apiKey?.trim() || elevenLabsApiKey.trim();
-
-  if (!apiKey) {
-    throw new Error("Voice transcription is unavailable right now.");
-  }
-
-  const form = new FormData();
+  const traceId = createLlmTraceId("transcribe_audio");
+  const startedAt = Date.now();
+  const modelId = options.modelId || DEFAULT_MODEL_ID;
   const fileName = getFileName(options.fileUri);
-  const mimeType = getMimeType(fileName);
 
-  form.append("file", {
-    uri: normalizeFileUri(options.fileUri),
-    name: fileName,
-    type: mimeType,
-  } as any);
-
-  form.append("model_id", options.modelId || DEFAULT_MODEL_ID);
-
-  if (options.languageCode) {
-    form.append("language_code", options.languageCode);
-  }
-
-  const response = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "xi-api-key": apiKey,
-    },
-    body: form,
-  });
-
-  const rawText = await response.text();
-  let data: any = null;
   try {
-    data = rawText ? JSON.parse(rawText) : null;
-  } catch (error) {
-    console.error("Failed to parse ElevenLabs transcription response JSON", {
-      error,
-      rawText,
-      status: response.status,
+    const apiKey = options.apiKey?.trim() || elevenLabsApiKey.trim();
+
+    if (!apiKey) {
+      throw new Error("Voice transcription is unavailable right now.");
+    }
+
+    const form = new FormData();
+    const mimeType = getMimeType(fileName);
+
+    form.append("file", {
+      uri: normalizeFileUri(options.fileUri),
+      name: fileName,
+      type: mimeType,
+    } as any);
+
+    form.append("model_id", modelId);
+
+    if (options.languageCode) {
+      form.append("language_code", options.languageCode);
+    }
+
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "xi-api-key": apiKey,
+      },
+      body: form,
     });
-    data = null;
-  }
 
-  if (!response.ok) {
-    const message = data?.message || rawText || "Failed to transcribe audio";
-    throw new Error(message);
-  }
+    const rawText = await response.text();
+    let data: any = null;
+    try {
+      data = rawText ? JSON.parse(rawText) : null;
+    } catch (error) {
+      console.error("Failed to parse ElevenLabs transcription response JSON", {
+        error,
+        rawText,
+        status: response.status,
+      });
+      data = null;
+    }
 
-  return {
-    text: extractTranscriptText(data),
-    language: extractLanguage(data),
-    raw: data,
-  };
+    if (!response.ok) {
+      const message = data?.message || rawText || "Failed to transcribe audio";
+
+      throw Object.assign(new Error(message), { status: response.status });
+    }
+
+    const transcript = extractTranscriptText(data);
+    const language = extractLanguage(data);
+
+    trackLlmGeneration({
+      traceId,
+      spanName: "transcribe_audio",
+      model: modelId,
+      provider: "elevenlabs",
+      baseUrl: "https://api.elevenlabs.io",
+      requestUrl: API_URL,
+      inputText: fileName,
+      outputText: transcript,
+      latencyMs: Date.now() - startedAt,
+      properties: {
+        llm_feature: "voice_transcription",
+        llm_language: language ?? options.languageCode ?? "",
+      },
+    });
+
+    return {
+      text: transcript,
+      language,
+      raw: data,
+    };
+  } catch (error) {
+    trackLlmGeneration({
+      traceId,
+      spanName: "transcribe_audio",
+      model: modelId,
+      provider: "elevenlabs",
+      baseUrl: "https://api.elevenlabs.io",
+      requestUrl: API_URL,
+      inputText: fileName,
+      latencyMs: Date.now() - startedAt,
+      isError: true,
+      error,
+      httpStatus: extractHttpStatusCode(error),
+      properties: {
+        llm_feature: "voice_transcription",
+      },
+    });
+
+    throw error;
+  }
 };
 
 export function setElevenLabsApiKey(apiKey: string): void {

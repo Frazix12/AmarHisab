@@ -4,6 +4,7 @@
  */
 
 import PostHog from "posthog-react-native";
+import type { PostHogEventProperties } from "@posthog/core";
 import { AnalyticsEventName } from "./events";
 
 // PostHog configuration from environment variables
@@ -18,10 +19,7 @@ if (!POSTHOG_API_KEY || !POSTHOG_HOST) {
   );
 }
 
-// PostHog-compatible property type
-type PostHogEventProperties = {
-  [key: string]: string | number | boolean | null | string[] | number[];
-};
+export type { PostHogEventProperties };
 
 // Queued event with original timestamp preserved
 type QueuedEvent = {

@@ -5,6 +5,8 @@ import {
   GROCERY_CATEGORIES,
   GroceryCategory,
 } from "@/types";
+import type { PostHogEventProperties } from "@posthog/core";
+import { createLlmTraceId, trackLlmGeneration } from "@/services/analytics/llm";
 import { sanitizeForAIPrompt } from "@/services/validation";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { retryWithBackoff } from "./rate-limiter";
@@ -41,6 +43,93 @@ const categoryCache = new Map<
 >();
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
+const GEMINI_MODEL_ID = "gemini-flash-lite-latest";
+const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com";
+
+interface GeminiUsageMetadata {
+  promptTokenCount?: number;
+  candidatesTokenCount?: number;
+  totalTokenCount?: number;
+}
+
+interface GeminiTrackParams {
+  spanName: string;
+  traceId: string;
+  startedAt: number;
+  inputText?: string;
+  outputText?: string;
+  response?: unknown;
+  isError?: boolean;
+  error?: Error | unknown;
+  properties?: PostHogEventProperties;
+}
+
+const toTokenCount = (value: unknown): number | undefined => {
+  if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+  return value;
+};
+
+const extractGeminiUsage = (
+  response: unknown,
+): { inputTokens?: number; outputTokens?: number } => {
+  if (typeof response !== "object" || response === null) {
+    return {};
+  }
+
+  const maybeUsage =
+    "usageMetadata" in response
+      ? (response as { usageMetadata?: GeminiUsageMetadata }).usageMetadata
+      : undefined;
+
+  if (!maybeUsage) {
+    return {};
+  }
+
+  const inputTokens = toTokenCount(maybeUsage.promptTokenCount);
+  const outputTokens = toTokenCount(maybeUsage.candidatesTokenCount);
+
+  if (inputTokens !== undefined || outputTokens !== undefined) {
+    return { inputTokens, outputTokens };
+  }
+
+  const totalTokens = toTokenCount(maybeUsage.totalTokenCount);
+  if (totalTokens !== undefined) {
+    return { inputTokens: totalTokens };
+  }
+
+  return {};
+};
+
+const trackGeminiGeneration = ({
+  spanName,
+  traceId,
+  startedAt,
+  inputText,
+  outputText,
+  response,
+  isError,
+  error,
+  properties,
+}: GeminiTrackParams): void => {
+  const usage = extractGeminiUsage(response);
+
+  trackLlmGeneration({
+    traceId,
+    spanName,
+    model: GEMINI_MODEL_ID,
+    provider: "gemini",
+    baseUrl: GEMINI_BASE_URL,
+    inputText,
+    outputText,
+    inputTokens: usage.inputTokens,
+    outputTokens: usage.outputTokens,
+    latencyMs: Date.now() - startedAt,
+    isError,
+    error,
+    properties,
+  });
+};
+
 /**
  * Detects the category of a grocery item using Gemini AI
  * @param itemName - The name of the grocery item
@@ -49,6 +138,10 @@ const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 export async function detectItemCategory(
   itemName: string,
 ): Promise<GroceryCategory | null> {
+  const traceId = createLlmTraceId("detect_item_category");
+  const startedAt = Date.now();
+  const spanName = "detect_item_category";
+
   try {
     // Validate input
     if (!itemName || itemName.trim().length < 2) {
@@ -71,7 +164,7 @@ export async function detectItemCategory(
 
     // Use Gemini 1.5 Flash for fast inference
     const model = genAI.getGenerativeModel({
-      model: "gemini-flash-latest",
+      model: GEMINI_MODEL_ID,
     });
 
     // Create the prompt with available categories
@@ -109,6 +202,19 @@ Category:`;
       (cat) => cat.value === text,
     )?.value;
 
+    trackGeminiGeneration({
+      spanName,
+      traceId,
+      startedAt,
+      inputText: sanitizedItemName,
+      outputText: text,
+      response,
+      properties: {
+        llm_feature: "grocery_category_detection",
+        llm_detection_success: Boolean(category),
+      },
+    });
+
     if (category) {
       // Cache the result
       categoryCache.set(normalizedName, {
@@ -120,6 +226,18 @@ Category:`;
 
     return null;
   } catch (error) {
+    trackGeminiGeneration({
+      spanName,
+      traceId,
+      startedAt,
+      inputText: itemName,
+      isError: true,
+      error,
+      properties: {
+        llm_feature: "grocery_category_detection",
+      },
+    });
+
     console.error("Error detecting category with Gemini:", error);
     return null;
   }
@@ -140,6 +258,10 @@ export function clearCategoryCache(): void {
 export async function detectExpenseCategory(
   description: string,
 ): Promise<string | null> {
+  const traceId = createLlmTraceId("detect_expense_category");
+  const startedAt = Date.now();
+  const spanName = "detect_expense_category";
+
   try {
     // Validate input
     if (!description || description.trim().length < 2) {
@@ -162,7 +284,7 @@ export async function detectExpenseCategory(
 
     // Use Gemini 1.5 Flash for fast inference
     const model = genAI.getGenerativeModel({
-      model: "gemini-flash-latest",
+      model: GEMINI_MODEL_ID,
     });
 
     const categoryList = EXPENSE_CATEGORIES.map((cat) => cat.value).join(", ");
@@ -205,8 +327,25 @@ Category:`;
     const response = await result.response;
     const text = response.text().trim().toLowerCase();
 
+    const isValidCategory = EXPENSE_CATEGORIES.some(
+      (category) => category.value === text,
+    );
+
+    trackGeminiGeneration({
+      spanName,
+      traceId,
+      startedAt,
+      inputText: sanitizedDescription,
+      outputText: text,
+      response,
+      properties: {
+        llm_feature: "expense_category_detection",
+        llm_detection_success: isValidCategory,
+      },
+    });
+
     // Validate the response is a valid category
-    if (EXPENSE_CATEGORIES.some((category) => category.value === text)) {
+    if (isValidCategory) {
       // Cache the result
       categoryCache.set(`exp_${normalizedDesc}`, {
         category: text as any,
@@ -217,6 +356,18 @@ Category:`;
 
     return null;
   } catch (error) {
+    trackGeminiGeneration({
+      spanName,
+      traceId,
+      startedAt,
+      inputText: description,
+      isError: true,
+      error,
+      properties: {
+        llm_feature: "expense_category_detection",
+      },
+    });
+
     console.error("Error detecting expense category with Gemini:", error);
     return null;
   }
@@ -305,6 +456,10 @@ export async function parseVoiceInput(
   transcript: string,
   options: { currencyCode: string; language: string },
 ): Promise<VoiceParsedResult | null> {
+  const traceId = createLlmTraceId("parse_voice_input");
+  const startedAt = Date.now();
+  const spanName = "parse_voice_input";
+
   try {
     if (!transcript || transcript.trim().length < 4) return null;
     if (!genAI) {
@@ -312,7 +467,7 @@ export async function parseVoiceInput(
       return null;
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_ID });
     const expenseCategories = EXPENSE_CATEGORIES.map((cat) => cat.value).join(
       ", ",
     );
@@ -361,12 +516,7 @@ ${sanitizedTranscript}
 """`;
 
     const result = await retryWithBackoff(async () => {
-      return await Promise.race([
-        model.generateContent(prompt),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout")), 12000),
-        ),
-      ]);
+      return await model.generateContent(prompt);
     }, "parseVoiceInput");
 
     const response = await result.response;
@@ -407,11 +557,39 @@ ${sanitizedTranscript}
         .filter(Boolean)
       : [];
 
+    trackGeminiGeneration({
+      spanName,
+      traceId,
+      startedAt,
+      inputText: sanitizedTranscript,
+      outputText: rawText,
+      response,
+      properties: {
+        llm_feature: "voice_parse",
+        llm_currency: sanitizedCurrencyCode,
+        llm_language: sanitizedLanguage,
+        llm_expense_count: expenses.length,
+        llm_grocery_count: groceries.length,
+      },
+    });
+
     return {
       expenses: expenses as VoiceParsedExpense[],
       groceries: groceries as VoiceParsedGrocery[],
     };
   } catch (error) {
+    trackGeminiGeneration({
+      spanName,
+      traceId,
+      startedAt,
+      inputText: transcript,
+      isError: true,
+      error,
+      properties: {
+        llm_feature: "voice_parse",
+      },
+    });
+
     console.error("Error parsing voice input with Gemini:", error);
     return null;
   }

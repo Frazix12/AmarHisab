@@ -27,5 +27,13 @@ export { AnalyticsEvents, type AnalyticsEventName } from "./events";
 // React hook
 export { useAnalytics, type UseAnalyticsReturn } from "./useAnalytics";
 
+// LLM analytics helpers
+export {
+  createLlmTraceId,
+  extractHttpStatusCode,
+  trackLlmGeneration,
+  type TrackLlmGenerationParams,
+} from "./llm";
+
 // Default export
 export { default } from "./posthog";
