@@ -24,6 +24,7 @@ interface ExpenseCardProps {
   colors: ThemeColors;
   settings: UserSettings;
   t: TranslationKey;
+  showCategory?: boolean;
   onPress?: (expense: Expense) => void;
   onLongPress?: (expense: Expense) => void;
 }
@@ -64,6 +65,7 @@ export const ExpenseCard = React.memo(
     colors,
     settings,
     t,
+    showCategory = true,
     onPress,
     onLongPress,
   }: ExpenseCardProps) => {
@@ -76,6 +78,7 @@ export const ExpenseCard = React.memo(
     )
       ? t.categories[expense.category as keyof typeof t.categories]
       : expense.category || t.categories.other || "Unknown";
+    const nameLabel = expense.description?.trim() || t.form.item;
     const handlePress = useCallback(() => {
       if (thumbnailPressedRef.current || !onPress) return;
       onPress(expense);
@@ -147,9 +150,9 @@ export const ExpenseCard = React.memo(
               style={[styles.category, { color: colors.text }]}
               numberOfLines={1}
             >
-              {categoryLabel}
+              {showCategory ? categoryLabel : nameLabel}
             </Text>
-            {expense.description ? (
+            {showCategory && expense.description ? (
               <Text
                 style={[styles.description, { color: colors.textSecondary }]}
                 numberOfLines={1}

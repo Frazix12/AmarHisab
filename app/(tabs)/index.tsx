@@ -173,6 +173,7 @@ export default function ExpensesScreen() {
         colors={colors}
         settings={settings}
         t={t}
+        showCategory={false}
         onPress={handleExpensePress}
         onLongPress={handleExpenseLongPress}
       />
