@@ -9,6 +9,8 @@ interface SummaryCardProps {
   title: string;
   amount: number;
   variant?: "primary" | "secondary" | "success";
+  description?: string;
+  size?: "default" | "large";
 }
 
 export const SummaryCard: React.FC<SummaryCardProps> = ({
@@ -16,6 +18,8 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
   title,
   amount,
   variant = "primary",
+  description,
+  size = "default",
 }) => {
   const { settings, colorScheme, formatNumber } = useApp();
   const colors = Colors[colorScheme];
@@ -59,7 +63,13 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
   const displayAmount = formatNumber(formattedAmount);
 
   return (
-    <View style={[styles.container, { backgroundColor: variantColors.bg }]}>
+    <View
+      style={[
+        styles.container,
+        size === "large" && styles.containerLarge,
+        { backgroundColor: variantColors.bg },
+      ]}
+    >
       <View style={styles.iconContainer}>
         <HugeiconsIcon
           icon={icon}
@@ -72,10 +82,21 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
         <Text style={[styles.title, { color: variantColors.textColor }]}>
           {title}
         </Text>
-        <Text style={[styles.amount, { color: variantColors.textColor }]}>
+        <Text
+          style={[
+            styles.amount,
+            size === "large" && styles.amountLarge,
+            { color: variantColors.textColor },
+          ]}
+        >
           {settings.currency.symbol}
           {displayAmount}
         </Text>
+        {description ? (
+          <Text style={[styles.description, { color: variantColors.textColor }]}>
+            {description}
+          </Text>
+        ) : null}
       </View>
     </View>
   );
@@ -88,6 +109,11 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 16,
     marginBottom: 12,
+  },
+  containerLarge: {
+    paddingVertical: 20,
+    paddingHorizontal: 18,
+    minHeight: 128,
   },
   iconContainer: {
     marginRight: 12,
@@ -105,5 +131,15 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "700",
     lineHeight: 30,
+  },
+  amountLarge: {
+    fontSize: 28,
+    lineHeight: 34,
+  },
+  description: {
+    marginTop: 8,
+    fontSize: 12,
+    lineHeight: 16,
+    opacity: 0.78,
   },
 });

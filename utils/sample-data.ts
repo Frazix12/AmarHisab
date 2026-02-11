@@ -1,117 +1,127 @@
 import { useApp } from "@/contexts/app-context";
+import {
+  EXPENSE_CATEGORIES,
+  GROCERY_CATEGORIES,
+  ExpenseCategory,
+  GroceryCategory,
+} from "@/types";
 
-/**
- * Development helper to add sample data
- * This is for testing purposes only
- */
 export const useSampleData = () => {
-  const { addExpense, addGroceryItem } = useApp();
+  const { addExpense, addGroceryItem, settings } = useApp();
+
+  const randomFrom = <T,>(items: T[]): T =>
+    items[Math.floor(Math.random() * items.length)];
+
+  const randomAmount = (min: number, max: number) =>
+    Number((Math.random() * (max - min) + min).toFixed(2));
+
+  const randomRecentDate = (maxDaysBack: number) => {
+    const date = new Date();
+    const backDays = Math.floor(Math.random() * (maxDaysBack + 1));
+    date.setDate(date.getDate() - backDays);
+    return date;
+  };
+
+  const expenseDescriptions: Record<ExpenseCategory, string[]> = {
+    food: ["Lunch", "Dinner", "Snacks", "Cafe"],
+    transport: ["Ride share", "Bus fare", "Fuel", "Parking"],
+    shopping: ["Clothes", "Accessories", "Online order", "Essentials"],
+    entertainment: ["Movie", "Streaming", "Gaming", "Concert"],
+    healthcare: ["Pharmacy", "Doctor fee", "Medical test", "Supplements"],
+    bills: ["Electricity bill", "Internet bill", "Water bill", "Phone bill"],
+    education: ["Course fee", "Books", "Stationery", "Subscription"],
+    other: ["Misc expense", "Service fee", "Gift", "One-time expense"],
+  };
+
+  const expenseRanges: Record<ExpenseCategory, { min: number; max: number }> = {
+    food: { min: 8, max: 55 },
+    transport: { min: 3, max: 35 },
+    shopping: { min: 20, max: 180 },
+    entertainment: { min: 6, max: 120 },
+    healthcare: { min: 12, max: 140 },
+    bills: { min: 25, max: 240 },
+    education: { min: 10, max: 220 },
+    other: { min: 5, max: 90 },
+  };
+
+  const grocerySamples: Record<GroceryCategory, { name: string; quantity: string }[]> = {
+    fruits: [
+      { name: "Bananas", quantity: "6 pcs" },
+      { name: "Apples", quantity: "8 pcs" },
+      { name: "Oranges", quantity: "1 kg" },
+    ],
+    vegetables: [
+      { name: "Tomatoes", quantity: "500g" },
+      { name: "Potatoes", quantity: "2 kg" },
+      { name: "Spinach", quantity: "2 bunch" },
+    ],
+    dairy: [
+      { name: "Milk", quantity: "2 L" },
+      { name: "Yogurt", quantity: "500g" },
+      { name: "Cheese", quantity: "200g" },
+    ],
+    meat: [
+      { name: "Chicken breast", quantity: "1 kg" },
+      { name: "Fish", quantity: "800g" },
+      { name: "Beef", quantity: "1 kg" },
+    ],
+    snacks: [
+      { name: "Biscuits", quantity: "2 packs" },
+      { name: "Chips", quantity: "3 packs" },
+      { name: "Nuts", quantity: "300g" },
+    ],
+    beverages: [
+      { name: "Coffee", quantity: "250g" },
+      { name: "Tea", quantity: "200g" },
+      { name: "Juice", quantity: "2 L" },
+    ],
+    household: [
+      { name: "Dish soap", quantity: "1 bottle" },
+      { name: "Tissue", quantity: "6 rolls" },
+      { name: "Laundry detergent", quantity: "1 pack" },
+    ],
+    other: [
+      { name: "Bread", quantity: "2 loaves" },
+      { name: "Eggs", quantity: "12 pcs" },
+      { name: "Rice", quantity: "5 kg" },
+    ],
+  };
 
   const addSampleExpenses = () => {
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const lastWeek = new Date(today);
-    lastWeek.setDate(lastWeek.getDate() - 5);
+    for (const { value: category } of EXPENSE_CATEGORIES) {
+      const range = expenseRanges[category];
+      addExpense({
+        amount: randomAmount(range.min, range.max),
+        category,
+        date: randomRecentDate(10),
+        description: randomFrom(expenseDescriptions[category]),
+        currency: settings.currency.code,
+      });
+    }
 
-    // Add sample expenses
-    addExpense({
-      amount: 450.5,
-      category: "food",
-      date: today,
-      description: "Lunch at restaurant",
-      currency: "USD",
-    });
-
-    addExpense({
-      amount: 25.0,
-      category: "transport",
-      date: today,
-      description: "Uber ride",
-      currency: "USD",
-    });
-
-    addExpense({
-      amount: 120.75,
-      category: "shopping",
-      date: yesterday,
-      description: "New shoes",
-      currency: "USD",
-    });
-
-    addExpense({
-      amount: 15.5,
-      category: "entertainment",
-      date: yesterday,
-      description: "Movie tickets",
-      currency: "USD",
-    });
-
-    addExpense({
-      amount: 85.0,
-      category: "healthcare",
-      date: lastWeek,
-      description: "Pharmacy",
-      currency: "USD",
-    });
-
-    addExpense({
-      amount: 200.0,
-      category: "bills",
-      date: lastWeek,
-      description: "Electricity bill",
-      currency: "USD",
-    });
+    for (const { value: category } of EXPENSE_CATEGORIES) {
+      const range = expenseRanges[category];
+      addExpense({
+        amount: randomAmount(range.min, range.max),
+        category,
+        date: randomRecentDate(25),
+        description: randomFrom(expenseDescriptions[category]),
+        currency: settings.currency.code,
+      });
+    }
   };
 
   const addSampleGroceryItems = () => {
-    addGroceryItem({
-      name: "Bananas",
-      quantity: "6 pcs",
-      price: 3.5,
-      category: "fruits",
-      checked: false,
-    });
-
-    addGroceryItem({
-      name: "Milk",
-      quantity: "2 L",
-      price: 4.99,
-      category: "dairy",
-      checked: false,
-    });
-
-    addGroceryItem({
-      name: "Tomatoes",
-      quantity: "500g",
-      price: 2.75,
-      category: "vegetables",
-      checked: true,
-    });
-
-    addGroceryItem({
-      name: "Chicken breast",
-      quantity: "1 kg",
-      price: 12.99,
-      category: "meat",
-      checked: false,
-    });
-
-    addGroceryItem({
-      name: "Coffee",
-      quantity: "250g",
-      price: 8.5,
-      category: "beverages",
-      checked: false,
-    });
-
-    addGroceryItem({
-      name: "Apples",
-      quantity: "8 pcs",
-      price: 5.25,
-      category: "fruits",
-      checked: true,
-    });
+    for (const { value: category } of GROCERY_CATEGORIES) {
+      const sample = randomFrom(grocerySamples[category]);
+      addGroceryItem({
+        name: sample.name,
+        quantity: sample.quantity,
+        price: randomAmount(1.5, 16),
+        category,
+        checked: Math.random() < 0.3,
+      });
+    }
   };
 
   return {

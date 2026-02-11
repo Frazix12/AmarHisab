@@ -5,15 +5,7 @@ import { Expense, UserSettings } from "@/types";
 import { formatCurrency } from "@/utils/currency";
 import { formatDate } from "@/utils/date";
 import {
-    Book02Icon,
-    Cancel01Icon,
-    Car03Icon,
-    Film01Icon,
-    Invoice01Icon,
-    Medicine01Icon,
-    MoreHorizontalIcon,
-    Restaurant01Icon,
-    ShoppingBag01Icon,
+  Cancel01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import React, { useCallback, useRef, useState } from "react";
@@ -36,18 +28,34 @@ interface ExpenseCardProps {
   onLongPress?: (expense: Expense) => void;
 }
 
-const getCategoryIcon = (category: string) => {
-  const icons: Record<string, any> = {
-    food: Restaurant01Icon,
-    transport: Car03Icon,
-    shopping: ShoppingBag01Icon,
-    entertainment: Film01Icon,
-    healthcare: Medicine01Icon,
-    bills: Invoice01Icon,
-    education: Book02Icon,
-    other: MoreHorizontalIcon,
+const getCategoryVisual = (category: string) => {
+  const visuals: Record<string, { emoji: string; backgroundColor: string }> = {
+    food: { emoji: "🍜", backgroundColor: "#FFE2C7" },
+    transport: { emoji: "🚕", backgroundColor: "#DCE9FF" },
+    shopping: { emoji: "🛍️", backgroundColor: "#FCDCF3" },
+    entertainment: { emoji: "🎬", backgroundColor: "#E8DEFF" },
+    healthcare: { emoji: "🩺", backgroundColor: "#FFD9DE" },
+    bills: { emoji: "🧾", backgroundColor: "#FFF1C9" },
+    education: { emoji: "📚", backgroundColor: "#D8F4E6" },
+    other: { emoji: "✨", backgroundColor: "#E7E7ED" },
   };
-  return icons[category] || MoreHorizontalIcon;
+  return visuals[category] || visuals.other;
+};
+
+const withAlpha = (color: string, alpha: number) => {
+  const normalizedAlpha = Math.min(1, Math.max(0, alpha));
+  const hex = color.replace("#", "");
+
+  if (hex.length !== 6 && hex.length !== 8) {
+    return color;
+  }
+
+  const base = hex.slice(0, 6);
+  const r = Number.parseInt(base.slice(0, 2), 16);
+  const g = Number.parseInt(base.slice(2, 4), 16);
+  const b = Number.parseInt(base.slice(4, 6), 16);
+
+  return `rgba(${r}, ${g}, ${b}, ${normalizedAlpha})`;
 };
 
 export const ExpenseCard = React.memo(
@@ -61,7 +69,7 @@ export const ExpenseCard = React.memo(
   }: ExpenseCardProps) => {
     const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
     const thumbnailPressedRef = useRef(false);
-    const icon = getCategoryIcon(expense.category);
+    const categoryVisual = getCategoryVisual(expense.category);
     const categoryLabel = Object.prototype.hasOwnProperty.call(
       t.categories,
       expense.category,
@@ -111,7 +119,7 @@ export const ExpenseCard = React.memo(
               {
                 backgroundColor: expense.imageUri
                   ? "transparent"
-                  : colors.primaryContainer,
+                  : categoryVisual.backgroundColor,
               },
             ]}
           >
@@ -130,12 +138,7 @@ export const ExpenseCard = React.memo(
                 />
               </Pressable>
             ) : (
-              <HugeiconsIcon
-                icon={icon}
-                size={24}
-                color={colors.primary}
-                strokeWidth={1.5}
-              />
+              <Text style={styles.categoryEmoji}>{categoryVisual.emoji}</Text>
             )}
           </View>
 
@@ -160,9 +163,18 @@ export const ExpenseCard = React.memo(
           </View>
 
           <View style={styles.amountContainer}>
-            <Text style={[styles.amount, { color: colors.error }]}>
-              {formatCurrency(expense.amount, settings.currency, settings.language)}
-            </Text>
+            <View
+              style={[
+                styles.amountPill,
+                {
+                  backgroundColor: withAlpha(colors.error, 0.1),
+                },
+              ]}
+            >
+              <Text style={[styles.amount, { color: colors.error }]}> 
+                {formatCurrency(expense.amount, settings.currency, settings.language)}
+              </Text>
+            </View>
           </View>
         </Pressable>
 
@@ -227,6 +239,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 12,
   },
+  categoryEmoji: {
+    fontSize: 22,
+    lineHeight: 26,
+  },
   content: {
     flex: 1,
     marginRight: 12,
@@ -249,9 +265,14 @@ const styles = StyleSheet.create({
   amountContainer: {
     alignItems: "flex-end",
   },
+  amountPill: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
   amount: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "500",
     lineHeight: 22,
   },
   thumbnailImage: {

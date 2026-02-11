@@ -23,10 +23,13 @@ import { HugeiconsIcon } from "@hugeicons/react-native";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   Alert,
+  FlatList,
+  Pressable,
   RefreshControl,
   SectionList,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import Animated from "react-native-reanimated";
@@ -54,11 +57,16 @@ export default function StatisticsScreen() {
     settings,
   } = useApp();
   const colors = Colors[colorScheme];
+  const { width: screenWidth } = useWindowDimensions();
+  const summaryCardWidth = screenWidth - 120;
+  const summarySideInset = (screenWidth - summaryCardWidth) / 2;
+  const summarySnapInterval = summaryCardWidth + 12;
   const isBangla = settings.language === "bn";
   const [refreshing, setRefreshing] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -70,15 +78,106 @@ export default function StatisticsScreen() {
     () => [...expenses].sort((a, b) => b.date.getTime() - a.date.getTime()),
     [expenses],
   );
-  const groupedExpenses = useMemo(
-    () => groupExpensesByDate(sortedExpenses),
-    [sortedExpenses],
+
+  const filteredSortedExpenses = useMemo(
+    () =>
+      selectedCategory
+        ? sortedExpenses.filter((expense) => expense.category === selectedCategory)
+        : sortedExpenses,
+    [selectedCategory, sortedExpenses],
   );
+
+  const groupedExpenses = useMemo(
+    () => groupExpensesByDate(filteredSortedExpenses),
+    [filteredSortedExpenses],
+  );
+
+  const monthExpenseCount = useMemo(() => {
+    const now = new Date();
+    return sortedExpenses.filter(
+      (expense) =>
+        expense.date.getFullYear() === now.getFullYear() &&
+        expense.date.getMonth() === now.getMonth(),
+    ).length;
+  }, [sortedExpenses]);
+
+  const weekExpenseCount = useMemo(() => {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setHours(0, 0, 0, 0);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+
+    return sortedExpenses.filter((expense) => expense.date >= startOfWeek).length;
+  }, [sortedExpenses]);
 
   const avgDaily = useMemo(() => {
     const currentDay = new Date().getDate();
     return currentDay > 0 ? monthExpenses / currentDay : 0;
   }, [monthExpenses]);
+
+  const summaryCards = useMemo(
+    () => [
+      {
+        key: "all-time",
+        icon: Wallet03Icon,
+        title: t.statistics?.allTime || "All Time",
+        amount: totalExpenses,
+        variant: "primary" as const,
+        description: `${formatNumber(sortedExpenses.length)} ${
+          sortedExpenses.length === 1 ? t.common.item : t.common.items
+        }`,
+      },
+      {
+        key: "this-month",
+        icon: Calendar03Icon,
+        title: t.statistics?.thisMonth || "This Month",
+        amount: monthExpenses,
+        variant: "secondary" as const,
+        description: `${formatNumber(monthExpenseCount)} ${
+          monthExpenseCount === 1 ? t.common.item : t.common.items
+        }`,
+      },
+      {
+        key: "this-week",
+        icon: Calendar03Icon,
+        title: t.statistics?.thisWeek || "This Week",
+        amount: weekExpenses,
+        variant: "success" as const,
+        description: `${formatNumber(weekExpenseCount)} ${
+          weekExpenseCount === 1 ? t.common.item : t.common.items
+        }`,
+      },
+      {
+        key: "daily-avg",
+        icon: Analytics01Icon,
+        title: t.statistics?.avgDaily || "Daily Avg",
+        amount: avgDaily,
+        variant: "secondary" as const,
+        description: `${t.statistics?.thisMonth || "This Month"} ${formatNumber(
+          monthExpenseCount,
+        )} ${monthExpenseCount === 1 ? t.common.item : t.common.items}`,
+      },
+    ],
+    [
+      avgDaily,
+      formatNumber,
+      monthExpenseCount,
+      monthExpenses,
+      sortedExpenses.length,
+      t,
+      totalExpenses,
+      weekExpenseCount,
+      weekExpenses,
+    ],
+  );
+
+  const selectedCategoryBreakdown = useMemo(
+    () =>
+      selectedCategory
+        ? categoryBreakdown.find((item) => item.category === selectedCategory) ?? null
+        : null,
+    [categoryBreakdown, selectedCategory],
+  );
 
   const handleExpensePress = useCallback((expense: Expense) => {
     console.log("Edit expense", expense);
@@ -204,29 +303,40 @@ export default function StatisticsScreen() {
     () => (
       <View>
         <View style={styles.summarySection}>
-          <SummaryCard
-            icon={Wallet03Icon}
-            title={t.statistics?.allTime || "All Time"}
-            amount={totalExpenses}
-            variant="primary"
-          />
-          <SummaryCard
-            icon={Calendar03Icon}
-            title={t.statistics?.thisMonth || "This Month"}
-            amount={monthExpenses}
-            variant="secondary"
-          />
-          <SummaryCard
-            icon={Calendar03Icon}
-            title={t.statistics?.thisWeek || "This Week"}
-            amount={weekExpenses}
-            variant="success"
-          />
-          <SummaryCard
-            icon={Analytics01Icon}
-            title={t.statistics?.avgDaily || "Daily Avg"}
-            amount={avgDaily}
-            variant="secondary"
+          <FlatList
+            data={summaryCards}
+            horizontal
+            keyExtractor={(item) => item.key}
+            showsHorizontalScrollIndicator={false}
+            decelerationRate="fast"
+            snapToAlignment="start"
+            snapToInterval={summarySnapInterval}
+            disableIntervalMomentum
+            contentContainerStyle={[
+              styles.summaryListContent,
+              { paddingHorizontal: summarySideInset },
+            ]}
+            renderItem={({ item, index }) => (
+              <View
+                style={[
+                  styles.summaryCardSlide,
+                  {
+                    width: summaryCardWidth,
+                    marginLeft: index === 0 ? -summarySideInset : 0,
+                    marginRight: index === summaryCards.length - 1 ? 0 : 12,
+                  },
+                ]}
+              >
+                <SummaryCard
+                  icon={item.icon}
+                  title={item.title}
+                  amount={item.amount}
+                  variant={item.variant}
+                  description={item.description}
+                  size="large"
+                />
+              </View>
+            )}
           />
         </View>
 
@@ -235,60 +345,60 @@ export default function StatisticsScreen() {
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               {t.statistics?.byCategory || "By Category"}
             </Text>
-            {categoryBreakdown.map((item) => (
+            <FlatList
+              data={categoryBreakdown}
+              horizontal
+              keyExtractor={(item) => item.category}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoryPillsRow}
+              renderItem={({ item }) => {
+                const isSelected = selectedCategory === item.category;
+                return (
+                  <Pressable
+                    onPress={() => setSelectedCategory(item.category)}
+                    style={[
+                      styles.categoryPill,
+                      {
+                        backgroundColor: isSelected
+                          ? colors.primaryContainer
+                          : colors.surface,
+                        borderColor: isSelected ? colors.primary : colors.outline,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryPillText,
+                        { color: isSelected ? colors.primary : colors.textSecondary },
+                      ]}
+                    >
+                      {t.categories[item.category]}
+                    </Text>
+                  </Pressable>
+                );
+              }}
+            />
+
+            {selectedCategoryBreakdown ? (
               <View
-                key={item.category}
                 style={[
-                  styles.categoryItem,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.outline,
-                  },
+                  styles.categorySelectedMeta,
+                  { backgroundColor: colors.surface, borderColor: colors.outline },
                 ]}
               >
-                <View style={styles.categoryInfo}>
-                  <Text style={[styles.categoryName, { color: colors.text }]}>
-                    {t.categories[item.category]}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.categoryDetails,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {formatNumber(item.count)} {item.count === 1 ? t.common.item : t.common.items} •{" "}
-                    {formatNumber(Math.round(item.percentage))}%
-                  </Text>
-                </View>
-                <View style={styles.categoryAmountContainer}>
-                  <View
-                    style={[
-                      styles.categoryBarContainer,
-                      { backgroundColor: colors.outline },
-                    ]}
-                  >
-                    <View
-                      style={[
-                        styles.categoryBar,
-                        {
-                          backgroundColor: colors.primary,
-                          width: `${item.percentage}%`,
-                        },
-                      ]}
-                    />
-                  </View>
-                  <Text style={[styles.categoryAmount, { color: colors.text }]}>
-                    {formatNumber(item.amount)}
-                  </Text>
-                </View>
+                <Text style={[styles.categorySelectedMetaText, { color: colors.text }]}>
+                  {formatNumber(Math.round(selectedCategoryBreakdown.percentage))}% •{" "}
+                  {formatNumber(selectedCategoryBreakdown.count)}{" "}
+                  {selectedCategoryBreakdown.count === 1 ? t.common.item : t.common.items}
+                </Text>
               </View>
-            ))}
+            ) : null}
           </View>
         )}
 
-        {sortedExpenses.length > 0 && (
+        {filteredSortedExpenses.length > 0 && (
           <View style={styles.historySection}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}> 
               {t.statistics?.history || "History"}
             </Text>
           </View>
@@ -296,15 +406,17 @@ export default function StatisticsScreen() {
       </View>
     ),
     [
-      avgDaily,
       categoryBreakdown,
       colors,
       formatNumber,
-      monthExpenses,
-      sortedExpenses.length,
+      filteredSortedExpenses.length,
+      selectedCategory,
+      selectedCategoryBreakdown,
+      summaryCardWidth,
+      summarySideInset,
+      summarySnapInterval,
+      summaryCards,
       t,
-      totalExpenses,
-      weekExpenses,
     ],
   );
   const pageTransitionStyle = usePageTransition();
@@ -401,6 +513,12 @@ const styles = StyleSheet.create({
   summarySection: {
     marginBottom: 24,
   },
+  summaryListContent: {
+    paddingRight: 0,
+  },
+  summaryCardSlide: {
+    flexShrink: 0,
+  },
   categorySection: {
     marginBottom: 24,
   },
@@ -410,47 +528,32 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     lineHeight: 24,
   },
-  categoryItem: {
-    marginBottom: 12,
-    padding: 16,
-    borderRadius: 12,
+  categoryPillsRow: {
+    paddingRight: 6,
+  },
+  categoryPill: {
     borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    marginRight: 10,
   },
-  categoryInfo: {
-    marginBottom: 8,
-  },
-  categoryName: {
-    fontSize: 16,
+  categoryPillText: {
+    fontSize: 13,
     fontWeight: "600",
-    marginBottom: 4,
-    lineHeight: 22,
+    lineHeight: 17,
   },
-  categoryDetails: {
-    fontSize: 14,
-    lineHeight: 18,
+  categorySelectedMeta: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  categoryAmountContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  categoryBarContainer: {
-    flex: 1,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 12,
-    overflow: "hidden",
-  },
-  categoryBar: {
-    height: "100%",
-    borderRadius: 4,
-  },
-  categoryAmount: {
-    fontSize: 16,
+  categorySelectedMetaText: {
+    fontSize: 13,
     fontWeight: "600",
-    minWidth: 80,
-    textAlign: "right",
-    lineHeight: 22,
+    lineHeight: 17,
   },
   historySection: {
     marginBottom: 24,
