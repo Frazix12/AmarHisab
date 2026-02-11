@@ -43,6 +43,10 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
   const { colorScheme, t, settings, formatNumber } = useApp();
   const colors = Colors[colorScheme];
   const { animatedStyle, backdropStyle, shouldRender } = useModalAnimation(visible);
+  const expenseCategoryLabel = item?.expenseCategory
+    ? t.categories[item.expenseCategory as keyof typeof t.categories] ||
+      t.categories.other
+    : t.categories.other;
 
   const [price, setPrice] = useState("");
   const [imageUri, setImageUri] = useState<string | undefined>(undefined);
@@ -254,6 +258,17 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
                 </Text>
                 <Text style={[styles.infoValue, { color: colors.text }]}>
                   {t.categories[item.category as keyof typeof t.categories]}
+                </Text>
+              </View>
+
+              <View style={styles.infoGroup}>
+                <Text
+                  style={[styles.infoLabel, { color: colors.textSecondary }]}
+                >
+                  {t.grocery.expenseCategoryHintLabel}
+                </Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>
+                  {expenseCategoryLabel}
                 </Text>
               </View>
 

@@ -20,6 +20,7 @@ export interface GroceryItem {
   templateId?: string; // Track which template was used
   createdAt: Date; // For learning analytics
   expenseId?: string; // Track linked expense when checked
+  expenseCategory?: ExpenseCategory;
   aiDetected?: boolean; // Track if category was detected by AI
   checkedAt?: Date; // Track when item was completed
   imageUri?: string; // Optional product/receipt photo

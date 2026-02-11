@@ -2,7 +2,7 @@ import { TemplateLearner } from "@/features/templates/services/template-learner"
 import { TemplateStorage } from "@/features/templates/services/template-storage";
 import { normalizeProductName } from "@/features/templates/services/template-utils";
 import { setElevenLabsApiKey } from "@/services/ai/elevenlabs";
-import { setGeminiApiKey } from "@/services/ai/gemini";
+import { detectExpenseCategory, setGeminiApiKey } from "@/services/ai/gemini";
 import { trackEvent, captureError, AnalyticsEvents } from "@/services/analytics";
 import { getTranslation, TranslationKey } from "@/services/i18n";
 import {
@@ -121,6 +121,17 @@ const DEFAULT_SETTINGS: UserSettings = {
   language: "en",
 };
 
+const FALLBACK_GROCERY_TO_EXPENSE_CATEGORY: Record<GroceryItem["category"], ExpenseCategory> = {
+  fruits: "food",
+  vegetables: "food",
+  dairy: "food",
+  meat: "food",
+  snacks: "food",
+  beverages: "food",
+  household: "shopping",
+  other: "other",
+};
+
 export const AppProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
@@ -133,6 +144,48 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   const [isLoaded, setIsLoaded] = useState(false);
   const [itemPendingCompletion, setItemPendingCompletion] =
     useState<GroceryItem | null>(null);
+
+  const getFallbackExpenseCategory = (
+    groceryCategory: GroceryItem["category"],
+  ): ExpenseCategory => {
+    return FALLBACK_GROCERY_TO_EXPENSE_CATEGORY[groceryCategory] ?? "other";
+  };
+
+  const resolveExpenseCategoryForGroceryItem = (
+    item: Pick<GroceryItem, "expenseCategory" | "category">,
+  ): ExpenseCategory => {
+    return item.expenseCategory ?? getFallbackExpenseCategory(item.category);
+  };
+
+  const cacheExpenseCategoryForGroceryItem = (item: GroceryItem): void => {
+    const fallbackCategory = getFallbackExpenseCategory(item.category);
+
+    setGroceryItems((prev) =>
+      prev.map((entry) =>
+        entry.id === item.id && !entry.expenseCategory
+          ? { ...entry, expenseCategory: fallbackCategory }
+          : entry,
+      ),
+    );
+
+    Promise.resolve(detectExpenseCategory(item.name))
+      .then((detectedCategory) => {
+        if (!detectedCategory) return;
+        setGroceryItems((prev) =>
+          prev.map((entry) =>
+            entry.id === item.id
+              ? {
+                  ...entry,
+                  expenseCategory: detectedCategory,
+                }
+              : entry,
+          ),
+        );
+      })
+      .catch((error) => {
+        console.error("Failed to detect expense category for grocery item:", error);
+      });
+  };
 
   // Load data on mount
   useEffect(() => {
@@ -238,13 +291,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     item: Omit<GroceryItem, "id" | "nameNormalized" | "createdAt">,
   ) => {
     const nameNormalized = normalizeProductName(item.name);
+    const fallbackExpenseCategory = getFallbackExpenseCategory(item.category);
     const newItem: GroceryItem = {
       ...item,
       nameNormalized,
       createdAt: new Date(),
+      expenseCategory: item.expenseCategory ?? fallbackExpenseCategory,
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
     };
     setGroceryItems((prev) => [newItem, ...prev]);
+    cacheExpenseCategoryForGroceryItem(newItem);
 
     // Track for learning (async, don't await)
     TemplateLearner.trackGroceryItem(newItem);
@@ -327,7 +383,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
             // Checking: Add expense and store its ID
             const newExpense = {
               amount: item.price,
-              category: "food" as const,
+              category: resolveExpenseCategoryForGroceryItem(item),
               date: new Date(),
               description: `${item.name}${item.quantity ? ` (${item.quantity})` : ""}`,
               currency: settings.currency.code,
@@ -372,7 +428,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
           // Create expense
           const newExpense = {
             amount: price,
-            category: "food" as const,
+            category: resolveExpenseCategoryForGroceryItem(item),
             date: new Date(),
             description: `${item.name}${item.quantity ? ` (${item.quantity})` : ""}`,
             currency: settings.currency.code,

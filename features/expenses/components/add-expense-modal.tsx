@@ -107,7 +107,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
         setAiDetecting(false);
 
         if (detectedCategory) {
-          setCategory(detectedCategory as ExpenseCategory);
+          setCategory(detectedCategory);
           setAiDetectedCategory(true);
         }
       }

@@ -36,6 +36,10 @@ export const GroceryItemComponent = React.memo(
     onPress,
     onLongPress,
   }: GroceryItemComponentProps) => {
+    const expenseCategoryLabel =
+      t.categories[item.expenseCategory as keyof typeof t.categories] ||
+      t.categories.other;
+
     const handlePress = onToggle
       ? () => onToggle(item.id)
       : onPress
@@ -119,11 +123,16 @@ export const GroceryItemComponent = React.memo(
                 {t.grocery?.priceNotSet || "Price not set"}
               </Text>
             )}
-            <Text style={[styles.category, { color: colors.textSecondary }]}>
+            <Text style={[styles.category, { color: colors.textSecondary }]}> 
               {t.categories[item.category as keyof typeof t.categories] ||
                 item.category ||
                 t.categories.other}
             </Text>
+            {!item.checked && (
+              <Text style={[styles.expenseHint, { color: colors.textSecondary }]}>
+                {t.grocery.expenseCategoryHintLabel}: {expenseCategoryLabel}
+              </Text>
+            )}
             {!item.checked && item.price === null && (
               <View
                 style={[
@@ -201,6 +210,10 @@ const styles = StyleSheet.create({
   priceNotSet: {
     fontSize: 12,
     fontStyle: "italic",
+    lineHeight: 16,
+  },
+  expenseHint: {
+    fontSize: 12,
     lineHeight: 16,
   },
   badge: {

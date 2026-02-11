@@ -69,6 +69,7 @@ export const translations = {
       completeAndCheck: "Complete",
       priceRequired: "Price is required to complete this item",
       pricePositive: "Price must be positive",
+      expenseCategoryHintLabel: "Expense category",
     },
 
     voice: {
@@ -647,6 +648,7 @@ export const translations = {
       completeAndCheck: "কিনেছি  ",
       priceRequired: "দাম দিন আগে",
       pricePositive: "দাম শূন্যের বেশি হতে হবে",
+      expenseCategoryHintLabel: "খরচের ধরন",
     },
 
     voice: {

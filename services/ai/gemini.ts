@@ -263,7 +263,7 @@ export function clearCategoryCache(): void {
  */
 export async function detectExpenseCategory(
   description: string,
-): Promise<string | null> {
+): Promise<ExpenseCategory | null> {
   const traceId = createLlmTraceId("detect_expense_category");
   const startedAt = Date.now();
   const spanName = "detect_expense_category";
