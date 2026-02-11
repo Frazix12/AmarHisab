@@ -44,6 +44,7 @@ import {
 } from "react-native";
 import Animated, {
   Easing,
+  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -107,6 +108,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
   const waveBarOne = useSharedValue(0.35);
   const waveBarTwo = useSharedValue(0.35);
   const waveBarThree = useSharedValue(0.35);
+  const micToCloseProgress = useSharedValue(0);
 
   useEffect(() => {
     if (status === "idle" && visible) {
@@ -220,6 +222,13 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
     waveBarThree,
   ]);
 
+  useEffect(() => {
+    micToCloseProgress.value = withTiming(status === "listening" ? 1 : 0, {
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [status, micToCloseProgress]);
+
   const readyPulseStyle = useAnimatedStyle(() => ({
     opacity: readyOpacity.value,
     transform: [{ scale: readyPulse.value }],
@@ -240,6 +249,35 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
 
   const waveBarThreeStyle = useAnimatedStyle(() => ({
     height: 7 + waveBarThree.value * 14,
+  }));
+
+  const micIconContainerStyle = useAnimatedStyle(() => {
+    const rotation = interpolate(micToCloseProgress.value, [0, 1], [0, 90]);
+    return {
+      transform: [
+        {
+          rotate: `${rotation}deg`,
+        },
+      ],
+    };
+  });
+
+  const micIconStyle = useAnimatedStyle(() => ({
+    opacity: 1 - micToCloseProgress.value,
+    transform: [
+      {
+        scale: interpolate(micToCloseProgress.value, [0, 1], [1, 0.72]),
+      },
+    ],
+  }));
+
+  const closeIconStyle = useAnimatedStyle(() => ({
+    opacity: micToCloseProgress.value,
+    transform: [
+      {
+        scale: interpolate(micToCloseProgress.value, [0, 1], [0.72, 1]),
+      },
+    ],
   }));
 
   const displayTranscript = useMemo(() => {
@@ -679,39 +717,86 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
 
             <View style={styles.textEntrySection}>
               <View style={styles.inputActionRow}>
-                <TextInput
+                <View
                   style={[
-                    styles.transcriptInput,
+                    styles.transcriptInputWrapper,
                     {
-                      color: colors.text,
                       borderColor: colors.outline,
                       backgroundColor: colors.surface,
                     },
                   ]}
-                  placeholder={
-                    status === "listening"
-                      ? t.voice.listening
-                      : status === "processing"
-                        ? t.voice.processing
-                        : t.voice.transcriptPlaceholder
-                  }
-                  placeholderTextColor={colors.textSecondary}
-                  multiline={false}
-                  editable={status !== "listening" && status !== "processing"}
-                  value={transcript}
-                  returnKeyType="send"
-                  onSubmitEditing={() => {
-                    if (canSendText) {
-                      void sendTypedTranscript();
-                    }
-                  }}
-                  onChangeText={(text) => {
-                    setTranscript(text);
-                    if (errorMessage) {
-                      setErrorMessage(null);
-                    }
-                  }}
-                />
+                >
+                  {status === "listening" ? (
+                    <View style={styles.transcriptListeningInline}>
+                      <Animated.View
+                        style={[
+                          styles.recordingDot,
+                          recordingDotStyle,
+                          {
+                            backgroundColor: colors.error,
+                            shadowColor: colors.error,
+                          },
+                        ]}
+                      />
+                      <Text style={[styles.recordingText, { color: colors.text }]}>
+                        {t.voice.listening}
+                      </Text>
+                      <View style={styles.recordingWaveInline}>
+                        <Animated.View
+                          style={[
+                            styles.recordingWaveBar,
+                            { backgroundColor: colors.primary },
+                            waveBarOneStyle,
+                          ]}
+                        />
+                        <Animated.View
+                          style={[
+                            styles.recordingWaveBar,
+                            { backgroundColor: colors.primary },
+                            waveBarTwoStyle,
+                          ]}
+                        />
+                        <Animated.View
+                          style={[
+                            styles.recordingWaveBar,
+                            { backgroundColor: colors.primary },
+                            waveBarThreeStyle,
+                          ]}
+                        />
+                      </View>
+                    </View>
+                  ) : (
+                    <TextInput
+                      style={[
+                        styles.transcriptInput,
+                        {
+                          color: colors.text,
+                        },
+                      ]}
+                      placeholder={
+                        status === "processing"
+                          ? t.voice.processing
+                          : t.voice.transcriptPlaceholder
+                      }
+                      placeholderTextColor={colors.textSecondary}
+                      multiline={false}
+                      editable={status !== "processing"}
+                      value={transcript}
+                      returnKeyType="send"
+                      onSubmitEditing={() => {
+                        if (canSendText) {
+                          void sendTypedTranscript();
+                        }
+                      }}
+                      onChangeText={(text) => {
+                        setTranscript(text);
+                        if (errorMessage) {
+                          setErrorMessage(null);
+                        }
+                      }}
+                    />
+                  )}
+                </View>
 
                 <Pressable
                   onPress={sendTypedTranscript}
@@ -755,68 +840,35 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
                       : t.voice.startListening
                   }
                 >
-                  <HugeiconsIcon
-                    icon={AiMicIcon}
-                    size={18}
-                    color={
-                      status === "listening" ? colors.error : colors.textSecondary
-                    }
-                    strokeWidth={2.2}
-                  />
+                  <Animated.View
+                    style={[styles.actionIconContainer, micIconContainerStyle]}
+                  >
+                    <Animated.View style={[styles.actionIconLayer, micIconStyle]}>
+                      <HugeiconsIcon
+                        icon={AiMicIcon}
+                        size={18}
+                        color={colors.textSecondary}
+                        strokeWidth={2.2}
+                      />
+                    </Animated.View>
+                    <Animated.View
+                      style={[
+                        styles.actionIconLayer,
+                        styles.actionIconOverlay,
+                        closeIconStyle,
+                      ]}
+                    >
+                      <HugeiconsIcon
+                        icon={Cancel01Icon}
+                        size={18}
+                        color={colors.error}
+                        strokeWidth={2.2}
+                      />
+                    </Animated.View>
+                  </Animated.View>
                 </Pressable>
               </View>
 
-              {status === "listening" ? (
-                <View
-                  style={[
-                    styles.recordingIndicator,
-                    {
-                      backgroundColor: colors.primary + "14",
-                      borderColor: colors.primary + "40",
-                    },
-                  ]}
-                >
-                  <Animated.View
-                    style={[
-                      styles.recordingDot,
-                      recordingDotStyle,
-                      {
-                        backgroundColor: colors.error,
-                        shadowColor: colors.error,
-                      },
-                    ]}
-                  />
-                  <Text
-                    style={[styles.recordingText, { color: colors.text }]}
-                    numberOfLines={1}
-                  >
-                    {t.voice.listening}
-                  </Text>
-                  <View style={styles.recordingWave}>
-                    <Animated.View
-                      style={[
-                        styles.recordingWaveBar,
-                        { backgroundColor: colors.primary },
-                        waveBarOneStyle,
-                      ]}
-                    />
-                    <Animated.View
-                      style={[
-                        styles.recordingWaveBar,
-                        { backgroundColor: colors.primary },
-                        waveBarTwoStyle,
-                      ]}
-                    />
-                    <Animated.View
-                      style={[
-                        styles.recordingWaveBar,
-                        { backgroundColor: colors.primary },
-                        waveBarThreeStyle,
-                      ]}
-                    />
-                  </View>
-                </View>
-              ) : null}
             </View>
 
             {status === "processing" && (
@@ -1611,6 +1663,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
+  transcriptInputWrapper: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 40,
+    justifyContent: "center",
+  },
   circleActionButton: {
     width: 40,
     height: 40,
@@ -1620,15 +1680,35 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexShrink: 0,
   },
+  actionIconContainer: {
+    width: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actionIconLayer: {
+    width: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actionIconOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+  },
   transcriptInput: {
     flex: 1,
     fontSize: 14,
     lineHeight: 18,
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
+    paddingHorizontal: 0,
     paddingVertical: 0,
-    height: 40,
+    height: "100%",
+  },
+  transcriptListeningInline: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   recordingIndicator: {
     marginTop: 12,
@@ -1660,6 +1740,13 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     gap: 3,
     height: 22,
+  },
+  recordingWaveInline: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 3,
+    height: 18,
+    marginLeft: "auto",
   },
   recordingWaveBar: {
     width: 4,
