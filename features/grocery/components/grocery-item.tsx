@@ -39,6 +39,7 @@ export const GroceryItemComponent = React.memo(
     const expenseCategoryLabel =
       t.categories[item.expenseCategory as keyof typeof t.categories] ||
       t.categories.other;
+    const expenseCategoryHintLabel = t.grocery?.expenseCategoryHintLabel ?? "";
 
     const handlePress = onToggle
       ? () => onToggle(item.id)
@@ -130,7 +131,8 @@ export const GroceryItemComponent = React.memo(
             </Text>
             {!item.checked && (
               <Text style={[styles.expenseHint, { color: colors.textSecondary }]}>
-                {t.grocery.expenseCategoryHintLabel}: {expenseCategoryLabel}
+                {expenseCategoryHintLabel ? `${expenseCategoryHintLabel}: ` : ""}
+                {expenseCategoryLabel}
               </Text>
             )}
             {!item.checked && item.price === null && (

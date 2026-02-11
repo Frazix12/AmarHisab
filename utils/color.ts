@@ -9,7 +9,7 @@ export const withAlpha = (color: string, alpha: number): string => {
   if (trimmedColor.startsWith("#")) {
     const hex = trimmedColor.slice(1);
     if (!HEX_COLOR_REGEX.test(hex)) {
-      return `rgba(0, 0, 0, ${normalizedAlpha})`;
+      return color;
     }
 
     const r = Number.parseInt(hex.slice(0, 2), 16);

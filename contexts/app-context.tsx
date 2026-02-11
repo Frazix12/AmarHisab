@@ -160,20 +160,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   const cacheExpenseCategoryForGroceryItem = (item: GroceryItem): void => {
     const fallbackCategory = getFallbackExpenseCategory(item.category);
 
-    setGroceryItems((prev) =>
-      prev.map((entry) =>
-        entry.id === item.id && !entry.expenseCategory
-          ? { ...entry, expenseCategory: fallbackCategory }
-          : entry,
-      ),
-    );
-
     Promise.resolve(detectExpenseCategory(item.name))
       .then((detectedCategory) => {
         if (!detectedCategory) return;
         setGroceryItems((prev) =>
           prev.map((entry) =>
-            entry.id === item.id
+            entry.id === item.id &&
+            (!entry.expenseCategory || entry.expenseCategory === fallbackCategory)
               ? {
                   ...entry,
                   expenseCategory: detectedCategory,
