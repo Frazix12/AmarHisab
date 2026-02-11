@@ -355,7 +355,11 @@ export default function StatisticsScreen() {
                 const isSelected = selectedCategory === item.category;
                 return (
                   <Pressable
-                    onPress={() => setSelectedCategory(item.category)}
+                    onPress={() =>
+                      setSelectedCategory((currentCategory) =>
+                        currentCategory === item.category ? null : item.category,
+                      )
+                    }
                     style={[
                       styles.categoryPill,
                       {

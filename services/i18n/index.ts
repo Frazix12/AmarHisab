@@ -691,7 +691,7 @@ export const translations = {
       quantity: "পরিমাণ",
       price: "দাম",
       save: "সেভ  ",
-      cancel: "বাদ",
+      cancel: "বাদ  ",
       permission: "অনুমতি লাগবে",
       attachment: "ছবি",
       takePhoto: "ক্যামেরা",

@@ -5,8 +5,6 @@
 
 import { Platform } from "react-native";
 
-
-// Old theme (kept commented out per request):
 export const Colors = {
   light: {
     primary: "#6444D5",
@@ -97,7 +95,7 @@ export const Colors = {
     text: "#F2ECF3",
     textSecondary: "#A19CA2",
     textTertiary: "#8D8891",
-    error: "#E76A68FF",
+    error: "#E76A68",
     onError: "#F2ECF3",
     errorContainer: "#8D1C18",
     onErrorContainer: "#FFDAD6",
@@ -125,6 +123,7 @@ export const Colors = {
 };
 
 
+// Old theme (kept commented out below for reference):
 // export const Colors = {
 //   light: {
 //     // primary: "#A78BFB",

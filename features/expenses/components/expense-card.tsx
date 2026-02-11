@@ -2,6 +2,7 @@ import { Colors } from "@/constants/theme";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { TranslationKey } from "@/services/i18n";
 import { Expense, UserSettings } from "@/types";
+import { withAlpha } from "@/utils/color";
 import { formatCurrency } from "@/utils/currency";
 import { formatDate } from "@/utils/date";
 import {
@@ -41,22 +42,6 @@ const getCategoryVisual = (category: string) => {
     other: { emoji: "✨", backgroundColor: "#E7E7ED" },
   };
   return visuals[category] || visuals.other;
-};
-
-const withAlpha = (color: string, alpha: number) => {
-  const normalizedAlpha = Math.min(1, Math.max(0, alpha));
-  const hex = color.replace("#", "");
-
-  if (hex.length !== 6 && hex.length !== 8) {
-    return color;
-  }
-
-  const base = hex.slice(0, 6);
-  const r = Number.parseInt(base.slice(0, 2), 16);
-  const g = Number.parseInt(base.slice(2, 4), 16);
-  const b = Number.parseInt(base.slice(4, 6), 16);
-
-  return `rgba(${r}, ${g}, ${b}, ${normalizedAlpha})`;
 };
 
 export const ExpenseCard = React.memo(
@@ -174,7 +159,7 @@ export const ExpenseCard = React.memo(
                 },
               ]}
             >
-              <Text style={[styles.amount, { color: colors.error }]}> 
+              <Text style={[styles.amount, { color: colors.error }]}>
                 {formatCurrency(expense.amount, settings.currency, settings.language)}
               </Text>
             </View>
