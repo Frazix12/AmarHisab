@@ -386,6 +386,8 @@ export default function GroceryScreen() {
       )}
 
       <FlashList
+        // @ts-expect-error FlashList v2 typings omit estimatedItemSize in this setup.
+        estimatedItemSize={72}
         data={groceryListItems}
         keyExtractor={(item) => item.id}
         renderItem={renderListItem}

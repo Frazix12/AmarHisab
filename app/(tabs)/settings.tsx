@@ -146,13 +146,25 @@ export default function Settings() {
             </Text>
 
             <Pressable
-              onPress={() => {
-                addSampleExpenses();
-                addSampleGroceryItems();
-                showNotification(t.alerts.sampleDataAdded, {
-                  type: "success",
-                  title: t.alerts.successTitle,
-                });
+              onPress={async () => {
+                try {
+                  await addSampleExpenses();
+                  await addSampleGroceryItems();
+                  showNotification(t.alerts.sampleDataAdded, {
+                    type: "success",
+                    title: t.alerts.successTitle,
+                  });
+                } catch (error) {
+                  console.error("Failed to add sample data:", error);
+                  showNotification(
+                    t.alerts.sampleDataAddFailed ||
+                      "Failed to add sample data. Please try again.",
+                    {
+                      type: "error",
+                      title: t.alerts.errorTitle,
+                    },
+                  );
+                }
               }}
               style={({ pressed }) => [
                 styles.devButton,
@@ -185,12 +197,24 @@ export default function Settings() {
                     {
                       text: t.settings.deleteAll,
                       style: "destructive",
-                      onPress: () => {
-                        clearAllData();
-                        showNotification(t.settings.dataCleared, {
-                          type: "success",
-                          title: t.alerts.successTitle,
-                        });
+                      onPress: async () => {
+                        try {
+                          await clearAllData();
+                          showNotification(t.settings.dataCleared, {
+                            type: "success",
+                            title: t.alerts.successTitle,
+                          });
+                        } catch (error) {
+                          console.error("Failed to clear all data:", error);
+                          showNotification(
+                            t.alerts.dataClearFailed ||
+                              "Failed to clear data. Please try again.",
+                            {
+                              type: "error",
+                              title: t.alerts.errorTitle,
+                            },
+                          );
+                        }
                       },
                     },
                   ],

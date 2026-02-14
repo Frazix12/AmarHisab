@@ -64,7 +64,14 @@ const apiRateLimitListeners: ApiRateLimitListener[] = [];
 
 const emitApiRateLimited = (context: string): void => {
   apiRateLimitListeners.forEach((listener) => {
-    listener(context);
+    try {
+      listener(context);
+    } catch (error) {
+      console.warn(
+        `[RateLimiter] ${context} rate-limit listener failed:`,
+        error,
+      );
+    }
   });
 };
 

@@ -110,7 +110,7 @@ interface AppContextType {
   ) => Promise<void>;
   smartSuggestionsEnabled: boolean;
   toggleSmartSuggestions: () => void;
-  clearAllData: () => void;
+  clearAllData: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -601,7 +601,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     setSmartSuggestionsEnabled((prev) => !prev);
   };
 
-  const clearAllData = async () => {
+  const clearAllData = async (): Promise<void> => {
     try {
       // Clear template storage first - await before mutating state
       if (typeof TemplateStorage.clear === "function") {
@@ -626,6 +626,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       // Don't mutate state on failure - log and capture error
       console.error("Failed to clear data:", error);
       captureError(error, { context: "clear_all_data" });
+      throw error instanceof Error ? error : new Error(String(error));
     }
   };
 

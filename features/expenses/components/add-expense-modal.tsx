@@ -290,7 +290,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             >
               {/* Amount Input */}
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text }]}> 
+                <Text style={[styles.label, { color: colors.text }]}>
                   {t.form.amount}
                 </Text>
                 <Controller
@@ -318,7 +318,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
 
               {/* Description Input */}
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text }]}> 
+                <Text style={[styles.label, { color: colors.text }]}>
                   {t.form.description}
                 </Text>
                 <Controller

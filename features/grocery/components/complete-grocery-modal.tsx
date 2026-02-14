@@ -279,7 +279,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
                 <Text
                   style={[styles.infoLabel, { color: colors.textSecondary }]}
                 >
-                  {t.grocery?.expenseCategoryHintLabel}
+                  {t.grocery?.expenseCategoryHintLabel ?? "Expense category"}
                 </Text>
                 <Text style={[styles.infoValue, { color: colors.text }]}>
                   {expenseCategoryLabel}

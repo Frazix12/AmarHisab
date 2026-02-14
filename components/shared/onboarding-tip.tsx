@@ -19,13 +19,17 @@ export const OnboardingTip: React.FC<OnboardingTipProps> = ({ screenKey }) => {
     let isActive = true;
 
     const showTipIfNeeded = async () => {
-      const dismissed = await loadOnboardingTipDismissed(screenKey);
-      if (!isActive || dismissed) {
-        return;
-      }
+      try {
+        const dismissed = await loadOnboardingTipDismissed(screenKey);
+        if (!isActive || dismissed) {
+          return;
+        }
 
-      showHint(tipMessage);
-      await saveOnboardingTipDismissed(screenKey);
+        showHint(tipMessage);
+        await saveOnboardingTipDismissed(screenKey);
+      } catch (error) {
+        console.error("Failed to handle onboarding tip:", error);
+      }
     };
 
     void showTipIfNeeded();

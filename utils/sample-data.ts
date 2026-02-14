@@ -87,7 +87,7 @@ export const useSampleData = () => {
     ],
   };
 
-  const addSampleExpenses = () => {
+  const addSampleExpenses = async (): Promise<void> => {
     for (const { value: category } of EXPENSE_CATEGORIES) {
       const range = expenseRanges[category];
       addExpense({
@@ -111,7 +111,7 @@ export const useSampleData = () => {
     }
   };
 
-  const addSampleGroceryItems = () => {
+  const addSampleGroceryItems = async (): Promise<void> => {
     for (const { value: category } of GROCERY_CATEGORIES) {
       const sample = randomFrom(grocerySamples[category]);
       addGroceryItem({

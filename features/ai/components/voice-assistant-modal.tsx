@@ -938,7 +938,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
                   ) : (
                     parsedResult.expenses.map((expense, index) => (
                       <Pressable
-                        key={`${expense.description}-${expense.amount}-${expense.category || "other"}`}
+                        key={`${(expense as { id?: string }).id ?? `${expense.description}-${expense.amount}-${expense.category || "other"}`}-${index}`}
                         onPress={() =>
                           setEditingExpense({ index, item: expense })
                         }
@@ -1000,7 +1000,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
                   ) : (
                     parsedResult.groceries.map((item, index) => (
                       <Pressable
-                        key={`${item.name}-${item.quantity || ""}-${item.price ?? ""}-${item.category || "other"}`}
+                        key={`${item.name}-${item.quantity || ""}-${item.price ?? ""}-${item.category || "other"}-${index}`}
                         onPress={() => setEditingGrocery({ index, item })}
                         style={[
                           styles.reviewCard,
@@ -1615,6 +1615,7 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                 </Text>
               </Pressable>
               <Pressable
+                disabled={!isNameValid}
                 onPress={handleSave}
                 style={[
                   styles.primaryButton,
