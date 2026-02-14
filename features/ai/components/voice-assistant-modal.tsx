@@ -29,7 +29,7 @@ import {
   Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -42,6 +42,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { Controller, useForm } from "react-hook-form";
 import Animated, {
   Easing,
   interpolate,
@@ -59,6 +60,10 @@ interface VoiceAssistantModalProps {
 
 type VoiceStatus = "idle" | "listening" | "processing" | "review";
 type VoiceLanguageMode = "auto" | "en" | "bn";
+
+interface VoiceTranscriptFormValues {
+  transcript: string;
+}
 
 const AUDIO_SAMPLE_RATE = 16000;
 const isAudioRecordAvailable = () => AudioRecord.isAvailable();
@@ -84,7 +89,18 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
   const { animatedStyle, backdropStyle, shouldRender } = useModalAnimation(visible);
 
   const [status, setStatus] = useState<VoiceStatus>("idle");
-  const [transcript, setTranscript] = useState("");
+  const {
+    control: transcriptControl,
+    handleSubmit: handleTranscriptSubmit,
+    reset: resetTranscriptForm,
+    setValue: setTranscriptValue,
+    watch: watchTranscript,
+  } = useForm<VoiceTranscriptFormValues>({
+    defaultValues: {
+      transcript: "",
+    },
+  });
+  const transcript = watchTranscript("transcript");
   const [parsedResult, setParsedResult] = useState<VoiceParsedResult | null>(
     null,
   );
@@ -290,15 +306,15 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
     status !== "processing" &&
     displayTranscript.length > 0;
 
-  const resetState = () => {
+  const resetState = useCallback(() => {
     setStatus("idle");
-    setTranscript("");
+    resetTranscriptForm({ transcript: "" });
     setParsedResult(null);
     setErrorMessage(null);
     setDetectedLanguage(null);
-  };
+  }, [resetTranscriptForm]);
 
-  const cleanupSession = async () => {
+  const cleanupSession = useCallback(async () => {
     if (isListeningRef.current) {
       isListeningRef.current = false;
       try {
@@ -309,14 +325,14 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
         console.warn("Failed to stop audio recording", error);
       }
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (!visible) {
       cleanupSession();
       resetState();
     }
-  }, [visible]);
+  }, [visible, cleanupSession, resetState]);
 
   const requestAudioPermission = async () => {
     if (Platform.OS !== "android") return true;
@@ -381,7 +397,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
 
     setErrorMessage(null);
     setParsedResult(null);
-    setTranscript("");
+    resetTranscriptForm({ transcript: "" });
     setDetectedLanguage(null);
     setStatus("listening");
 
@@ -457,7 +473,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
 
       setDetectedLanguage(result.language || null);
       const normalized = normalizeSpeechText(result.text || "");
-      setTranscript(normalized);
+      setTranscriptValue("transcript", normalized);
       await processTranscript(normalized);
     } catch (error) {
       const message =
@@ -467,7 +483,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
     }
   };
 
-  const sendTypedTranscript = async () => {
+  const sendTypedTranscript = handleTranscriptSubmit(async ({ transcript }) => {
     const normalized = normalizeSpeechText(transcript);
     if (!normalized) {
       setErrorMessage(t.voice.noSpeechDetected);
@@ -489,7 +505,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
       setParsedResult(null);
       setStatus("idle");
     }
-  };
+  });
 
   const toggleMicrophone = () => {
     if (status === "processing") {
@@ -766,34 +782,40 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
                       </View>
                     </View>
                   ) : (
-                    <TextInput
-                      style={[
-                        styles.transcriptInput,
-                        {
-                          color: colors.text,
-                        },
-                      ]}
-                      placeholder={
-                        status === "processing"
-                          ? t.voice.processing
-                          : t.voice.transcriptPlaceholder
-                      }
-                      placeholderTextColor={colors.textSecondary}
-                      multiline={false}
-                      editable={status !== "processing"}
-                      value={transcript}
-                      returnKeyType="send"
-                      onSubmitEditing={() => {
-                        if (canSendText) {
-                          void sendTypedTranscript();
-                        }
-                      }}
-                      onChangeText={(text) => {
-                        setTranscript(text);
-                        if (errorMessage) {
-                          setErrorMessage(null);
-                        }
-                      }}
+                    <Controller
+                      control={transcriptControl}
+                      name="transcript"
+                      render={({ field: { onChange, value } }) => (
+                        <TextInput
+                          style={[
+                            styles.transcriptInput,
+                            {
+                              color: colors.text,
+                            },
+                          ]}
+                          placeholder={
+                            status === "processing"
+                              ? t.voice.processing
+                              : t.voice.transcriptPlaceholder
+                          }
+                          placeholderTextColor={colors.textSecondary}
+                          multiline={false}
+                          editable={status !== "processing"}
+                          value={value}
+                          returnKeyType="send"
+                          onSubmitEditing={() => {
+                            if (canSendText) {
+                              void sendTypedTranscript();
+                            }
+                          }}
+                          onChangeText={(text) => {
+                            onChange(text);
+                            if (errorMessage) {
+                              setErrorMessage(null);
+                            }
+                          }}
+                        />
+                      )}
                     />
                   )}
                 </View>
@@ -916,7 +938,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
                   ) : (
                     parsedResult.expenses.map((expense, index) => (
                       <Pressable
-                        key={`expense-${index}`}
+                        key={`${expense.description}-${expense.amount}-${expense.category || "other"}`}
                         onPress={() =>
                           setEditingExpense({ index, item: expense })
                         }
@@ -978,7 +1000,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
                   ) : (
                     parsedResult.groceries.map((item, index) => (
                       <Pressable
-                        key={`grocery-${index}`}
+                        key={`${item.name}-${item.quantity || ""}-${item.price ?? ""}-${item.category || "other"}`}
                         onPress={() => setEditingGrocery({ index, item })}
                         style={[
                           styles.reviewCard,
@@ -1100,6 +1122,12 @@ interface EditExpenseModalProps {
   onSave: (item: VoiceParsedExpense) => void;
 }
 
+interface EditExpenseModalFormValues {
+  amount: string;
+  description: string;
+  category: ExpenseCategory;
+}
+
 const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
   visible,
   item,
@@ -1108,25 +1136,58 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
 }) => {
   const { colorScheme, t, settings } = useApp();
   const colors = Colors[colorScheme];
-  const [amount, setAmount] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<ExpenseCategory>("other");
-  const [amountError, setAmountError] = useState<string | null>(null);
+  const amountInputRef = useRef<TextInput | null>(null);
+  const {
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<EditExpenseModalFormValues>({
+    defaultValues: {
+      amount: "",
+      description: "",
+      category: "other",
+    },
+  });
 
+  const amount = watch("amount");
+  const description = watch("description");
+  const category = watch("category");
   const parsedAmount = Number.parseFloat(amount);
   const isAmountValid = !Number.isNaN(parsedAmount) && parsedAmount > 0;
   const isSaveDisabled = !isAmountValid;
-  const validationError =
-    !isAmountValid && amount.trim() ? t.alerts.invalidAmount : null;
-  const displayAmountError = amountError ?? validationError;
+  const displayAmountError =
+    errors.amount?.message ||
+    (!isAmountValid && amount.trim() ? t.alerts.invalidAmount : null);
 
   useEffect(() => {
     if (!visible || !item) return;
-    setAmount(item.amount.toString());
-    setDescription(item.description);
-    setCategory(item.category || "other");
-    setAmountError(null);
-  }, [visible, item]);
+    reset({
+      amount: item.amount.toString(),
+      description: item.description,
+      category: item.category || "other",
+    });
+  }, [visible, item, reset]);
+
+  const handleSave = handleSubmit(
+    (values) => {
+      const nextAmount = Number.parseFloat(values.amount);
+      if (Number.isNaN(nextAmount) || nextAmount <= 0) {
+        return;
+      }
+
+      onSave({
+        amount: nextAmount,
+        description: values.description.trim() || item?.description || "",
+        category: values.category,
+      });
+    },
+    () => {
+      amountInputRef.current?.focus();
+    },
+  );
 
   if (!item) return null;
 
@@ -1165,21 +1226,34 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
               >
                 {t.form.amount} ({settings.currency.symbol})
               </Text>
-              <BanglaNumberInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.surfaceVariant,
-                    borderColor: colors.outline,
-                    color: colors.text,
+              <Controller
+                control={control}
+                name="amount"
+                rules={{
+                  validate: (value) => {
+                    const parsed = Number.parseFloat(value);
+                    if (Number.isNaN(parsed) || parsed <= 0) {
+                      return t.alerts.invalidAmount;
+                    }
+                    return true;
                   },
-                ]}
-                value={amount}
-                onChangeText={(text) => {
-                  setAmount(text);
-                  if (amountError) setAmountError(null);
                 }}
-                isBanglaMode={settings.language === "bn"}
+                render={({ field: { onChange, value } }) => (
+                  <BanglaNumberInput
+                    ref={amountInputRef}
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: colors.surfaceVariant,
+                        borderColor: colors.outline,
+                        color: colors.text,
+                      },
+                    ]}
+                    value={value}
+                    onChangeText={onChange}
+                    isBanglaMode={settings.language === "bn"}
+                  />
+                )}
               />
               {displayAmountError ? (
                 <Text style={[styles.inputErrorText, { color: colors.error }]}>
@@ -1191,21 +1265,27 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
               >
                 {t.form.description}
               </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  styles.textArea,
-                  {
-                    backgroundColor: colors.surfaceVariant,
-                    borderColor: colors.outline,
-                    color: colors.text,
-                  },
-                ]}
-                value={description}
-                onChangeText={setDescription}
-                onFocus={() => triggerLightHaptic()}
-                multiline
-                numberOfLines={3}
+              <Controller
+                control={control}
+                name="description"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    style={[
+                      styles.input,
+                      styles.textArea,
+                      {
+                        backgroundColor: colors.surfaceVariant,
+                        borderColor: colors.outline,
+                        color: colors.text,
+                      },
+                    ]}
+                    value={value}
+                    onChangeText={onChange}
+                    onFocus={() => triggerLightHaptic()}
+                    multiline
+                    numberOfLines={3}
+                  />
+                )}
               />
 
               <Text style={[styles.fieldLabel, { color: colors.text }]}
@@ -1216,7 +1296,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                 {EXPENSE_CATEGORIES.map((cat) => (
                   <Pressable
                     key={cat.value}
-                    onPress={() => setCategory(cat.value)}
+                    onPress={() => setValue("category", cat.value)}
                     style={[
                       styles.categoryButton,
                       {
@@ -1265,18 +1345,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
               </Pressable>
               <Pressable
                 disabled={isSaveDisabled}
-                onPress={() => {
-                  if (!isAmountValid) {
-                    setAmountError(t.alerts.invalidAmount);
-                    return;
-                  }
-                  setAmountError(null);
-                  onSave({
-                    amount: parsedAmount,
-                    description: description.trim() || item.description,
-                    category,
-                  });
-                }}
+                onPress={handleSave}
                 style={[
                   styles.primaryButton,
                   {
@@ -1308,6 +1377,13 @@ interface EditGroceryModalProps {
   onSave: (item: VoiceParsedGrocery) => void;
 }
 
+interface EditGroceryModalFormValues {
+  name: string;
+  quantity: string;
+  price: string;
+  category: GroceryCategory;
+}
+
 const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
   visible,
   item,
@@ -1316,22 +1392,53 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
 }) => {
   const { colorScheme, t, settings } = useApp();
   const colors = Colors[colorScheme];
-  const [name, setName] = useState("");
-  const [quantity, setQuantity] = useState("");
-  const [price, setPrice] = useState("");
-  const [category, setCategory] = useState<GroceryCategory>("other");
-  const [nameError, setNameError] = useState<string | null>(null);
+  const {
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<EditGroceryModalFormValues>({
+    defaultValues: {
+      name: "",
+      quantity: "",
+      price: "",
+      category: "other",
+    },
+  });
 
+  const name = watch("name");
+  const quantity = watch("quantity");
+  const price = watch("price");
+  const category = watch("category");
   const isNameValid = name.trim().length > 0;
 
   useEffect(() => {
     if (!visible || !item) return;
-    setName(item.name);
-    setQuantity(item.quantity || "");
-    setPrice(item.price?.toString() || "");
-    setCategory(item.category || "other");
-    setNameError(null);
-  }, [visible, item]);
+    reset({
+      name: item.name,
+      quantity: item.quantity || "",
+      price: item.price?.toString() || "",
+      category: item.category || "other",
+    });
+  }, [visible, item, reset]);
+
+  const handleSave = handleSubmit((values) => {
+    const parsedPrice = values.price.trim()
+      ? Number.parseFloat(values.price)
+      : undefined;
+    const priceValue =
+      parsedPrice !== undefined && !Number.isNaN(parsedPrice)
+        ? parsedPrice
+        : undefined;
+    onSave({
+      name: values.name.trim(),
+      quantity: values.quantity.trim() || undefined,
+      price: priceValue,
+      category: values.category,
+    });
+  });
 
   if (!item) return null;
 
@@ -1370,34 +1477,14 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
               >
                 {t.form.name}
               </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.surfaceVariant,
-                    borderColor: colors.outline,
-                    color: colors.text,
-                  },
-                ]}
-                value={name}
-                onChangeText={(text) => {
-                  setName(text);
-                  if (nameError && text.trim()) setNameError(null);
+              <Controller
+                control={control}
+                name="name"
+                rules={{
+                  validate: (value) =>
+                    value.trim().length > 0 ? true : t.alerts.requiredName,
                 }}
-                onFocus={() => triggerLightHaptic()}
-              />
-              {nameError ? (
-                <Text style={[styles.inputErrorText, { color: colors.error }]}>
-                  {nameError}
-                </Text>
-              ) : null}
-
-              <View style={styles.row}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldLabel, { color: colors.text }]}
-                  >
-                    {t.form.quantity}
-                  </Text>
+                render={({ field: { onChange, value } }) => (
                   <TextInput
                     style={[
                       styles.input,
@@ -1407,11 +1494,42 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                         color: colors.text,
                       },
                     ]}
-                    value={quantity}
-                    onChangeText={(text) =>
-                      setQuantity(parseBanglaNumber(text))
-                    }
+                    value={value}
+                    onChangeText={onChange}
                     onFocus={() => triggerLightHaptic()}
+                  />
+                )}
+              />
+              {errors.name?.message ? (
+                <Text style={[styles.inputErrorText, { color: colors.error }]}>
+                  {errors.name.message}
+                </Text>
+              ) : null}
+
+              <View style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.fieldLabel, { color: colors.text }]}
+                  >
+                    {t.form.quantity}
+                  </Text>
+                  <Controller
+                    control={control}
+                    name="quantity"
+                    render={({ field: { onChange, value } }) => (
+                      <TextInput
+                        style={[
+                          styles.input,
+                          {
+                            backgroundColor: colors.surfaceVariant,
+                            borderColor: colors.outline,
+                            color: colors.text,
+                          },
+                        ]}
+                        value={value}
+                        onChangeText={(text) => onChange(parseBanglaNumber(text))}
+                        onFocus={() => triggerLightHaptic()}
+                      />
+                    )}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -1419,18 +1537,24 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                   >
                     {t.form.price} ({settings.currency.symbol})
                   </Text>
-                  <BanglaNumberInput
-                    style={[
-                      styles.input,
-                      {
-                        backgroundColor: colors.surfaceVariant,
-                        borderColor: colors.outline,
-                        color: colors.text,
-                      },
-                    ]}
-                    value={price}
-                    onChangeText={setPrice}
-                    isBanglaMode={settings.language === "bn"}
+                  <Controller
+                    control={control}
+                    name="price"
+                    render={({ field: { onChange, value } }) => (
+                      <BanglaNumberInput
+                        style={[
+                          styles.input,
+                          {
+                            backgroundColor: colors.surfaceVariant,
+                            borderColor: colors.outline,
+                            color: colors.text,
+                          },
+                        ]}
+                        value={value}
+                        onChangeText={onChange}
+                        isBanglaMode={settings.language === "bn"}
+                      />
+                    )}
                   />
                 </View>
               </View>
@@ -1443,7 +1567,7 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                 {GROCERY_CATEGORIES.map((cat) => (
                   <Pressable
                     key={cat.value}
-                    onPress={() => setCategory(cat.value)}
+                    onPress={() => setValue("category", cat.value)}
                     style={[
                       styles.categoryButton,
                       {
@@ -1491,29 +1615,15 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                 </Text>
               </Pressable>
               <Pressable
-                onPress={() => {
-                  if (!isNameValid) {
-                    setNameError(t.alerts.requiredName);
-                    return;
-                  }
-                  setNameError(null);
-                  const parsedPrice = price.trim()
-                    ? Number.parseFloat(price)
-                    : undefined;
-                  const priceValue =
-                    parsedPrice !== undefined && !Number.isNaN(parsedPrice)
-                      ? parsedPrice
-                      : undefined;
-                  onSave({
-                    name: name.trim(),
-                    quantity: quantity.trim() || undefined,
-                    price: priceValue,
-                    category,
-                  });
-                }}
+                onPress={handleSave}
                 style={[
                   styles.primaryButton,
-                  { backgroundColor: colors.primary, flex: 1, marginTop: 0 },
+                  {
+                    backgroundColor: colors.primary,
+                    flex: 1,
+                    marginTop: 0,
+                    opacity: isNameValid ? 1 : 0.8,
+                  },
                 ]}
               >
                 <Text

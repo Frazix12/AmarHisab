@@ -9,7 +9,8 @@ import { triggerLightHaptic } from "@/utils/haptics";
 import { Cancel01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React from "react";
+import { Controller, useForm } from "react-hook-form";
 import {
     Alert,
     ScrollView,
@@ -20,47 +21,44 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+interface AddTemplateFormValues {
+  productName: string;
+  quantity: string;
+  price: string;
+  category: GroceryCategory;
+}
+
 export default function AddTemplateScreen() {
   const { addTemplate, colorScheme, settings, formatNumber, t } = useApp();
   const colors = Colors[colorScheme];
 
-  const [productName, setProductName] = useState("");
-  const [quantity, setQuantity] = useState("");
-  const [price, setPrice] = useState("");
-  const [category, setCategory] = useState<GroceryCategory>("other");
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    clearErrors,
+    formState: { errors },
+  } = useForm<AddTemplateFormValues>({
+    defaultValues: {
+      productName: "",
+      quantity: "",
+      price: "",
+      category: "other",
+    },
+  });
 
-  const [errors, setErrors] = useState<{
-    productName?: string;
-    price?: string;
-  }>({});
-
-  const validate = (): boolean => {
-    const newErrors: typeof errors = {};
-
-    if (!productName.trim()) {
-      newErrors.productName = t.alerts.requiredProductName;
-    }
-
-    const priceNum = parseFloat(price);
-    if (!price || isNaN(priceNum) || priceNum < 0) {
-      newErrors.price = t.alerts.requiredValidPrice;
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSave = async () => {
-    if (!validate()) return;
+  const handleSave = handleSubmit(async (values) => {
+    const normalizedPrice = parseBanglaNumber(values.price).trim();
+    const priceNum = Number.parseFloat(normalizedPrice);
 
     try {
       await addTemplate({
         userId: "default",
-        productNameDisplay: productName.trim(),
-        productNameNormalized: normalizeProductName(productName),
-        defaultQuantity: quantity.trim(),
-        defaultPrice: parseFloat(price),
-        category,
+        productNameDisplay: values.productName.trim(),
+        productNameNormalized: normalizeProductName(values.productName),
+        defaultQuantity: values.quantity.trim(),
+        defaultPrice: priceNum,
+        category: values.category,
         source: "manual",
       });
 
@@ -68,7 +66,7 @@ export default function AddTemplateScreen() {
     } catch {
       Alert.alert(t.alerts.errorTitle, t.alerts.failedToCreate);
     }
-  };
+  });
 
   return (
     <SafeAreaView
@@ -93,28 +91,37 @@ export default function AddTemplateScreen() {
           <Text style={[styles.label, { color: colors.text }]}>
             {t.templates.productName} {t.templates.required}
           </Text>
-          <TextInput
-            value={productName}
-            onChangeText={(text) => {
-              setProductName(text);
-              if (errors.productName)
-                setErrors({ ...errors, productName: undefined });
+          <Controller
+            control={control}
+            name="productName"
+            rules={{
+              validate: (value) =>
+                value.trim() ? true : t.alerts.requiredProductName,
             }}
-            placeholder={t.placeholders.templateName}
-            placeholderTextColor={colors.textSecondary}
-            onKeyPress={triggerLightHaptic}
-            style={[
-              styles.input,
-              {
-                color: colors.text,
-                backgroundColor: colors.surface,
-                borderColor: errors.productName ? colors.error : colors.outline,
-              },
-            ]}
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                value={value}
+                onChangeText={(text) => {
+                  onChange(text);
+                  clearErrors("productName");
+                }}
+                placeholder={t.placeholders.templateName}
+                placeholderTextColor={colors.textSecondary}
+                onKeyPress={triggerLightHaptic}
+                style={[
+                  styles.input,
+                  {
+                    color: colors.text,
+                    backgroundColor: colors.surface,
+                    borderColor: errors.productName ? colors.error : colors.outline,
+                  },
+                ]}
+              />
+            )}
           />
-          {errors.productName && (
+          {errors.productName?.message && (
             <Text style={[styles.errorText, { color: colors.error }]}>
-              {errors.productName}
+              {errors.productName.message}
             </Text>
           )}
         </View>
@@ -124,20 +131,26 @@ export default function AddTemplateScreen() {
           <Text style={[styles.label, { color: colors.text }]}>
             {t.templates.defaultQuantity}
           </Text>
-          <TextInput
-            value={formatNumber(quantity)}
-            onChangeText={(text) => setQuantity(parseBanglaNumber(text))}
-            placeholder={t.placeholders.templateQuantity}
-            placeholderTextColor={colors.textSecondary}
-            onKeyPress={triggerLightHaptic}
-            style={[
-              styles.input,
-              {
-                color: colors.text,
-                backgroundColor: colors.surface,
-                borderColor: colors.outline,
-              },
-            ]}
+          <Controller
+            control={control}
+            name="quantity"
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                value={formatNumber(value || "")}
+                onChangeText={(text) => onChange(parseBanglaNumber(text))}
+                placeholder={t.placeholders.templateQuantity}
+                placeholderTextColor={colors.textSecondary}
+                onKeyPress={triggerLightHaptic}
+                style={[
+                  styles.input,
+                  {
+                    color: colors.text,
+                    backgroundColor: colors.surface,
+                    borderColor: colors.outline,
+                  },
+                ]}
+              />
+            )}
           />
           <Text style={[styles.hint, { color: colors.textSecondary }]}>
             {t.helpers.templateQuantityHint}
@@ -153,25 +166,44 @@ export default function AddTemplateScreen() {
             <Text style={[styles.currencySymbol, { color: colors.text }]}>
               {settings.currency.symbol}
             </Text>
-            <BanglaNumberInput
-              value={price}
-              onChangeText={setPrice}
-              isBanglaMode={settings.language === "bn"}
-              placeholder={t.placeholders.templatePrice}
-              placeholderTextColor={colors.textSecondary}
-              style={[
-                styles.priceInput,
-                {
-                  color: colors.text,
-                  backgroundColor: colors.surface,
-                  borderColor: errors.price ? colors.error : colors.outline,
+            <Controller
+              control={control}
+              name="price"
+              rules={{
+                validate: (value) => {
+                  const normalizedPrice = parseBanglaNumber(value).trim();
+                  const priceNum = Number.parseFloat(normalizedPrice);
+                  if (!normalizedPrice || Number.isNaN(priceNum) || priceNum < 0) {
+                    return t.alerts.requiredValidPrice;
+                  }
+                  return true;
                 },
-              ]}
+              }}
+              render={({ field: { onChange, value } }) => (
+                <BanglaNumberInput
+                  value={value}
+                  onChangeText={(text) => {
+                    onChange(text);
+                    clearErrors("price");
+                  }}
+                  isBanglaMode={settings.language === "bn"}
+                  placeholder={t.placeholders.templatePrice}
+                  placeholderTextColor={colors.textSecondary}
+                  style={[
+                    styles.priceInput,
+                    {
+                      color: colors.text,
+                      backgroundColor: colors.surface,
+                      borderColor: errors.price ? colors.error : colors.outline,
+                    },
+                  ]}
+                />
+              )}
             />
           </View>
-          {errors.price && (
+          {errors.price?.message && (
             <Text style={[styles.errorText, { color: colors.error }]}>
-              {errors.price}
+              {errors.price.message}
             </Text>
           )}
         </View>
@@ -181,16 +213,20 @@ export default function AddTemplateScreen() {
           <Text style={[styles.label, { color: colors.text }]}>
             {t.templates.category} {t.templates.required}
           </Text>
+          <Controller
+            control={control}
+            name="category"
+            render={({ field: { value } }) => (
           <View style={styles.categoryGrid}>
             {GROCERY_CATEGORIES.map((cat) => (
               <Pressable
                 key={cat.value}
-                onPress={() => setCategory(cat.value)}
+                onPress={() => setValue("category", cat.value)}
                 style={[
                   styles.categoryButton,
                   {
                     backgroundColor:
-                      category === cat.value ? colors.primary : colors.surface,
+                      value === cat.value ? colors.primary : colors.surface,
                     borderColor: colors.outline,
                   },
                 ]}
@@ -199,7 +235,7 @@ export default function AddTemplateScreen() {
                   style={[
                     styles.categoryText,
                     {
-                      color: category === cat.value ? "#fff" : colors.text,
+                      color: value === cat.value ? "#fff" : colors.text,
                     },
                   ]}
                 >
@@ -208,6 +244,8 @@ export default function AddTemplateScreen() {
               </Pressable>
             ))}
           </View>
+            )}
+          />
         </View>
 
         {/* Info */}

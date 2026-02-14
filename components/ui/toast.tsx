@@ -1,8 +1,19 @@
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
+import {
+  getCurrentNotification,
+  NotificationPayload,
+  showToast,
+  subscribeToNotifications,
+} from "@/services/notifications";
 import { useReducedMotionPreference } from "@/utils/animations";
-import { Tick02Icon } from "@hugeicons/core-free-icons";
+import {
+  Cancel01Icon,
+  InformationCircleIcon,
+  Tick02Icon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
+import { BlurView } from "expo-blur";
 import React, { useEffect, useRef, useState } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import Animated, {
@@ -14,58 +25,77 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-let toastTimeoutId: ReturnType<typeof setTimeout> | null = null;
-const TOAST_HIDE_DELAY_MS = 2200;
-
-interface ToastState {
-  visible: boolean;
-  message: string;
-}
-
-const toastState: ToastState = {
-  visible: false,
-  message: "",
+type VisualConfig = {
+  accent: string;
+  iconBackground: string;
+  iconColor: string;
+  icon: typeof Tick02Icon;
 };
 
-const listeners: ((state: ToastState) => void)[] = [];
-
-export const showToast = (message: string) => {
-  if (toastTimeoutId) {
-    clearTimeout(toastTimeoutId);
+const getVisualConfig = (
+  notification: NotificationPayload,
+  colors: (typeof Colors)["light"],
+): VisualConfig => {
+  switch (notification.type) {
+    case "success":
+      return {
+        accent: colors.success,
+        iconBackground: colors.successContainer,
+        iconColor: colors.success,
+        icon: Tick02Icon,
+      };
+    case "error":
+      return {
+        accent: colors.error,
+        iconBackground: colors.errorContainer,
+        iconColor: colors.error,
+        icon: Cancel01Icon,
+      };
+    case "warning":
+      return {
+        accent: colors.warning,
+        iconBackground: colors.warningContainer,
+        iconColor: colors.warning,
+        icon: InformationCircleIcon,
+      };
+    case "hint":
+      return {
+        accent: colors.primary,
+        iconBackground: colors.primaryContainer,
+        iconColor: colors.primary,
+        icon: InformationCircleIcon,
+      };
+    case "info":
+    default:
+      return {
+        accent: colors.info,
+        iconBackground: colors.infoContainer,
+        iconColor: colors.info,
+        icon: InformationCircleIcon,
+      };
   }
-
-  toastState.visible = true;
-  toastState.message = message;
-  listeners.forEach((listener) => listener({ ...toastState }));
-
-  toastTimeoutId = setTimeout(() => {
-    toastState.visible = false;
-    listeners.forEach((listener) => listener({ ...toastState }));
-  }, TOAST_HIDE_DELAY_MS);
 };
 
 export const Toast: React.FC = () => {
   const { colorScheme } = useApp();
   const colors = Colors[colorScheme];
+  const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotionPreference();
-  const [state, setState] = useState<ToastState>(toastState);
-  const [shouldRender, setShouldRender] = useState(toastState.visible);
+  const [notification, setNotification] = useState<NotificationPayload | null>(
+    getCurrentNotification(),
+  );
+  const [renderNotification, setRenderNotification] =
+    useState<NotificationPayload | null>(notification);
+  const [shouldRender, setShouldRender] = useState(Boolean(notification));
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const progress = useSharedValue(toastState.visible ? 1 : 0);
+  const progress = useSharedValue(notification ? 1 : 0);
 
   useEffect(() => {
-    const listener = (newState: ToastState) => {
-      setState(newState);
-    };
-
-    listeners.push(listener);
-    return () => {
-      const index = listeners.indexOf(listener);
-      if (index > -1) {
-        listeners.splice(index, 1);
-      }
-    };
+    return subscribeToNotifications((nextNotification) => {
+      setNotification(nextNotification);
+    });
   }, []);
 
   useEffect(() => {
@@ -74,7 +104,8 @@ export const Toast: React.FC = () => {
       hideTimeoutRef.current = null;
     }
 
-    if (state.visible) {
+    if (notification) {
+      setRenderNotification(notification);
       setShouldRender(true);
       progress.value = reduceMotion
         ? withTiming(1, { duration: 0 })
@@ -98,6 +129,7 @@ export const Toast: React.FC = () => {
 
     hideTimeoutRef.current = setTimeout(() => {
       setShouldRender(false);
+      setRenderNotification(null);
     }, 170);
 
     return () => {
@@ -105,13 +137,13 @@ export const Toast: React.FC = () => {
         clearTimeout(hideTimeoutRef.current);
       }
     };
-  }, [progress, reduceMotion, state.visible]);
+  }, [notification, progress, reduceMotion]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: progress.value,
     transform: [
       {
-        translateY: interpolate(progress.value, [0, 1], [16, 0], Extrapolation.CLAMP),
+        translateY: interpolate(progress.value, [0, 1], [-10, 0], Extrapolation.CLAMP),
       },
       {
         scale: interpolate(progress.value, [0, 1], [0.98, 1], Extrapolation.CLAMP),
@@ -119,41 +151,56 @@ export const Toast: React.FC = () => {
     ],
   }));
 
-  if (!shouldRender) return null;
+  if (!shouldRender || !renderNotification) return null;
+
+  const visualConfig = getVisualConfig(renderNotification, colors);
+  const blurTint = colorScheme === "dark" ? "dark" : "light";
+  const blurIntensity = colorScheme === "dark" ? 42 : 70;
+  const surfaceOverlayColor =
+    colorScheme === "dark"
+      ? "rgba(31, 24, 32, 0.62)"
+      : "rgba(246, 239, 244, 0.72)";
 
   return (
     <Animated.View
-      style={[
-        styles.container,
-        animatedStyle,
-      ]}
+      style={[styles.container, { top: insets.top + 10 }, animatedStyle]}
       pointerEvents="none"
     >
-      <View
-        style={[
-          styles.toast,
-          {
-            backgroundColor: colors.surface,
-            borderColor: colors.outline,
-          },
-        ]}
-      >
-        <View
-          style={[
-            styles.iconContainer,
-            { backgroundColor: colors.primary + "20" },
-          ]}
+      <View style={[styles.toastShell, { borderColor: visualConfig.accent }]}> 
+        <BlurView
+          intensity={blurIntensity}
+          tint={blurTint}
+          style={styles.blurLayer}
+          experimentalBlurMethod={
+            Platform.OS === "android" ? "dimezisBlurView" : undefined
+          }
         >
-          <HugeiconsIcon
-            icon={Tick02Icon}
-            size={18}
-            color={colors.primary}
-            strokeWidth={2.5}
-          />
-        </View>
-        <Text style={[styles.message, { color: colors.text }]}>
-          {state.message}
-        </Text>
+          <View style={[styles.toast, { backgroundColor: surfaceOverlayColor }]}>
+            <View
+              style={[
+                styles.iconContainer,
+                { backgroundColor: visualConfig.iconBackground },
+              ]}
+            >
+              <HugeiconsIcon
+                icon={visualConfig.icon}
+                size={20}
+                color={visualConfig.iconColor}
+                strokeWidth={2.5}
+              />
+            </View>
+            <View style={styles.textGroup}>
+              {renderNotification.title ? (
+                <Text style={[styles.title, { color: colors.text }]}>
+                  {renderNotification.title}
+                </Text>
+              ) : null}
+              <Text style={[styles.message, { color: colors.text }]}> 
+                {renderNotification.message}
+              </Text>
+            </View>
+          </View>
+        </BlurView>
       </View>
     </Animated.View>
   );
@@ -162,45 +209,62 @@ export const Toast: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    bottom: 80, // Above FAB
     left: 0,
     right: 0,
     alignItems: "center",
     zIndex: 9999,
   },
-  toast: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+  toastShell: {
+    width: "94%",
+    maxWidth: 560,
+    borderRadius: 18,
     borderWidth: 1,
-    marginHorizontal: 20,
-    maxWidth: "90%",
+    overflow: "hidden",
     ...Platform.select({
       ios: {
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 7 },
+        shadowOpacity: 0.22,
+        shadowRadius: 12,
       },
       android: {
-        elevation: 8,
+        elevation: 10,
       },
     }),
   },
+  blurLayer: {
+    width: "100%",
+  },
+  toast: {
+    flexDirection: "row",
+    alignItems: "center",
+    minHeight: 78,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+  },
   iconContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: 14,
+  },
+  textGroup: {
+    flex: 1,
+    paddingRight: 2,
+  },
+  title: {
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 3,
+    lineHeight: 18,
   },
   message: {
     fontSize: 15,
     fontWeight: "600",
-    flex: 1,
     lineHeight: 20,
   },
 });
+
+export { showToast };

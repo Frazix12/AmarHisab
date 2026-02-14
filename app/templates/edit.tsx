@@ -10,6 +10,7 @@ import { Cancel01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import {
     ActivityIndicator,
     Alert,
@@ -21,6 +22,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+interface EditTemplateFormValues {
+  productName: string;
+  quantity: string;
+  price: string;
+  category: GroceryCategory;
+}
+
 export default function EditTemplateScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { templates, updateTemplate, colorScheme, settings, formatNumber, t } =
@@ -29,25 +37,34 @@ export default function EditTemplateScreen() {
 
   const template = templates.find((t) => t.id === id);
 
-  const [productName, setProductName] = useState("");
-  const [quantity, setQuantity] = useState("");
-  const [price, setPrice] = useState("");
-  const [category, setCategory] = useState<GroceryCategory>("other");
   const [loading, setLoading] = useState(false);
 
-  const [errors, setErrors] = useState<{
-    productName?: string;
-    price?: string;
-  }>({});
+  const {
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    clearErrors,
+    formState: { errors },
+  } = useForm<EditTemplateFormValues>({
+    defaultValues: {
+      productName: "",
+      quantity: "",
+      price: "",
+      category: "other",
+    },
+  });
 
   useEffect(() => {
     if (template) {
-      setProductName(template.productNameDisplay);
-      setQuantity(template.defaultQuantity);
-      setPrice(template.defaultPrice.toString());
-      setCategory(template.category);
+      reset({
+        productName: template.productNameDisplay,
+        quantity: template.defaultQuantity,
+        price: template.defaultPrice.toString(),
+        category: template.category,
+      });
     }
-  }, [template]);
+  }, [reset, template]);
 
   if (!template) {
     return (
@@ -69,38 +86,19 @@ export default function EditTemplateScreen() {
     );
   }
 
-  const validate = (): boolean => {
-    const newErrors: typeof errors = {};
-
-    if (!productName.trim()) {
-      newErrors.productName = t.alerts.requiredProductName;
-    }
-
-    const normalizedPrice = parseBanglaNumber(price).trim();
-    const priceNum = Number.parseFloat(normalizedPrice);
-    if (!price || isNaN(priceNum) || priceNum < 0) {
-      newErrors.price = t.alerts.requiredValidPrice;
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSave = async () => {
-    if (!validate()) return;
-
+  const handleSave = handleSubmit(async (values) => {
     setLoading(true);
     try {
-      const normalizedPrice = parseBanglaNumber(price).trim();
+      const normalizedPrice = parseBanglaNumber(values.price).trim();
       const parsedPrice = Number.parseFloat(normalizedPrice);
       const safePrice = Number.isNaN(parsedPrice) ? 0 : parsedPrice;
 
       await updateTemplate(id, {
-        productNameDisplay: productName.trim(),
-        productNameNormalized: normalizeProductName(productName),
-        defaultQuantity: quantity.trim(),
+        productNameDisplay: values.productName.trim(),
+        productNameNormalized: normalizeProductName(values.productName),
+        defaultQuantity: values.quantity.trim(),
         defaultPrice: safePrice,
-        category,
+        category: values.category,
       });
 
       router.back();
@@ -109,7 +107,7 @@ export default function EditTemplateScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  });
 
   return (
     <SafeAreaView
@@ -179,28 +177,37 @@ export default function EditTemplateScreen() {
           <Text style={[styles.label, { color: colors.text }]}>
             {t.templates.productName} {t.templates.required}
           </Text>
-          <TextInput
-            value={productName}
-            onChangeText={(text) => {
-              setProductName(text);
-              if (errors.productName)
-                setErrors({ ...errors, productName: undefined });
+          <Controller
+            control={control}
+            name="productName"
+            rules={{
+              validate: (value) =>
+                value.trim() ? true : t.alerts.requiredProductName,
             }}
-            placeholder={t.placeholders.templateName}
-            placeholderTextColor={colors.textSecondary}
-            onKeyPress={triggerLightHaptic}
-            style={[
-              styles.input,
-              {
-                color: colors.text,
-                backgroundColor: colors.surface,
-                borderColor: errors.productName ? colors.error : colors.outline,
-              },
-            ]}
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                value={value}
+                onChangeText={(text) => {
+                  onChange(text);
+                  clearErrors("productName");
+                }}
+                placeholder={t.placeholders.templateName}
+                placeholderTextColor={colors.textSecondary}
+                onKeyPress={triggerLightHaptic}
+                style={[
+                  styles.input,
+                  {
+                    color: colors.text,
+                    backgroundColor: colors.surface,
+                    borderColor: errors.productName ? colors.error : colors.outline,
+                  },
+                ]}
+              />
+            )}
           />
-          {errors.productName && (
+          {errors.productName?.message && (
             <Text style={[styles.errorText, { color: colors.error }]}>
-              {errors.productName}
+              {errors.productName.message}
             </Text>
           )}
         </View>
@@ -210,20 +217,26 @@ export default function EditTemplateScreen() {
           <Text style={[styles.label, { color: colors.text }]}>
             {t.templates.defaultQuantity}
           </Text>
-          <TextInput
-            value={formatNumber(quantity)}
-            onChangeText={(text) => setQuantity(parseBanglaNumber(text))}
-            placeholder={t.placeholders.templateQuantity}
-            placeholderTextColor={colors.textSecondary}
-            onKeyPress={triggerLightHaptic}
-            style={[
-              styles.input,
-              {
-                color: colors.text,
-                backgroundColor: colors.surface,
-                borderColor: colors.outline,
-              },
-            ]}
+          <Controller
+            control={control}
+            name="quantity"
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                value={formatNumber(value || "")}
+                onChangeText={(text) => onChange(parseBanglaNumber(text))}
+                placeholder={t.placeholders.templateQuantity}
+                placeholderTextColor={colors.textSecondary}
+                onKeyPress={triggerLightHaptic}
+                style={[
+                  styles.input,
+                  {
+                    color: colors.text,
+                    backgroundColor: colors.surface,
+                    borderColor: colors.outline,
+                  },
+                ]}
+              />
+            )}
           />
         </View>
 
@@ -236,28 +249,44 @@ export default function EditTemplateScreen() {
             <Text style={[styles.currencySymbol, { color: colors.text }]}>
               {settings.currency.symbol}
             </Text>
-            <BanglaNumberInput
-              value={price}
-              onChangeText={(text) => {
-                setPrice(text);
-                if (errors.price) setErrors({ ...errors, price: undefined });
-              }}
-              isBanglaMode={settings.language === "bn"}
-              placeholder={t.placeholders.templatePrice}
-              placeholderTextColor={colors.textSecondary}
-              style={[
-                styles.priceInput,
-                {
-                  color: colors.text,
-                  backgroundColor: colors.surface,
-                  borderColor: errors.price ? colors.error : colors.outline,
+            <Controller
+              control={control}
+              name="price"
+              rules={{
+                validate: (value) => {
+                  const normalizedPrice = parseBanglaNumber(value).trim();
+                  const priceNum = Number.parseFloat(normalizedPrice);
+                  if (!normalizedPrice || Number.isNaN(priceNum) || priceNum < 0) {
+                    return t.alerts.requiredValidPrice;
+                  }
+                  return true;
                 },
-              ]}
+              }}
+              render={({ field: { onChange, value } }) => (
+                <BanglaNumberInput
+                  value={value}
+                  onChangeText={(text) => {
+                    onChange(text);
+                    clearErrors("price");
+                  }}
+                  isBanglaMode={settings.language === "bn"}
+                  placeholder={t.placeholders.templatePrice}
+                  placeholderTextColor={colors.textSecondary}
+                  style={[
+                    styles.priceInput,
+                    {
+                      color: colors.text,
+                      backgroundColor: colors.surface,
+                      borderColor: errors.price ? colors.error : colors.outline,
+                    },
+                  ]}
+                />
+              )}
             />
           </View>
-          {errors.price && (
+          {errors.price?.message && (
             <Text style={[styles.errorText, { color: colors.error }]}>
-              {errors.price}
+              {errors.price.message}
             </Text>
           )}
         </View>
@@ -267,33 +296,39 @@ export default function EditTemplateScreen() {
           <Text style={[styles.label, { color: colors.text }]}>
             {t.templates.category} {t.templates.required}
           </Text>
-          <View style={styles.categoryGrid}>
-            {GROCERY_CATEGORIES.map((cat) => (
-              <Pressable
-                key={cat.value}
-                onPress={() => setCategory(cat.value)}
-                style={[
-                  styles.categoryButton,
-                  {
-                    backgroundColor:
-                      category === cat.value ? colors.primary : colors.surface,
-                    borderColor: colors.outline,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.categoryText,
-                    {
-                      color: category === cat.value ? "#fff" : colors.text,
-                    },
-                  ]}
-                >
-                  {t.categories[cat.value as keyof typeof t.categories]}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+          <Controller
+            control={control}
+            name="category"
+            render={({ field: { value } }) => (
+              <View style={styles.categoryGrid}>
+                {GROCERY_CATEGORIES.map((cat) => (
+                  <Pressable
+                    key={cat.value}
+                    onPress={() => setValue("category", cat.value)}
+                    style={[
+                      styles.categoryButton,
+                      {
+                        backgroundColor:
+                          value === cat.value ? colors.primary : colors.surface,
+                        borderColor: colors.outline,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryText,
+                        {
+                          color: value === cat.value ? "#fff" : colors.text,
+                        },
+                      ]}
+                    >
+                      {t.categories[cat.value as keyof typeof t.categories]}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>

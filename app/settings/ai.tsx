@@ -21,10 +21,15 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { Controller, useForm } from "react-hook-form";
 import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 type ApiKeyType = "gemini" | "elevenlabs";
+
+interface ApiKeyFormValues {
+  apiKeyInput: string;
+}
 
 export default function AiSettings() {
   const {
@@ -43,8 +48,13 @@ export default function AiSettings() {
   const pageTransitionStyle = usePageTransition();
 
   const [isApiKeyModalVisible, setIsApiKeyModalVisible] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState("");
   const [activeApiKeyType, setActiveApiKeyType] = useState<ApiKeyType>("gemini");
+
+  const { control, handleSubmit, reset, setValue } = useForm<ApiKeyFormValues>({
+    defaultValues: {
+      apiKeyInput: "",
+    },
+  });
 
   const isGeminiApiKeyModal = activeApiKeyType === "gemini";
   const activeStoredApiKey = isGeminiApiKeyModal
@@ -54,15 +64,16 @@ export default function AiSettings() {
 
   const openApiKeyModal = (apiKeyType: ApiKeyType) => {
     setActiveApiKeyType(apiKeyType);
-    setApiKeyInput(
-      apiKeyType === "gemini"
-        ? settings.geminiApiKey || ""
-        : settings.elevenLabsApiKey || "",
-    );
+    reset({
+      apiKeyInput:
+        apiKeyType === "gemini"
+          ? settings.geminiApiKey || ""
+          : settings.elevenLabsApiKey || "",
+    });
     setIsApiKeyModalVisible(true);
   };
 
-  const handleApiKeySave = () => {
+  const handleApiKeySave = handleSubmit(({ apiKeyInput }) => {
     const trimmedApiKey = apiKeyInput.trim();
     if (activeApiKeyType === "gemini") {
       updateApiKey(trimmedApiKey);
@@ -75,7 +86,7 @@ export default function AiSettings() {
       t.alerts.successTitle,
       trimmedApiKey ? t.settings.apiKeySaved : t.settings.usingBuiltInApi,
     );
-  };
+  });
 
   const handleApiKeyRemove = () => {
     Alert.alert(
@@ -93,7 +104,7 @@ export default function AiSettings() {
               updateElevenLabsApiKey("");
             }
 
-            setApiKeyInput("");
+            setValue("apiKeyInput", "");
             setIsApiKeyModalVisible(false);
             Alert.alert(t.alerts.successTitle, t.settings.apiKeyRemoved);
           },
@@ -206,27 +217,33 @@ export default function AiSettings() {
                   : t.settings.elevenLabsApiKeyDesc}
               </Text>
 
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    borderColor: colors.outline,
-                    color: colors.text,
-                    backgroundColor: colors.background,
-                  },
-                ]}
-                placeholder={
-                  isGeminiApiKeyModal
-                    ? t.settings.enterGeminiApiKey
-                    : t.settings.enterElevenLabsApiKey
-                }
-                placeholderTextColor={colors.textSecondary}
-                value={apiKeyInput}
-                onChangeText={setApiKeyInput}
-                onKeyPress={() => triggerLightHaptic()}
-                secureTextEntry
-                autoCapitalize="none"
-                autoCorrect={false}
+              <Controller
+                control={control}
+                name="apiKeyInput"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        borderColor: colors.outline,
+                        color: colors.text,
+                        backgroundColor: colors.background,
+                      },
+                    ]}
+                    placeholder={
+                      isGeminiApiKeyModal
+                        ? t.settings.enterGeminiApiKey
+                        : t.settings.enterElevenLabsApiKey
+                    }
+                    placeholderTextColor={colors.textSecondary}
+                    value={value}
+                    onChangeText={onChange}
+                    onKeyPress={() => triggerLightHaptic()}
+                    secureTextEntry
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                )}
               />
 
               <View style={styles.modalButtons}>

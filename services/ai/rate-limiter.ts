@@ -59,6 +59,28 @@ const RETRY_CONFIG = {
   maxDelay: 8000,   // 8 seconds max
 };
 
+type ApiRateLimitListener = (context: string) => void;
+const apiRateLimitListeners: ApiRateLimitListener[] = [];
+
+const emitApiRateLimited = (context: string): void => {
+  apiRateLimitListeners.forEach((listener) => {
+    listener(context);
+  });
+};
+
+export const subscribeToApiRateLimited = (
+  listener: ApiRateLimitListener,
+): (() => void) => {
+  apiRateLimitListeners.push(listener);
+
+  return () => {
+    const index = apiRateLimitListeners.indexOf(listener);
+    if (index > -1) {
+      apiRateLimitListeners.splice(index, 1);
+    }
+  };
+};
+
 /**
  * Check if error is a rate limit error (429)
  */
@@ -71,13 +93,16 @@ export function isRateLimitError(error: unknown): boolean {
   return false;
 }
 
+type RateLimitRetryHandler = (context: string, attempt: number) => void;
+
 /**
  * Execute a function with exponential backoff retry
  * Automatically handles rate limiting and 429 errors
  */
 export async function retryWithBackoff<T>(
   fn: () => Promise<T>,
-  context: string = "API call"
+  context: string = "API call",
+  onRateLimit?: RateLimitRetryHandler,
 ): Promise<T> {
   let lastError: Error | null = null;
   
@@ -100,10 +125,22 @@ export async function retryWithBackoff<T>(
       if (!isRateLimitError(error)) {
         throw lastError;
       }
+
+      if (attempt < RETRY_CONFIG.maxRetries && onRateLimit) {
+        try {
+          onRateLimit(context, attempt + 1);
+        } catch (callbackError) {
+          console.warn(
+            `[RateLimiter] ${context} rate-limit callback failed:`,
+            callbackError,
+          );
+        }
+      }
       
       // Don't retry if we've exhausted attempts
       if (attempt >= RETRY_CONFIG.maxRetries) {
         console.error(`[RateLimiter] ${context} failed after ${RETRY_CONFIG.maxRetries} retries`);
+        emitApiRateLimited(context);
         throw lastError;
       }
       

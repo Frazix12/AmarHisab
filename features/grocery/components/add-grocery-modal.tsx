@@ -3,6 +3,7 @@ import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
 import { detectItemCategory } from "@/services/ai/gemini";
+import { showNotification } from "@/services/notifications";
 import { validateName, validateQuantity, validateAmount, checkRateLimit } from "@/services/validation";
 import { GROCERY_CATEGORIES, GroceryCategory } from "@/types";
 import { TemplateMatch } from "@/types/template";
@@ -16,7 +17,8 @@ import {
     Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import {
     Alert,
     BackHandler,
@@ -38,6 +40,13 @@ interface AddGroceryModalProps {
     MorphingModalOptions,
     "fabSize" | "fabRight" | "fabBottom" | "modalHeightRatio"
   >;
+}
+
+interface AddGroceryFormValues {
+  name: string;
+  quantity: string;
+  price: string;
+  category: GroceryCategory;
 }
 
 export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
@@ -68,10 +77,6 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
       contentFadeDuration: 160,
     });
 
-  const [name, setName] = useState("");
-  const [quantity, setQuantity] = useState("");
-  const [price, setPrice] = useState("");
-  const [category, setCategory] = useState<GroceryCategory>("other");
   const [matchingTemplates, setMatchingTemplates] = useState<TemplateMatch[]>(
     [],
   );
@@ -81,6 +86,19 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
   );
   const [aiDetecting, setAiDetecting] = useState(false);
   const [aiDetectedCategory, setAiDetectedCategory] = useState(false);
+
+  const { control, handleSubmit, reset, setValue, watch } =
+    useForm<AddGroceryFormValues>({
+      defaultValues: {
+        name: "",
+        quantity: "",
+        price: "",
+        category: "other",
+      },
+    });
+
+  const name = watch("name");
+  const category = watch("category");
 
   // Find matching templates as user types
   useEffect(() => {
@@ -105,7 +123,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
         try {
           const detectedCategory = await detectItemCategory(name);
           if (detectedCategory) {
-            setCategory(detectedCategory);
+            setValue("category", detectedCategory);
             setAiDetectedCategory(true);
           }
         } catch (error) {
@@ -118,22 +136,24 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
 
     const timeout = setTimeout(detectCategory, 500);
     return () => clearTimeout(timeout);
-  }, [name, appliedTemplateId]);
+  }, [name, appliedTemplateId, setValue]);
 
   // Reset form when modal closes
   useEffect(() => {
     if (!visible) {
-      setName("");
-      setQuantity("");
-      setPrice("");
-      setCategory("other");
+      reset({
+        name: "",
+        quantity: "",
+        price: "",
+        category: "other",
+      });
       setMatchingTemplates([]);
       setAppliedTemplateId(null);
       setShowTemplatePicker(false);
       setAiDetecting(false);
       setAiDetectedCategory(false);
     }
-  }, [visible]);
+  }, [reset, visible]);
 
   useEffect(() => {
     if (!visible) return;
@@ -157,39 +177,46 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
 
     const data = await applyTemplate(idToUse);
     if (data) {
-      if (data.name) setName(data.name);
-      if (data.quantity) setQuantity(data.quantity);
+      if (data.name) setValue("name", data.name);
+      if (data.quantity) setValue("quantity", data.quantity);
       if (data.price !== undefined && data.price !== null) {
-        setPrice(data.price.toString());
+        setValue("price", data.price.toString());
       }
-      if (data.category) setCategory(data.category);
+      if (data.category) setValue("category", data.category);
       setAppliedTemplateId(idToUse);
     }
     setShowTemplatePicker(false);
   };
 
-  const handleSave = useCallback(() => {
+  const handleSave = handleSubmit((values) => {
     // Rate limiting check
-    if (!checkRateLimit('add-grocery')) {
-      Alert.alert(t.alerts.errorTitle, t.alerts.tooManyRequests || 'Too many requests. Please wait a moment.');
+    if (!checkRateLimit("add-grocery")) {
+      showNotification(
+        t.alerts.tooManyRequests || "Too many requests. Please wait a moment.",
+        {
+          type: "warning",
+          title: t.alerts.errorTitle,
+          dedupeKey: "form-rate-limit",
+        },
+      );
       return;
     }
 
     // Validate name
-    const nameValidation = validateName(name, 100);
+    const nameValidation = validateName(values.name, 100);
     if (!nameValidation.isValid) {
       Alert.alert(t.alerts.errorTitle, nameValidation.error || t.alerts.requiredName);
       return;
     }
 
     // Validate quantity (optional)
-    const quantityValidation = validateQuantity(quantity);
+    const quantityValidation = validateQuantity(values.quantity);
     if (!quantityValidation.isValid) {
       Alert.alert(t.alerts.errorTitle, quantityValidation.error || t.alerts.invalidInput);
       return;
     }
 
-    const normalizedPrice = parseBanglaNumber(price).trim();
+    const normalizedPrice = parseBanglaNumber(values.price).trim();
     const hasPrice = normalizedPrice.length > 0;
     
     // Validate price if provided
@@ -208,26 +235,28 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
     }
 
     addGroceryItem({
-      name: nameValidation.sanitized || name.trim(),
-      quantity: quantityValidation.sanitized || quantity.trim(),
+      name: nameValidation.sanitized || values.name.trim(),
+      quantity: quantityValidation.sanitized || values.quantity.trim(),
       price: parsedPrice,
-      category,
+      category: values.category,
       checked: false,
       templateId: appliedTemplateId || undefined,
       aiDetected: aiDetectedCategory,
     });
 
     // Reset form
-    setName("");
-    setQuantity("");
-    setPrice("");
-    setCategory("other");
+    reset({
+      name: "",
+      quantity: "",
+      price: "",
+      category: "other",
+    });
     setMatchingTemplates([]);
     setAppliedTemplateId(null);
     setAiDetecting(false);
     setAiDetectedCategory(false);
     onClose();
-  }, [name, quantity, price, category, appliedTemplateId, aiDetectedCategory, addGroceryItem, onClose, t]);
+  });
 
   if (!shouldRender) return null;
 
@@ -290,22 +319,28 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                   </Pressable>
                 )}
               </View>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.surfaceVariant,
-                    color: colors.text,
-                    borderColor: appliedTemplateId
-                      ? colors.primary
-                      : colors.outline,
-                  },
-                ]}
-                value={name}
-                onChangeText={setName}
-                onKeyPress={triggerLightHaptic}
-                placeholder={t.placeholders.groceryName}
-                placeholderTextColor={colors.textSecondary}
+              <Controller
+                control={control}
+                name="name"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: colors.surfaceVariant,
+                        color: colors.text,
+                        borderColor: appliedTemplateId
+                          ? colors.primary
+                          : colors.outline,
+                      },
+                    ]}
+                    value={value}
+                    onChangeText={onChange}
+                    onKeyPress={triggerLightHaptic}
+                    placeholder={t.placeholders.groceryName}
+                    placeholderTextColor={colors.textSecondary}
+                  />
+                )}
               />
               {matchingTemplates.length > 0 && !appliedTemplateId && (
                 <Text
@@ -331,20 +366,26 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                 <Text style={[styles.label, { color: colors.text }]}>
                   {t.form.quantity}
                 </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colors.surfaceVariant,
-                      color: colors.text,
-                      borderColor: colors.outline,
-                    },
-                  ]}
-                  value={formatNumber(quantity)}
-                  onChangeText={(text) => setQuantity(parseBanglaNumber(text))}
-                  onKeyPress={triggerLightHaptic}
-                  placeholder={t.placeholders.groceryQuantity}
-                  placeholderTextColor={colors.textSecondary}
+                <Controller
+                  control={control}
+                  name="quantity"
+                  render={({ field: { onChange, value } }) => (
+                    <TextInput
+                      style={[
+                        styles.input,
+                        {
+                          backgroundColor: colors.surfaceVariant,
+                          color: colors.text,
+                          borderColor: colors.outline,
+                        },
+                      ]}
+                      value={formatNumber(value || "")}
+                      onChangeText={(text) => onChange(parseBanglaNumber(text))}
+                      onKeyPress={triggerLightHaptic}
+                      placeholder={t.placeholders.groceryQuantity}
+                      placeholderTextColor={colors.textSecondary}
+                    />
+                  )}
                 />
               </View>
 
@@ -352,20 +393,26 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                 <Text style={[styles.label, { color: colors.text }]}>
                   {t.form.price} ({settings.currency.symbol})
                 </Text>
-                <BanglaNumberInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colors.surfaceVariant,
-                      color: colors.text,
-                      borderColor: colors.outline,
-                    },
-                  ]}
-                  value={price}
-                  onChangeText={setPrice}
-                  isBanglaMode={settings.language === "bn"}
-                  placeholder={t.placeholders.groceryPrice}
-                  placeholderTextColor={colors.textSecondary}
+                <Controller
+                  control={control}
+                  name="price"
+                  render={({ field: { onChange, value } }) => (
+                    <BanglaNumberInput
+                      style={[
+                        styles.input,
+                        {
+                          backgroundColor: colors.surfaceVariant,
+                          color: colors.text,
+                          borderColor: colors.outline,
+                        },
+                      ]}
+                      value={value}
+                      onChangeText={onChange}
+                      isBanglaMode={settings.language === "bn"}
+                      placeholder={t.placeholders.groceryPrice}
+                      placeholderTextColor={colors.textSecondary}
+                    />
+                  )}
                 />
               </View>
             </View>
@@ -420,7 +467,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                   <Pressable
                     key={cat.value}
                     onPress={() => {
-                      setCategory(cat.value);
+                      setValue("category", cat.value);
                       setAiDetectedCategory(false);
                     }}
                     style={[

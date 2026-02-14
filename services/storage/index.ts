@@ -9,6 +9,8 @@ const SETTINGS_KEY = "@amar_hisab_settings";
 const GEMINI_API_KEY_STORAGE_KEY = "amar_hisab_gemini_api_key";
 const ELEVENLABS_API_KEY_STORAGE_KEY = "amar_hisab_elevenlabs_api_key";
 const DATA_VERSION_KEY = "@amar_hisab_data_version";
+const APP_UPDATE_FINGERPRINT_KEY = "@amar_hisab_app_update_fingerprint";
+const ONBOARDING_TIP_DISMISSED_PREFIX = "@onboarding_longpress_tip_dismissed_";
 
 // Current data format version for migration support
 const CURRENT_DATA_VERSION = 1;
@@ -242,5 +244,51 @@ export const clearAllData = async (): Promise<void> => {
     ]);
   } catch (e) {
     console.error("Error clearing data:", e);
+  }
+};
+
+export const loadAppUpdateFingerprint = async (): Promise<string | null> => {
+  try {
+    return await AsyncStorage.getItem(APP_UPDATE_FINGERPRINT_KEY);
+  } catch (error) {
+    console.error("Error loading app update fingerprint:", error);
+    return null;
+  }
+};
+
+export const saveAppUpdateFingerprint = async (
+  fingerprint: string,
+): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(APP_UPDATE_FINGERPRINT_KEY, fingerprint);
+  } catch (error) {
+    console.error("Error saving app update fingerprint:", error);
+  }
+};
+
+export const loadOnboardingTipDismissed = async (
+  screenKey: "expenses" | "grocery",
+): Promise<boolean> => {
+  try {
+    const value = await AsyncStorage.getItem(
+      `${ONBOARDING_TIP_DISMISSED_PREFIX}${screenKey}`,
+    );
+    return value === "true";
+  } catch (error) {
+    console.error("Error loading onboarding tip dismissal:", error);
+    return false;
+  }
+};
+
+export const saveOnboardingTipDismissed = async (
+  screenKey: "expenses" | "grocery",
+): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(
+      `${ONBOARDING_TIP_DISMISSED_PREFIX}${screenKey}`,
+      "true",
+    );
+  } catch (error) {
+    console.error("Error saving onboarding tip dismissal:", error);
   }
 };

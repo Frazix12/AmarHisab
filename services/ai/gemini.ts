@@ -13,10 +13,37 @@ import { retryWithBackoff } from "./rate-limiter";
 
 // Initialize the Gemini API client
 let genAI: GoogleGenerativeAI | null = null;
-const ENV_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || "";
+const ENV_API_KEYS = [
+  process.env.EXPO_PUBLIC_GEMINI_API_KEY,
+  process.env.EXPO_PUBLIC_GEMINI_API_KEY2,
+  process.env.EXPO_PUBLIC_GEMINI_API_KEY3,
+  process.env.EXPO_PUBLIC_GEMINI_API_KEY4,
+]
+  .map((apiKey) => apiKey?.trim())
+  .filter((apiKey): apiKey is string => Boolean(apiKey));
 
-if (ENV_API_KEY) {
-  genAI = new GoogleGenerativeAI(ENV_API_KEY);
+let geminiApiKeys = [...ENV_API_KEYS];
+let geminiApiKeyIndex = 0;
+
+const updateGeminiClient = (): void => {
+  const activeApiKey = geminiApiKeys[geminiApiKeyIndex];
+  genAI = activeApiKey ? new GoogleGenerativeAI(activeApiKey) : null;
+};
+
+const rotateGeminiApiKey = (): void => {
+  if (geminiApiKeys.length <= 1) {
+    return;
+  }
+
+  geminiApiKeyIndex = (geminiApiKeyIndex + 1) % geminiApiKeys.length;
+  updateGeminiClient();
+  console.warn(
+    `[Gemini] Switched API key ${geminiApiKeyIndex + 1}/${geminiApiKeys.length} after rate limit`,
+  );
+};
+
+if (geminiApiKeys.length > 0) {
+  updateGeminiClient();
 }
 
 /**
@@ -24,14 +51,22 @@ if (ENV_API_KEY) {
  * @param apiKey - The new API key to use
  */
 export function setGeminiApiKey(apiKey: string): void {
-  if (apiKey) {
+  const trimmedApiKey = apiKey.trim();
+
+  if (trimmedApiKey) {
     console.log("Setting custom Gemini API key");
-    genAI = new GoogleGenerativeAI(apiKey);
-  } else if (ENV_API_KEY) {
-    console.log("Reverting to environment Gemini API key");
-    genAI = new GoogleGenerativeAI(ENV_API_KEY);
+    geminiApiKeys = [trimmedApiKey];
+    geminiApiKeyIndex = 0;
+    updateGeminiClient();
+  } else if (ENV_API_KEYS.length > 0) {
+    console.log("Reverting to environment Gemini API keys");
+    geminiApiKeys = [...ENV_API_KEYS];
+    geminiApiKeyIndex = 0;
+    updateGeminiClient();
   } else {
     console.log("Removing Gemini API key");
+    geminiApiKeys = [];
+    geminiApiKeyIndex = 0;
     genAI = null;
   }
 }
@@ -167,11 +202,6 @@ export async function detectItemCategory(
       return null;
     }
 
-    // Use Gemini 1.5 Flash for fast inference
-    const model = genAI.getGenerativeModel({
-      model: GEMINI_MODEL_ID,
-    });
-
     // Create the prompt with available categories
     // Sanitize user input to prevent prompt injection
     const sanitizedItemName = sanitizeForAIPrompt(itemName, 100);
@@ -189,14 +219,23 @@ Rules:
 Category:`;
 
     // Generate content with timeout and retry
-    const result = await retryWithBackoff(async () => {
-      return await Promise.race([
-        model.generateContent(prompt),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout")), 5000),
-        ),
-      ]);
-    }, "detectItemCategory");
+    const result = await retryWithBackoff(
+      async () => {
+        if (!genAI) {
+          throw new Error("Gemini API key not configured");
+        }
+
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_ID });
+        return await Promise.race([
+          model.generateContent(prompt),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Timeout")), 5000),
+          ),
+        ]);
+      },
+      "detectItemCategory",
+      rotateGeminiApiKey,
+    );
 
     // Extract the response
     const response = await result.response;
@@ -288,11 +327,6 @@ export async function detectExpenseCategory(
       return null;
     }
 
-    // Use Gemini 1.5 Flash for fast inference
-    const model = genAI.getGenerativeModel({
-      model: GEMINI_MODEL_ID,
-    });
-
     const categoryList = EXPENSE_CATEGORIES.map((cat) => cat.value).join(", ");
 
     // Sanitize user input to prevent prompt injection
@@ -320,14 +354,23 @@ Examples:
 Category:`;
 
     // Generate content with timeout and retry
-    const result = await retryWithBackoff(async () => {
-      return await Promise.race([
-        model.generateContent(prompt),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout")), 5000),
-        ),
-      ]);
-    }, "detectExpenseCategory");
+    const result = await retryWithBackoff(
+      async () => {
+        if (!genAI) {
+          throw new Error("Gemini API key not configured");
+        }
+
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_ID });
+        return await Promise.race([
+          model.generateContent(prompt),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Timeout")), 5000),
+          ),
+        ]);
+      },
+      "detectExpenseCategory",
+      rotateGeminiApiKey,
+    );
 
     // Extract the response
     const response = await result.response;
@@ -474,7 +517,6 @@ export async function parseVoiceInput(
       return null;
     }
 
-    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_ID });
     const expenseCategories = EXPENSE_CATEGORIES.map((cat) => cat.value).join(
       ", ",
     );
@@ -522,14 +564,23 @@ Transcript:
 ${sanitizedTranscript}
 """`;
 
-    const result = await retryWithBackoff(async () => {
-      return await Promise.race([
-        model.generateContent(prompt),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout")), VOICE_PARSE_TIMEOUT_MS),
-        ),
-      ]);
-    }, "parseVoiceInput");
+    const result = await retryWithBackoff(
+      async () => {
+        if (!genAI) {
+          throw new Error("Gemini API key not configured");
+        }
+
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_ID });
+        return await Promise.race([
+          model.generateContent(prompt),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Timeout")), VOICE_PARSE_TIMEOUT_MS),
+          ),
+        ]);
+      },
+      "parseVoiceInput",
+      rotateGeminiApiKey,
+    );
 
     const response = await result.response;
     const rawText = response.text().trim();

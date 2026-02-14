@@ -1,4 +1,4 @@
-import { Toast } from "@/components/ui/toast";
+import { showNotification } from "@/services/notifications";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
@@ -149,7 +149,10 @@ export default function Settings() {
               onPress={() => {
                 addSampleExpenses();
                 addSampleGroceryItems();
-                Alert.alert(t.alerts.successTitle, t.alerts.sampleDataAdded);
+                showNotification(t.alerts.sampleDataAdded, {
+                  type: "success",
+                  title: t.alerts.successTitle,
+                });
               }}
               style={({ pressed }) => [
                 styles.devButton,
@@ -184,7 +187,10 @@ export default function Settings() {
                       style: "destructive",
                       onPress: () => {
                         clearAllData();
-                        Alert.alert(t.alerts.successTitle, t.settings.dataCleared);
+                        showNotification(t.settings.dataCleared, {
+                          type: "success",
+                          title: t.alerts.successTitle,
+                        });
                       },
                     },
                   ],
@@ -230,7 +236,6 @@ export default function Settings() {
           </View>
         </ScrollView>
 
-        <Toast />
       </Animated.View>
     </SafeAreaView>
   );

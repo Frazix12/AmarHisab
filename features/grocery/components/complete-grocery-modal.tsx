@@ -13,6 +13,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import {
     Alert,
     Image,
@@ -34,6 +35,11 @@ interface CompleteGroceryModalProps {
   onComplete: (price: number, imageUri?: string) => void;
 }
 
+interface CompleteGroceryFormValues {
+  price: string;
+  imageUri?: string;
+}
+
 export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
   visible,
   item,
@@ -48,30 +54,46 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
       t.categories.other
     : t.categories.other;
 
-  const [price, setPrice] = useState("");
-  const [imageUri, setImageUri] = useState<string | undefined>(undefined);
-  const [error, setError] = useState("");
   const [isPriceFocused, setIsPriceFocused] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [priceInputY, setPriceInputY] = useState(0);
   const scrollRef = React.useRef<ScrollView>(null);
+  const {
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    clearErrors,
+    formState: { errors },
+    watch,
+  } = useForm<CompleteGroceryFormValues>({
+    defaultValues: {
+      price: "",
+      imageUri: undefined,
+    },
+  });
+
+  const imageUri = watch("imageUri");
 
   // Reset form when modal opens/closes
   useEffect(() => {
     if (visible && item) {
-      setPrice(item.price !== null ? item.price.toString() : "");
-      setImageUri(item.imageUri);
-      setError("");
+      reset({
+        price: item.price !== null ? item.price.toString() : "",
+        imageUri: item.imageUri,
+      });
       setIsPriceFocused(false);
       setKeyboardHeight(0);
     } else {
-      setPrice("");
-      setImageUri(undefined);
-      setError("");
+      reset({
+        price: "",
+        imageUri: undefined,
+      });
       setIsPriceFocused(false);
       setKeyboardHeight(0);
     }
-  }, [visible, item]);
+    clearErrors("price");
+  }, [visible, item, reset, clearErrors]);
 
   useEffect(() => {
     const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
@@ -126,7 +148,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
       });
 
       if (!result.canceled && result.assets[0]) {
-        setImageUri(result.assets[0].uri);
+        setValue("imageUri", result.assets[0].uri);
       }
     } catch (err) {
       console.error("Error picking image:", err);
@@ -153,7 +175,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
       });
 
       if (!result.canceled && result.assets[0]) {
-        setImageUri(result.assets[0].uri);
+        setValue("imageUri", result.assets[0].uri);
       }
     } catch (err) {
       console.error("Error capturing image:", err);
@@ -162,21 +184,13 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
   };
 
   const removeImage = () => {
-    setImageUri(undefined);
+    setValue("imageUri", undefined);
   };
 
-  const handleComplete = () => {
-    const numPrice = parseFloat(price);
-
-    if (!price.trim() || isNaN(numPrice) || numPrice <= 0) {
-      setError(
-        t.grocery?.priceRequired || "Price is required to complete this item",
-      );
-      return;
-    }
-
-    onComplete(numPrice, imageUri);
-  };
+  const handleComplete = handleSubmit((values) => {
+    const numPrice = parseFloat(values.price);
+    onComplete(numPrice, values.imageUri);
+  });
 
   if (!item) return null;
 
@@ -283,40 +297,61 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
                   {t.form.price}
                   <Text style={{ color: colors.error || "#DC2626" }}>*</Text>
                 </Text>
-                <BanglaNumberInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colors.surfaceVariant,
-                      color: colors.text,
-                      borderColor: error
-                        ? colors.error || "#DC2626"
-                        : colors.outline,
-                      borderWidth: error ? 2 : 1,
+                <Controller
+                  control={control}
+                  name="price"
+                  rules={{
+                    validate: (value) => {
+                      const numPrice = parseFloat(value);
+                      if (!value.trim() || Number.isNaN(numPrice) || numPrice <= 0) {
+                        return (
+                          t.grocery?.priceRequired ||
+                          "Price is required to complete this item"
+                        );
+                      }
+                      return true;
                     },
-                  ]}
-                  value={price}
-                  onChangeText={(text) => {
-                    setPrice(text);
-                    setError("");
                   }}
-                  onFocus={() => {
-                    setIsPriceFocused(true);
-                    scrollPriceFieldIntoView();
-                  }}
-                  onBlur={() => setIsPriceFocused(false)}
-                  isBanglaMode={settings.language === "bn"}
-                  placeholder={`0.00 ${settings.currency.symbol}`}
-                  placeholderTextColor={colors.textSecondary}
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <BanglaNumberInput
+                      style={[
+                        styles.input,
+                        {
+                          backgroundColor: colors.surfaceVariant,
+                          color: colors.text,
+                          borderColor: errors.price
+                            ? colors.error || "#DC2626"
+                            : colors.outline,
+                          borderWidth: errors.price ? 2 : 1,
+                        },
+                      ]}
+                      value={value}
+                      onChangeText={(text) => {
+                        onChange(text);
+                        clearErrors("price");
+                      }}
+                      onFocus={() => {
+                        setIsPriceFocused(true);
+                        scrollPriceFieldIntoView();
+                      }}
+                      onBlur={() => {
+                        setIsPriceFocused(false);
+                        onBlur();
+                      }}
+                      isBanglaMode={settings.language === "bn"}
+                      placeholder={`0.00 ${settings.currency.symbol}`}
+                      placeholderTextColor={colors.textSecondary}
+                    />
+                  )}
                 />
-                {error && (
+                {errors.price?.message && (
                   <Text
                     style={[
                       styles.errorText,
                       { color: colors.error || "#DC2626" },
                     ]}
                   >
-                    {error}
+                    {errors.price.message}
                   </Text>
                 )}
               </View>

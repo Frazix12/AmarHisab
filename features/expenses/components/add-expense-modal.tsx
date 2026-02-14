@@ -3,6 +3,7 @@ import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
 import { detectExpenseCategory } from "@/services/ai/gemini";
+import { showNotification } from "@/services/notifications";
 import { validateAmount, validateDescription, checkRateLimit } from "@/services/validation";
 import { EXPENSE_CATEGORIES, ExpenseCategory } from "@/types";
 import {
@@ -18,7 +19,8 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import * as ImagePicker from "expo-image-picker";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import {
     Alert,
     BackHandler,
@@ -43,6 +45,13 @@ interface AddExpenseModalProps {
   >;
 }
 
+interface AddExpenseFormValues {
+  amount: string;
+  category: ExpenseCategory;
+  description: string;
+  imageUri?: string;
+}
+
 export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   visible,
   onClose,
@@ -63,24 +72,36 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
       contentFadeDuration: 160,
     });
 
-  const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState<ExpenseCategory>("food");
-  const [description, setDescription] = useState("");
-  const [imageUri, setImageUri] = useState<string | undefined>(undefined);
   const [aiDetecting, setAiDetecting] = useState(false);
   const [aiDetectedCategory, setAiDetectedCategory] = useState(false);
+
+  const { control, handleSubmit, reset, setValue, watch } =
+    useForm<AddExpenseFormValues>({
+      defaultValues: {
+        amount: "",
+        category: "food",
+        description: "",
+        imageUri: undefined,
+      },
+    });
+
+  const description = watch("description");
+  const category = watch("category");
+  const imageUri = watch("imageUri");
 
   // Reset form when modal closes
   useEffect(() => {
     if (!visible) {
-      setAmount("");
-      setCategory("food");
-      setDescription("");
-      setImageUri(undefined);
+      reset({
+        amount: "",
+        category: "food",
+        description: "",
+        imageUri: undefined,
+      });
       setAiDetecting(false);
       setAiDetectedCategory(false);
     }
-  }, [visible]);
+  }, [reset, visible]);
 
   useEffect(() => {
     if (!visible) return;
@@ -107,7 +128,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
         setAiDetecting(false);
 
         if (detectedCategory) {
-          setCategory(detectedCategory);
+          setValue("category", detectedCategory);
           setAiDetectedCategory(true);
         }
       }
@@ -115,7 +136,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
 
     const timeout = setTimeout(detectCategory, 500);
     return () => clearTimeout(timeout);
-  }, [description]);
+  }, [description, setValue]);
 
   const pickImageFromGallery = async () => {
     try {
@@ -138,7 +159,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
       });
 
       if (!result.canceled && result.assets[0]) {
-        setImageUri(result.assets[0].uri);
+        setValue("imageUri", result.assets[0].uri);
       }
     } catch (error) {
       console.error("Error picking image:", error);
@@ -165,7 +186,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
       });
 
       if (!result.canceled && result.assets[0]) {
-        setImageUri(result.assets[0].uri);
+        setValue("imageUri", result.assets[0].uri);
       }
     } catch (error) {
       console.error("Error capturing image:", error);
@@ -174,25 +195,32 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   };
 
   const removeImage = () => {
-    setImageUri(undefined);
+    setValue("imageUri", undefined);
   };
 
-  const handleSave = useCallback(() => {
+  const handleSave = handleSubmit((values) => {
     // Rate limiting check
-    if (!checkRateLimit('add-expense')) {
-      Alert.alert(t.alerts.errorTitle, t.alerts.tooManyRequests || 'Too many requests. Please wait a moment.');
+    if (!checkRateLimit("add-expense")) {
+      showNotification(
+        t.alerts.tooManyRequests || "Too many requests. Please wait a moment.",
+        {
+          type: "warning",
+          title: t.alerts.errorTitle,
+          dedupeKey: "form-rate-limit",
+        },
+      );
       return;
     }
 
     // Validate amount
-    const amountValidation = validateAmount(amount);
+    const amountValidation = validateAmount(values.amount);
     if (!amountValidation.isValid) {
       Alert.alert(t.alerts.errorTitle, amountValidation.error || t.alerts.invalidAmount);
       return;
     }
 
     // Validate description (optional but sanitized if provided)
-    const descriptionValidation = validateDescription(description || "", 200);
+    const descriptionValidation = validateDescription(values.description || "", 200);
     if (!descriptionValidation.isValid) {
       Alert.alert(
         t.alerts.errorTitle,
@@ -200,31 +228,33 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
       );
       return;
     }
-    const sanitizedDescription = description.trim()
+    const sanitizedDescription = values.description.trim()
       ? descriptionValidation.sanitized || ""
       : "";
 
-    const numAmount = parseFloat(amountValidation.sanitized || amount);
+    const numAmount = parseFloat(amountValidation.sanitized || values.amount);
 
     addExpense({
       amount: numAmount,
-      category,
+      category: values.category,
       date: new Date(),
       description: sanitizedDescription || '',
       currency: settings.currency.code,
-      imageUri,
+      imageUri: values.imageUri,
       aiDetected: aiDetectedCategory,
     });
 
     // Reset form
-    setAmount("");
-    setCategory("food");
-    setDescription("");
-    setImageUri(undefined);
+    reset({
+      amount: "",
+      category: "food",
+      description: "",
+      imageUri: undefined,
+    });
     setAiDetecting(false);
     setAiDetectedCategory(false);
     onClose();
-  }, [amount, description, category, settings.currency.code, imageUri, aiDetectedCategory, addExpense, onClose, t]);
+  });
 
   if (!shouldRender) return null;
 
@@ -260,47 +290,59 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             >
               {/* Amount Input */}
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text }]}>
+                <Text style={[styles.label, { color: colors.text }]}> 
                   {t.form.amount}
                 </Text>
-                <BanglaNumberInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colors.surfaceVariant,
-                      color: colors.text,
-                      borderColor: colors.outline,
-                    },
-                  ]}
-                  value={amount}
-                  onChangeText={setAmount}
-                  isBanglaMode={settings.language === "bn"}
-                  placeholder={t.placeholders.expenseAmount}
-                  placeholderTextColor={colors.textSecondary}
+                <Controller
+                  control={control}
+                  name="amount"
+                  render={({ field: { onChange, value } }) => (
+                    <BanglaNumberInput
+                      style={[
+                        styles.input,
+                        {
+                          backgroundColor: colors.surfaceVariant,
+                          color: colors.text,
+                          borderColor: colors.outline,
+                        },
+                      ]}
+                      value={value}
+                      onChangeText={onChange}
+                      isBanglaMode={settings.language === "bn"}
+                      placeholder={t.placeholders.expenseAmount}
+                      placeholderTextColor={colors.textSecondary}
+                    />
+                  )}
                 />
               </View>
 
               {/* Description Input */}
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text }]}>
+                <Text style={[styles.label, { color: colors.text }]}> 
                   {t.form.description}
                 </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    styles.textArea,
-                    {
-                      backgroundColor: colors.surfaceVariant,
-                      color: colors.text,
-                      borderColor: colors.outline,
-                    },
-                  ]}
-                  value={description}
-                  onChangeText={setDescription}
-                  placeholder={t.placeholders.expenseDescription}
-                  placeholderTextColor={colors.textSecondary}
-                  multiline
-                  numberOfLines={3}
+                <Controller
+                  control={control}
+                  name="description"
+                  render={({ field: { onChange, value } }) => (
+                    <TextInput
+                      style={[
+                        styles.input,
+                        styles.textArea,
+                        {
+                          backgroundColor: colors.surfaceVariant,
+                          color: colors.text,
+                          borderColor: colors.outline,
+                        },
+                      ]}
+                      value={value}
+                      onChangeText={onChange}
+                      placeholder={t.placeholders.expenseDescription}
+                      placeholderTextColor={colors.textSecondary}
+                      multiline
+                      numberOfLines={3}
+                    />
+                  )}
                 />
               </View>
 
@@ -433,7 +475,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                     <Pressable
                       key={cat.value}
                       onPress={() => {
-                        setCategory(cat.value);
+                        setValue("category", cat.value);
                         setAiDetectedCategory(false);
                       }}
                       style={[

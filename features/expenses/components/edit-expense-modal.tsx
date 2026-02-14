@@ -12,7 +12,8 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import * as ImagePicker from "expo-image-picker";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
+import { Controller, useForm } from "react-hook-form";
 import {
   Alert,
   Image,
@@ -34,6 +35,13 @@ interface EditExpenseModalProps {
   onSave?: () => void;
 }
 
+interface EditExpenseFormValues {
+  amount: string;
+  category: ExpenseCategory;
+  description: string;
+  imageUri?: string;
+}
+
 export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
   visible,
   onClose,
@@ -44,21 +52,30 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
   const colors = Colors[colorScheme];
   const { animatedStyle, backdropStyle, shouldRender } = useModalAnimation(visible);
 
-  const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState<ExpenseCategory>("food");
-  const [description, setDescription] = useState("");
-  const [imageUri, setImageUri] = useState<string | undefined>(undefined);
   const amountInputRef = useRef<TextInput | null>(null);
+  const { control, handleSubmit, reset, setValue, watch } =
+    useForm<EditExpenseFormValues>({
+      defaultValues: {
+        amount: "",
+        category: "food",
+        description: "",
+        imageUri: undefined,
+      },
+    });
+  const category = watch("category");
+  const imageUri = watch("imageUri");
 
   // Initialize form with expense data when modal opens
   useEffect(() => {
     if (visible && expense) {
-      setAmount(expense.amount.toString());
-      setCategory(expense.category);
-      setDescription(expense.description || "");
-      setImageUri(expense.imageUri);
+      reset({
+        amount: expense.amount.toString(),
+        category: expense.category,
+        description: expense.description || "",
+        imageUri: expense.imageUri,
+      });
     }
-  }, [visible, expense]);
+  }, [visible, expense, reset]);
 
   const pickImageFromGallery = async () => {
     try {
@@ -82,7 +99,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
       });
 
       if (!result.canceled && result.assets[0]) {
-        setImageUri(result.assets[0].uri);
+        setValue("imageUri", result.assets[0].uri);
       }
     } catch (error) {
       console.error("Error picking image:", error);
@@ -113,7 +130,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
       });
 
       if (!result.canceled && result.assets[0]) {
-        setImageUri(result.assets[0].uri);
+        setValue("imageUri", result.assets[0].uri);
       }
     } catch (error) {
       console.error("Error capturing image:", error);
@@ -141,11 +158,11 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
   };
 
   const removeImage = () => {
-    setImageUri(undefined);
+    setValue("imageUri", undefined);
   };
 
-  const handleSave = () => {
-    const numAmount = parseFloat(amount);
+  const handleSave = handleSubmit((values) => {
+    const numAmount = parseFloat(values.amount);
     if (isNaN(numAmount) || numAmount <= 0) {
       Alert.alert(
         t.alerts?.errorTitle ?? "Error",
@@ -167,14 +184,14 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
 
     updateExpense(expense.id, {
       amount: numAmount,
-      category,
-      description: description.trim(),
-      imageUri,
+      category: values.category,
+      description: values.description.trim(),
+      imageUri: values.imageUri,
     });
 
     onSave?.();
     onClose();
-  };
+  });
 
   if (!shouldRender) return null;
 
@@ -215,48 +232,60 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
             <ScrollView style={styles.formContainer}>
               {/* Amount Input */}
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text }]}>
+                <Text style={[styles.label, { color: colors.text }]}> 
                   {t.form.amount}
                 </Text>
-                <BanglaNumberInput
-                  ref={amountInputRef}
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colors.surfaceVariant,
-                      color: colors.text,
-                      borderColor: colors.outline,
-                    },
-                  ]}
-                  value={amount}
-                  onChangeText={setAmount}
-                  isBanglaMode={settings.language === "bn"}
-                  placeholder={t.placeholders.expenseAmount}
-                  placeholderTextColor={colors.textSecondary}
+                <Controller
+                  control={control}
+                  name="amount"
+                  render={({ field: { onChange, value } }) => (
+                    <BanglaNumberInput
+                      ref={amountInputRef}
+                      style={[
+                        styles.input,
+                        {
+                          backgroundColor: colors.surfaceVariant,
+                          color: colors.text,
+                          borderColor: colors.outline,
+                        },
+                      ]}
+                      value={value}
+                      onChangeText={onChange}
+                      isBanglaMode={settings.language === "bn"}
+                      placeholder={t.placeholders.expenseAmount}
+                      placeholderTextColor={colors.textSecondary}
+                    />
+                  )}
                 />
               </View>
 
               {/* Description Input */}
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text }]}>
+                <Text style={[styles.label, { color: colors.text }]}> 
                   {t.form.description}
                 </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    styles.textArea,
-                    {
-                      backgroundColor: colors.surfaceVariant,
-                      color: colors.text,
-                      borderColor: colors.outline,
-                    },
-                  ]}
-                  value={description}
-                  onChangeText={setDescription}
-                  placeholder={t.placeholders.expenseDescription}
-                  placeholderTextColor={colors.textSecondary}
-                  multiline
-                  numberOfLines={3}
+                <Controller
+                  control={control}
+                  name="description"
+                  render={({ field: { onChange, value } }) => (
+                    <TextInput
+                      style={[
+                        styles.input,
+                        styles.textArea,
+                        {
+                          backgroundColor: colors.surfaceVariant,
+                          color: colors.text,
+                          borderColor: colors.outline,
+                        },
+                      ]}
+                      value={value}
+                      onChangeText={onChange}
+                      placeholder={t.placeholders.expenseDescription}
+                      placeholderTextColor={colors.textSecondary}
+                      multiline
+                      numberOfLines={3}
+                    />
+                  )}
                 />
               </View>
 
@@ -348,7 +377,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                   {EXPENSE_CATEGORIES.map((cat) => (
                     <Pressable
                       key={cat.value}
-                      onPress={() => setCategory(cat.value)}
+                      onPress={() => setValue("category", cat.value)}
                       style={[
                         styles.categoryButton,
                         {

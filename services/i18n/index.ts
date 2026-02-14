@@ -281,6 +281,7 @@ export const translations = {
       captureImageFailed: "Failed to capture image. Please try again.",
       tooManyRequests: "Too many requests. Please wait a moment.",
       invalidInput: "Invalid input. Please check your entries.",
+      appUpdated: "App updated successfully.",
     },
 
     // Templates
@@ -858,6 +859,7 @@ export const translations = {
       captureImageFailed: "ছবি তোলা যায়নি, আবার চেষ্টা করুন।",
       tooManyRequests: "অনেক বেশি রিকোয়েস্ট, একটু অপেক্ষা করুন।",
       invalidInput: "ভুল ইনপুট, আবার চেষ্টা করুন।",
+      appUpdated: "অ্যাপ আপডেট হয়েছে।",
     },
 
     // Templates

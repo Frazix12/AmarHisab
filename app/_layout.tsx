@@ -3,15 +3,19 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
+import * as Application from "expo-application";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as NavigationBar from "expo-navigation-bar";
+import * as Updates from "expo-updates";
 import "react-native-reanimated";
 import React, { useEffect } from "react";
 import { AppState, AppStateStatus, Platform } from "react-native";
 import { PostHogProvider, usePostHog } from "posthog-react-native";
 
+import { Toast } from "@/components/ui/toast";
 import { AppProvider, useApp } from "@/contexts/app-context";
+import { subscribeToApiRateLimited } from "@/services/ai/rate-limiter";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
 import {
   ensureTextMetricsPatched,
@@ -19,13 +23,18 @@ import {
   setTextMetricsLanguage,
 } from "@/utils/text-metrics";
 import { flushEvents, setPostHogClient } from "@/services/analytics";
+import { showNotification } from "@/services/notifications";
+import {
+  loadAppUpdateFingerprint,
+  saveAppUpdateFingerprint,
+} from "@/services/storage";
 
 export const unstable_settings = {
   anchor: "(tabs)",
 };
 
 const RootLayoutContent = () => {
-  const { colorScheme, settings } = useApp();
+  const { colorScheme, settings, t } = useApp();
   const posthog = usePostHog();
 
   useEffect(() => {
@@ -83,6 +92,48 @@ const RootLayoutContent = () => {
     };
   }, []);
 
+  useEffect(() => {
+    return subscribeToApiRateLimited(() => {
+      showNotification(t.alerts.tooManyRequests, {
+        type: "warning",
+        title: t.alerts.errorTitle,
+        dedupeKey: "api-rate-limited",
+      });
+    });
+  }, [t.alerts.errorTitle, t.alerts.tooManyRequests]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const checkForUpdatedAppVersion = async () => {
+      const currentFingerprint = [
+        Application.nativeApplicationVersion || "unknown",
+        Application.nativeBuildVersion || "unknown",
+        Updates.updateId || "embedded",
+      ].join(":");
+
+      const previousFingerprint = await loadAppUpdateFingerprint();
+      if (!isActive) {
+        return;
+      }
+
+      if (previousFingerprint && previousFingerprint !== currentFingerprint) {
+        showNotification(t.alerts.appUpdated, {
+          type: "success",
+          dedupeKey: "app-updated",
+        });
+      }
+
+      await saveAppUpdateFingerprint(currentFingerprint);
+    };
+
+    void checkForUpdatedAppVersion();
+
+    return () => {
+      isActive = false;
+    };
+  }, [t.alerts.appUpdated]);
+
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack
@@ -120,6 +171,7 @@ const RootLayoutContent = () => {
         />
       </Stack>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+      <Toast />
     </ThemeProvider>
   );
 };

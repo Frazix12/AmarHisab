@@ -8,7 +8,8 @@ import { parseBanglaNumber } from "@/utils/format";
 import { triggerLightHaptic } from "@/utils/haptics";
 import { Cancel01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
+import { Controller, useForm } from "react-hook-form";
 import {
     Alert,
     Modal,
@@ -28,6 +29,14 @@ interface EditGroceryModalProps {
   onSave?: () => void;
 }
 
+interface EditGroceryFormValues {
+  name: string;
+  quantity: string;
+  price: string;
+  category: GroceryCategory;
+  updateTemplateChecked: boolean;
+}
+
 export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
   visible,
   onClose,
@@ -44,31 +53,40 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
   } = useApp();
   const colors = Colors[colorScheme];
   const { animatedStyle, backdropStyle, shouldRender } = useModalAnimation(visible);
+  const { control, handleSubmit, reset, setValue, watch } =
+    useForm<EditGroceryFormValues>({
+      defaultValues: {
+        name: "",
+        quantity: "",
+        price: "",
+        category: "other",
+        updateTemplateChecked: false,
+      },
+    });
 
-  const [name, setName] = useState("");
-  const [quantity, setQuantity] = useState("");
-  const [price, setPrice] = useState("");
-  const [category, setCategory] = useState<GroceryCategory>("other");
-  const [updateTemplateChecked, setUpdateTemplateChecked] = useState(false);
+  const category = watch("category");
+  const updateTemplateChecked = watch("updateTemplateChecked");
 
   // Initialize form with item data when modal opens
   useEffect(() => {
     if (visible && item) {
-      setName(item.name);
-      setQuantity(item.quantity);
-      setPrice(item.price !== null ? item.price.toString() : "");
-      setCategory(item.category);
-      setUpdateTemplateChecked(false);
+      reset({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price !== null ? item.price.toString() : "",
+        category: item.category,
+        updateTemplateChecked: false,
+      });
     }
-  }, [visible, item]);
+  }, [visible, item, reset]);
 
-  const handleSave = async () => {
-    if (!name.trim()) {
+  const handleSave = handleSubmit(async (values) => {
+    if (!values.name.trim()) {
       Alert.alert(t.alerts.errorTitle, t.alerts.requiredName);
       return;
     }
 
-    const normalizedPrice = parseBanglaNumber(price).trim();
+    const normalizedPrice = parseBanglaNumber(values.price).trim();
     const hasPrice = normalizedPrice.length > 0;
     const numPrice = hasPrice ? Number.parseFloat(normalizedPrice) : null;
     if (hasPrice && (numPrice === null || isNaN(numPrice) || numPrice < 0)) {
@@ -78,24 +96,24 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
 
     // Update the grocery item
     updateGroceryItem(item.id, {
-      name: name.trim(),
-      quantity: quantity.trim(),
+      name: values.name.trim(),
+      quantity: values.quantity.trim(),
       price: numPrice,
-      category,
+      category: values.category,
     });
 
     // If user wants to update the template
-    if (updateTemplateChecked && item.templateId) {
+    if (values.updateTemplateChecked && item.templateId) {
       await updateTemplate(item.templateId, {
-        defaultQuantity: quantity.trim(),
+        defaultQuantity: values.quantity.trim(),
         defaultPrice: numPrice ?? 0,
-        category,
+        category: values.category,
       });
     }
 
     onSave?.();
     onClose();
-  };
+  });
 
   if (!shouldRender) return null;
 
@@ -134,23 +152,29 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
           <ScrollView style={styles.formContainer}>
             {/* Name Input */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>
+              <Text style={[styles.label, { color: colors.text }]}> 
                 {t.form.name}
               </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.surfaceVariant,
-                    color: colors.text,
-                    borderColor: colors.outline,
-                  },
-                ]}
-                value={name}
-                onChangeText={setName}
-                onKeyPress={triggerLightHaptic}
-                placeholder={t.placeholders.groceryName}
-                placeholderTextColor={colors.textSecondary}
+              <Controller
+                control={control}
+                name="name"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: colors.surfaceVariant,
+                        color: colors.text,
+                        borderColor: colors.outline,
+                      },
+                    ]}
+                    value={value}
+                    onChangeText={onChange}
+                    onKeyPress={triggerLightHaptic}
+                    placeholder={t.placeholders.groceryName}
+                    placeholderTextColor={colors.textSecondary}
+                  />
+                )}
               />
             </View>
 
@@ -160,20 +184,26 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                 <Text style={[styles.label, { color: colors.text }]}>
                   {t.form.quantity}
                 </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colors.surfaceVariant,
-                      color: colors.text,
-                      borderColor: colors.outline,
-                    },
-                  ]}
-                  value={formatNumber(quantity)}
-                  onChangeText={(text) => setQuantity(parseBanglaNumber(text))}
-                  onKeyPress={triggerLightHaptic}
-                  placeholder={t.placeholders.groceryQuantity}
-                  placeholderTextColor={colors.textSecondary}
+                <Controller
+                  control={control}
+                  name="quantity"
+                  render={({ field: { onChange, value } }) => (
+                    <TextInput
+                      style={[
+                        styles.input,
+                        {
+                          backgroundColor: colors.surfaceVariant,
+                          color: colors.text,
+                          borderColor: colors.outline,
+                        },
+                      ]}
+                      value={formatNumber(value || "")}
+                      onChangeText={(text) => onChange(parseBanglaNumber(text))}
+                      onKeyPress={triggerLightHaptic}
+                      placeholder={t.placeholders.groceryQuantity}
+                      placeholderTextColor={colors.textSecondary}
+                    />
+                  )}
                 />
               </View>
 
@@ -181,20 +211,26 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                 <Text style={[styles.label, { color: colors.text }]}>
                   {t.form.price} ({settings.currency.symbol})
                 </Text>
-                <BanglaNumberInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colors.surfaceVariant,
-                      color: colors.text,
-                      borderColor: colors.outline,
-                    },
-                  ]}
-                  value={price}
-                  onChangeText={setPrice}
-                  isBanglaMode={settings.language === "bn"}
-                  placeholder={t.placeholders.groceryPrice}
-                  placeholderTextColor={colors.textSecondary}
+                <Controller
+                  control={control}
+                  name="price"
+                  render={({ field: { onChange, value } }) => (
+                    <BanglaNumberInput
+                      style={[
+                        styles.input,
+                        {
+                          backgroundColor: colors.surfaceVariant,
+                          color: colors.text,
+                          borderColor: colors.outline,
+                        },
+                      ]}
+                      value={value}
+                      onChangeText={onChange}
+                      isBanglaMode={settings.language === "bn"}
+                      placeholder={t.placeholders.groceryPrice}
+                      placeholderTextColor={colors.textSecondary}
+                    />
+                  )}
                 />
               </View>
             </View>
@@ -208,7 +244,7 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                 {GROCERY_CATEGORIES.map((cat) => (
                   <Pressable
                     key={cat.value}
-                    onPress={() => setCategory(cat.value)}
+                    onPress={() => setValue("category", cat.value)}
                     style={[
                       styles.categoryButton,
                       {
@@ -246,7 +282,7 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
               <View style={styles.inputGroup}>
                 <Pressable
                   onPress={() =>
-                    setUpdateTemplateChecked(!updateTemplateChecked)
+                    setValue("updateTemplateChecked", !updateTemplateChecked)
                   }
                   style={styles.checkboxRow}
                 >
