@@ -23,10 +23,8 @@ import { HugeiconsIcon } from "@hugeicons/react-native";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   Alert,
-  FlatList,
   Pressable,
   RefreshControl,
-  SectionList,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -34,6 +32,7 @@ import {
 } from "react-native";
 import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { FlashList } from "@shopify/flash-list";
 
 const DATE_GROUP_ORDER: DateGroup[] = [
   "today",
@@ -42,6 +41,16 @@ const DATE_GROUP_ORDER: DateGroup[] = [
   "thisMonth",
   "older",
 ];
+
+interface HistorySection {
+  title: DateGroup;
+  data: Expense[];
+}
+
+type HistoryListItem =
+  | { type: "header"; id: string; title: DateGroup }
+  | { type: "item"; id: string; expense: Expense }
+  | { type: "footer"; id: string };
 
 export default function StatisticsScreen() {
   const {
@@ -234,7 +243,7 @@ export default function StatisticsScreen() {
     [handleDelete, handleEdit, t],
   );
 
-  const historySections = useMemo(
+  const historySections = useMemo<HistorySection[]>(
     () =>
       DATE_GROUP_ORDER.flatMap((groupName) => {
         const groupExpenses = groupedExpenses.get(groupName);
@@ -244,38 +253,66 @@ export default function StatisticsScreen() {
     [groupedExpenses],
   );
 
-  const renderExpenseItem = useCallback(
-    ({ item }: { item: Expense }) => (
-      <ExpenseCard
-        expense={item}
-        colors={colors}
-        settings={settings}
-        t={t}
-        onPress={handleExpensePress}
-        onLongPress={handleExpenseLongPress}
-      />
-    ),
-    [colors, handleExpenseLongPress, handleExpensePress, settings, t],
+  const historyListItems = useMemo<HistoryListItem[]>(
+    () =>
+      historySections.flatMap((section) => [
+        {
+          type: "header" as const,
+          id: `header-${section.title}`,
+          title: section.title,
+        },
+        ...section.data.map((expense) => ({
+          type: "item" as const,
+          id: expense.id,
+          expense,
+        })),
+        {
+          type: "footer" as const,
+          id: `footer-${section.title}`,
+        },
+      ]),
+    [historySections],
   );
 
-  const renderSectionHeader = useCallback(
-    ({ section }: { section: { title: DateGroup } }) => (
-      <Text
-        style={[
-          styles.dateGroupTitle,
-          { color: colors.textSecondary },
-          isBangla && styles.dateGroupTitleBangla,
-        ]}
-      >
-        {t.common[section.title]}
-      </Text>
-    ),
-    [colors, isBangla, t],
-  );
+  const renderHistoryItem = useCallback(
+    ({ item }: { item: HistoryListItem }) => {
+      if (item.type === "header") {
+        return (
+          <Text
+            style={[
+              styles.dateGroupTitle,
+              { color: colors.textSecondary },
+              isBangla && styles.dateGroupTitleBangla,
+            ]}
+          >
+            {t.common[item.title]}
+          </Text>
+        );
+      }
 
-  const renderSectionFooter = useCallback(
-    () => <View style={styles.sectionFooter} />,
-    [],
+      if (item.type === "footer") {
+        return <View style={styles.sectionFooter} />;
+      }
+
+      return (
+        <ExpenseCard
+          expense={item.expense}
+          colors={colors}
+          settings={settings}
+          t={t}
+          onPress={handleExpensePress}
+          onLongPress={handleExpenseLongPress}
+        />
+      );
+    },
+    [
+      colors,
+      handleExpenseLongPress,
+      handleExpensePress,
+      isBangla,
+      settings,
+      t,
+    ],
   );
 
   const renderEmptyState = useCallback(
@@ -303,7 +340,7 @@ export default function StatisticsScreen() {
     () => (
       <View>
         <View style={styles.summarySection}>
-          <FlatList
+          <FlashList
             data={summaryCards}
             horizontal
             keyExtractor={(item) => item.key}
@@ -345,7 +382,7 @@ export default function StatisticsScreen() {
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               {t.statistics?.byCategory || "By Category"}
             </Text>
-            <FlatList
+            <FlashList
               data={categoryBreakdown}
               horizontal
               keyExtractor={(item) => item.category}
@@ -437,12 +474,11 @@ export default function StatisticsScreen() {
         </Text>
       </View>
 
-      <SectionList
-        sections={historySections}
+      <FlashList
+        data={historyListItems}
         keyExtractor={(item) => item.id}
-        renderItem={renderExpenseItem}
-        renderSectionHeader={renderSectionHeader}
-        renderSectionFooter={renderSectionFooter}
+        renderItem={renderHistoryItem}
+        getItemType={(item) => item.type}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         ListHeaderComponent={listHeader}
@@ -455,7 +491,6 @@ export default function StatisticsScreen() {
             colors={[colors.primary]}
           />
         }
-        stickySectionHeadersEnabled={false}
       />
 
       {/* Action Menu */}

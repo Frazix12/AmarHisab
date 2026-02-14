@@ -10,6 +10,31 @@ jest.mock("react-native-reanimated", () =>
   require("react-native-reanimated/mock"),
 );
 
+jest.mock("@shopify/flash-list", () => {
+  const React = require("react");
+  const { FlatList } = require("react-native");
+
+  const FlashList = ({
+    estimatedItemSize,
+    estimatedListSize,
+    overrideItemLayout,
+    getItemType,
+    ...props
+  }: {
+    estimatedItemSize?: number;
+    estimatedListSize?: { height: number; width: number };
+    overrideItemLayout?: unknown;
+    getItemType?: unknown;
+    [key: string]: unknown;
+  }) =>
+    React.createElement(FlatList, props);
+
+  return {
+    __esModule: true,
+    FlashList,
+  };
+});
+
 jest.mock("expo-secure-store", () => ({
   setItemAsync: jest.fn(async () => {}),
   getItemAsync: jest.fn(async () => null),

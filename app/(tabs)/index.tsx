@@ -23,7 +23,6 @@ import { HugeiconsIcon } from "@hugeicons/react-native";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   Alert,
-  FlatList,
   RefreshControl,
   StyleSheet,
   Text,
@@ -32,6 +31,7 @@ import {
 } from "react-native";
 import Animated from "react-native-reanimated";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { FlashList } from "@shopify/flash-list";
 
 const FAB_SIZE = 60;
 const FAB_RIGHT = 20;
@@ -221,7 +221,7 @@ export default function ExpensesScreen() {
       {/* Onboarding Tip */}
       <OnboardingTip screenKey="expenses" />
 
-      <FlatList
+      <FlashList
         data={sortedExpenses}
         keyExtractor={(item) => item.id}
         renderItem={renderExpenseItem}

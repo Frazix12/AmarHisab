@@ -25,7 +25,6 @@ import { HugeiconsIcon } from "@hugeicons/react-native";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
-  SectionList,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -33,6 +32,7 @@ import {
 } from "react-native";
 import Animated from "react-native-reanimated";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { FlashList } from "@shopify/flash-list";
 
 const FAB_SIZE = 60;
 const FAB_RIGHT = 20;
@@ -56,6 +56,11 @@ interface GrocerySection {
   title: GroceryCategory;
   data: GroceryItem[];
 }
+
+type GroceryListItem =
+  | { type: "header"; id: string; title: GroceryCategory }
+  | { type: "item"; id: string; item: GroceryItem }
+  | { type: "footer"; id: string };
 
 export default function GroceryScreen() {
   const {
@@ -142,6 +147,27 @@ export default function GroceryScreen() {
   const hasCompletedItems = useMemo(
     () => groceryItems.some((item) => item.checked),
     [groceryItems],
+  );
+
+  const groceryListItems = useMemo<GroceryListItem[]>(
+    () =>
+      sections.flatMap((section) => [
+        {
+          type: "header" as const,
+          id: `header-${section.title}`,
+          title: section.title,
+        },
+        ...section.data.map((item) => ({
+          type: "item" as const,
+          id: item.id,
+          item,
+        })),
+        {
+          type: "footer" as const,
+          id: `footer-${section.title}`,
+        },
+      ]),
+    [sections],
   );
 
   const handleAddItem = useCallback(() => {
@@ -271,43 +297,44 @@ export default function GroceryScreen() {
     [colors, t],
   );
 
-  const renderSectionHeader = useCallback(
-    ({ section }: { section: GrocerySection }) => (
-      <Text
-        style={[
-          styles.categoryTitle,
-          { color: colors.textSecondary },
-          isBangla && styles.categoryTitleBangla,
-        ]}
-      >
-        {t.categories[section.title as keyof typeof t.categories]}
-      </Text>
-    ),
-    [colors, isBangla, t],
-  );
+  const renderListItem = useCallback(
+    ({ item }: { item: GroceryListItem }) => {
+      if (item.type === "header") {
+        return (
+          <Text
+            style={[
+              styles.categoryTitle,
+              { color: colors.textSecondary },
+              isBangla && styles.categoryTitleBangla,
+            ]}
+          >
+            {t.categories[item.title as keyof typeof t.categories]}
+          </Text>
+        );
+      }
 
-  const renderSectionFooter = useCallback(
-    () => <View style={styles.sectionFooter} />,
-    [],
-  );
+      if (item.type === "footer") {
+        return <View style={styles.sectionFooter} />;
+      }
 
-  const renderItem = useCallback(
-    ({ item }: { item: GroceryItem }) => (
-      <GroceryItemComponent
-        item={item}
-        colors={colors}
-        t={t}
-        settings={settings}
-        formatNumber={formatNumber}
-        onToggle={handleToggleItem}
-        onLongPress={handleItemLongPress}
-      />
-    ),
+      return (
+        <GroceryItemComponent
+          item={item.item}
+          colors={colors}
+          t={t}
+          settings={settings}
+          formatNumber={formatNumber}
+          onToggle={handleToggleItem}
+          onLongPress={handleItemLongPress}
+        />
+      );
+    },
     [
       colors,
       formatNumber,
       handleItemLongPress,
       handleToggleItem,
+      isBangla,
       settings,
       t,
     ],
@@ -358,17 +385,15 @@ export default function GroceryScreen() {
         />
       )}
 
-      <SectionList
-        sections={sections}
+      <FlashList
+        data={groceryListItems}
         keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        renderSectionHeader={renderSectionHeader}
-        renderSectionFooter={renderSectionFooter}
+        renderItem={renderListItem}
+        getItemType={(item) => item.type}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         ListEmptyComponent={renderEmptyState}
         ListFooterComponent={<View style={styles.bottomSpacer} />}
-        stickySectionHeadersEnabled={false}
       />
 
       {/* Add Grocery Modal */}
