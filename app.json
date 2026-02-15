@@ -39,10 +39,10 @@
         }
       ],
       [
-        "expo-camera",
+        "react-native-vision-camera",
         {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to capture expense receipts",
-          "recordAudioAndroid": false
+          "cameraPermissionText": "Allow $(PRODUCT_NAME) to access your camera to capture expense receipts",
+          "enableMicrophonePermission": false
         }
       ],
       [

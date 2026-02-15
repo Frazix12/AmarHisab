@@ -1,4 +1,5 @@
 import { BanglaNumberInput } from "@/components/shared/bangla-number-input";
+import { CameraModal } from "@/components/camera/camera-modal";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { AppImage } from "@/components/ui/app-image";
 import { Colors } from "@/constants/theme";
@@ -13,7 +14,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import * as ImagePicker from "expo-image-picker";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
   Alert,
@@ -53,6 +54,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
   const { animatedStyle, backdropStyle, shouldRender } = useModalAnimation(visible);
 
   const amountInputRef = useRef<TextInput | null>(null);
+  const [cameraVisible, setCameraVisible] = useState(false);
   const { control, handleSubmit, reset, setValue, watch } =
     useForm<EditExpenseFormValues>({
       defaultValues: {
@@ -74,7 +76,10 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
         description: expense.description || "",
         imageUri: expense.imageUri,
       });
+      return;
     }
+
+    setCameraVisible(false);
   }, [visible, expense, reset]);
 
   const pickImageFromGallery = async () => {
@@ -110,51 +115,8 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
     }
   };
 
-  const captureImageFromCamera = async () => {
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-
-      if (status !== "granted") {
-        Alert.alert(
-          t.form.permission || "Permission Required",
-          t.alerts?.cameraPermission ||
-            "Camera permission is required to capture photos.",
-        );
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        setValue("imageUri", result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error("Error capturing image:", error);
-      const fallbackMessage =
-        t.alerts?.captureImageFailed ??
-        "Failed to capture image. Please try again.";
-      const errorDetail = error instanceof Error ? error.message : "";
-      const message = errorDetail
-        ? `${fallbackMessage}\n${errorDetail}`
-        : fallbackMessage;
-      Alert.alert(t.alerts?.errorTitle ?? "Error", message, [
-        {
-          text: "Retry",
-          onPress: () => {
-            void captureImageFromCamera();
-          },
-        },
-        {
-          text: t.form.cancel || "Cancel",
-          style: "cancel",
-          onPress: onClose,
-        },
-      ]);
-    }
+  const openCamera = () => {
+    setCameraVisible(true);
   };
 
   const removeImage = () => {
@@ -196,13 +158,14 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
   if (!shouldRender) return null;
 
   return (
-    <Modal
-      visible={shouldRender}
-      transparent
-      animationType="none"
-      onRequestClose={onClose}
-    >
-      <Animated.View style={[styles.modalOverlay, backdropStyle]}>
+    <>
+      <Modal
+        visible={shouldRender}
+        transparent
+        animationType="none"
+        onRequestClose={onClose}
+      >
+        <Animated.View style={[styles.modalOverlay, backdropStyle]}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardAvoid}
@@ -320,7 +283,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                 ) : (
                   <View style={styles.imageButtonsContainer}>
                     <Pressable
-                      onPress={captureImageFromCamera}
+                      onPress={openCamera}
                       style={[
                         styles.imageButton,
                         {
@@ -446,8 +409,19 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
             </View>
           </Animated.View>
         </KeyboardAvoidingView>
-      </Animated.View>
-    </Modal>
+        </Animated.View>
+      </Modal>
+      <CameraModal
+        visible={cameraVisible}
+        onClose={() => {
+          setCameraVisible(false);
+        }}
+        onCapture={(uri) => {
+          setValue("imageUri", uri);
+          setCameraVisible(false);
+        }}
+      />
+    </>
   );
 };
 

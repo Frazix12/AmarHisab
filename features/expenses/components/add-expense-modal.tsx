@@ -1,4 +1,5 @@
 import { BanglaNumberInput } from "@/components/shared/bangla-number-input";
+import { CameraModal } from "@/components/camera/camera-modal";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { AppImage } from "@/components/ui/app-image";
 import { Colors } from "@/constants/theme";
@@ -74,6 +75,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
 
   const [aiDetecting, setAiDetecting] = useState(false);
   const [aiDetectedCategory, setAiDetectedCategory] = useState(false);
+  const [cameraVisible, setCameraVisible] = useState(false);
 
   const { control, handleSubmit, reset, setValue, watch } =
     useForm<AddExpenseFormValues>({
@@ -100,6 +102,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
       });
       setAiDetecting(false);
       setAiDetectedCategory(false);
+      setCameraVisible(false);
     }
   }, [reset, visible]);
 
@@ -167,31 +170,8 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     }
   };
 
-  const captureImageFromCamera = async () => {
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-
-      if (status !== "granted") {
-        Alert.alert(
-          t.form.permission || "Permission Required",
-          t.alerts.cameraPermission,
-        );
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        setValue("imageUri", result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error("Error capturing image:", error);
-      Alert.alert(t.alerts.errorTitle, t.alerts.captureImageFailed);
-    }
+  const openCamera = () => {
+    setCameraVisible(true);
   };
 
   const removeImage = () => {
@@ -376,10 +356,10 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                   </View>
                 ) : (
                   <View style={styles.imageButtonsContainer}>
-                    <Pressable
-                      onPress={captureImageFromCamera}
-                      style={[
-                        styles.imageButton,
+                     <Pressable
+                       onPress={openCamera}
+                       style={[
+                         styles.imageButton,
                         {
                           backgroundColor: colors.surfaceVariant,
                           borderColor: colors.outline,
@@ -534,6 +514,16 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
           </Animated.View>
         </KeyboardAvoidingView>
       </Animated.View>
+      <CameraModal
+        visible={cameraVisible}
+        onClose={() => {
+          setCameraVisible(false);
+        }}
+        onCapture={(uri) => {
+          setValue("imageUri", uri);
+          setCameraVisible(false);
+        }}
+      />
     </View>
   );
 };

@@ -124,6 +124,25 @@ export const translations = {
       item: "Item",
     },
 
+    camera: {
+      allowCamera: "Allow Camera",
+      openSettings: "Open Settings",
+      closeCamera: "Close camera",
+      close: "Close",
+      retake: "Retake",
+      usePhoto: "Use Photo",
+      capturePhoto: "Capture photo",
+      switchCamera: "Switch camera",
+      flip: "Flip",
+      flashOff: "Flash Off",
+      flashOn: "Flash On",
+      flashAuto: "Flash Auto",
+      frontCamera: "Front Camera",
+      backCamera: "Back Camera",
+      cameraUnavailableTitle: "Camera not available",
+      cameraUnavailableMessage: "No camera device was found on this phone.",
+    },
+
     // Modal actions
     modal: {
       delete: "Delete",
@@ -704,6 +723,25 @@ export const translations = {
       edit: "এডিট",
       updateTemplate: "নতুন মান দিয়ে টেমপ্লেট আপডেট করুন",
       item: "জিনিস",
+    },
+
+    camera: {
+      allowCamera: "ক্যামেরা অনুমতি দিন",
+      openSettings: "সেটিংস খুলুন",
+      closeCamera: "ক্যামেরা বন্ধ করুন",
+      close: "বন্ধ করুন",
+      retake: "আবার তুলুন",
+      usePhoto: "ছবি ব্যবহার করুন",
+      capturePhoto: "ছবি তুলুন",
+      switchCamera: "ক্যামেরা পরিবর্তন",
+      flip: "ঘুরান",
+      flashOff: "ফ্ল্যাশ বন্ধ",
+      flashOn: "ফ্ল্যাশ চালু",
+      flashAuto: "ফ্ল্যাশ অটো",
+      frontCamera: "সামনের ক্যামেরা",
+      backCamera: "পিছনের ক্যামেরা",
+      cameraUnavailableTitle: "ক্যামেরা পাওয়া যায়নি",
+      cameraUnavailableMessage: "এই ফোনে কোনো ক্যামেরা ডিভাইস পাওয়া যায়নি।",
     },
 
     // Modal actions
