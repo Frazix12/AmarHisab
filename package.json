@@ -8,6 +8,7 @@
     "android": "expo run:android",
     "db:generate": "drizzle-kit generate",
     "lint": "expo lint",
+    "eas:env-sync": "node ./scripts/sync-env.js",
     "test": "jest"
   },
   "dependencies": {
