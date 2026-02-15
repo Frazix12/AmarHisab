@@ -18,6 +18,7 @@ interface AnimatedTabButtonProps {
   isActive: boolean;
   icon: any; // HugeIcons IconSvgObject type
   label: string;
+  tabKey: string;
   color: string;
   onPress: () => void;
 }
@@ -31,6 +32,7 @@ export const AnimatedTabButton: React.FC<AnimatedTabButtonProps> = ({
   isActive,
   icon,
   label,
+  tabKey,
   color,
   onPress,
 }) => {
@@ -80,6 +82,7 @@ export const AnimatedTabButton: React.FC<AnimatedTabButtonProps> = ({
       accessibilityRole="tab"
       accessibilityState={{ selected: isActive }}
       accessibilityLabel={label}
+      testID={`tab-button-${tabKey}`}
     >
       <Animated.View style={[styles.iconContainer, animatedIconStyle]}>
         <HugeiconsIcon

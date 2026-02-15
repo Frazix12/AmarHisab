@@ -1,0 +1,25 @@
+appId: ${APP_ID}
+tags:
+  - ai
+  - manual
+  - network
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: "tab-button-voice"
+- assertVisible:
+    id: "voice-assistant-modal"
+- tapOn:
+    id: "voice-transcript-input"
+- inputText: "Bought bananas for 80 and eggs for 120"
+- tapOn:
+    id: "voice-send-text-button"
+- assertVisible:
+    id: "voice-confirm-add-button"
+- tapOn:
+    id: "voice-confirm-add-button"
+- tapOn:
+    id: "tab-button-statistics"
+- assertVisible:
+    id: "screen-statistics"

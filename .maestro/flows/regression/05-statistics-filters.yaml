@@ -1,0 +1,41 @@
+appId: ${APP_ID}
+tags:
+  - regression
+  - statistics
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: "expenses-add-fab"
+- tapOn:
+    id: "add-expense-amount-input"
+- inputText: "120"
+- tapOn:
+    id: "add-expense-description-input"
+- inputText: "Food Expense"
+- tapOn:
+    id: "add-expense-category-food"
+- tapOn:
+    id: "add-expense-save-button"
+- tapOn:
+    id: "expenses-add-fab"
+- tapOn:
+    id: "add-expense-amount-input"
+- inputText: "60"
+- tapOn:
+    id: "add-expense-description-input"
+- inputText: "Bus Ticket"
+- tapOn:
+    id: "add-expense-category-transport"
+- tapOn:
+    id: "add-expense-save-button"
+- tapOn:
+    id: "tab-button-statistics"
+- assertVisible:
+    id: "screen-statistics"
+- assertVisible:
+    id: "statistics-summary-card-all-time"
+- tapOn:
+    id: "statistics-category-pill-food"
+- assertVisible: "Food Expense"
+- assertNotVisible: "Bus Ticket"

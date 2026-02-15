@@ -267,6 +267,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
         renderToHardwareTextureAndroid
         shouldRasterizeIOS
         style={[styles.growContainer, { backgroundColor: colors.surface }, shellStyle]}
+        testID="add-expense-modal"
       >
         <KeyboardAvoidingView
           behavior="padding"
@@ -298,6 +299,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                   name="amount"
                   render={({ field: { onChange, value } }) => (
                     <BanglaNumberInput
+                      testID="add-expense-amount-input"
                       style={[
                         styles.input,
                         {
@@ -326,6 +328,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                   name="description"
                   render={({ field: { onChange, value } }) => (
                     <TextInput
+                      testID="add-expense-description-input"
                       style={[
                         styles.input,
                         styles.textArea,
@@ -378,6 +381,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                   <View style={styles.imageButtonsContainer}>
                     <Pressable
                       onPress={captureImageFromCamera}
+                      testID="add-expense-camera-button"
                       style={[
                         styles.imageButton,
                         {
@@ -401,6 +405,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
 
                     <Pressable
                       onPress={pickImageFromGallery}
+                      testID="add-expense-gallery-button"
                       style={[
                         styles.imageButton,
                         {
@@ -478,6 +483,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                         setValue("category", cat.value);
                         setAiDetectedCategory(false);
                       }}
+                      testID={`add-expense-category-${cat.value}`}
                       style={[
                         styles.categoryButton,
                         {
@@ -515,6 +521,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             <View style={styles.modalFooter}>
               <Pressable
                 onPress={handleSave}
+                testID="add-expense-save-button"
                 style={[
                   styles.button,
                   { backgroundColor: colors.success },

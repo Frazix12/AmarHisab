@@ -92,6 +92,8 @@ export const ExpenseCard = React.memo(
           longPressHaptic="medium"
           onPress={handlePress}
           onLongPress={handleLongPress}
+          testID={`expense-card-${expense.id}`}
+          accessibilityLabel={`expense-card-${expense.description || expense.category}`}
           style={({ pressed }) => [
             styles.container,
             {
@@ -118,6 +120,7 @@ export const ExpenseCard = React.memo(
                 onPress={handleThumbnailPress}
                 accessibilityRole="button"
                 accessibilityLabel={t.form.attachment || "View attached image"}
+                testID={`expense-card-image-${expense.id}`}
               >
                 <Image
                   source={{ uri: expense.imageUri }}

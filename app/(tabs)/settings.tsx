@@ -51,6 +51,7 @@ export default function Settings() {
 
   return (
     <SafeAreaView
+      testID="screen-settings"
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <Animated.View style={[styles.screenTransition, pageTransitionStyle]}>
@@ -106,6 +107,7 @@ export default function Settings() {
               title={t.settings.customization}
               value={customizationValue}
               onPress={() => router.push("/settings/customization")}
+              testID="settings-item-customization"
             />
 
             <SettingItem
@@ -113,6 +115,7 @@ export default function Settings() {
               title={t.settings.aiMenu}
               value={smartSuggestionsEnabled ? t.settings.on : t.settings.off}
               onPress={() => router.push("/settings/ai")}
+              testID="settings-item-ai"
             />
           </View>
 
@@ -131,6 +134,7 @@ export default function Settings() {
               icon={InformationCircleIcon}
               title={t.settings.version}
               value={packageJson.version}
+              testID="settings-item-version"
             />
           </View>
 
@@ -173,6 +177,7 @@ export default function Settings() {
                   opacity: pressed ? 0.8 : 1,
                 },
               ]}
+              testID="settings-add-sample-data-button"
             >
               <Text
                 style={[
@@ -229,6 +234,7 @@ export default function Settings() {
                   opacity: pressed ? 0.8 : 1,
                 },
               ]}
+              testID="settings-clear-all-data-button"
             >
               <View style={styles.devButtonContent}>
                 <HugeiconsIcon

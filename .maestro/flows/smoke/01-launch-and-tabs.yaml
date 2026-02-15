@@ -1,0 +1,33 @@
+appId: ${APP_ID}
+tags:
+  - smoke
+  - navigation
+---
+- launchApp:
+    clearState: true
+- assertVisible:
+    id: "screen-expenses"
+- assertVisible:
+    id: "tab-button-index"
+- assertVisible:
+    id: "tab-button-list"
+- assertVisible:
+    id: "tab-button-statistics"
+- assertVisible:
+    id: "tab-button-settings"
+- tapOn:
+    id: "tab-button-list"
+- assertVisible:
+    id: "screen-grocery"
+- tapOn:
+    id: "tab-button-statistics"
+- assertVisible:
+    id: "screen-statistics"
+- tapOn:
+    id: "tab-button-settings"
+- assertVisible:
+    id: "screen-settings"
+- tapOn:
+    id: "tab-button-index"
+- assertVisible:
+    id: "screen-expenses"

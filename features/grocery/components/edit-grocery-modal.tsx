@@ -131,6 +131,7 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
             { backgroundColor: colors.surface },
             animatedStyle,
           ]}
+          testID="edit-grocery-modal"
         >
           {/* Header */}
           <View
@@ -160,6 +161,7 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                 name="name"
                 render={({ field: { onChange, value } }) => (
                   <TextInput
+                    testID="edit-grocery-name-input"
                     style={[
                       styles.input,
                       {
@@ -189,6 +191,7 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                   name="quantity"
                   render={({ field: { onChange, value } }) => (
                     <TextInput
+                      testID="edit-grocery-quantity-input"
                       style={[
                         styles.input,
                         {
@@ -216,6 +219,7 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                   name="price"
                   render={({ field: { onChange, value } }) => (
                     <BanglaNumberInput
+                      testID="edit-grocery-price-input"
                       style={[
                         styles.input,
                         {
@@ -245,6 +249,7 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                   <Pressable
                     key={cat.value}
                     onPress={() => setValue("category", cat.value)}
+                    testID={`edit-grocery-category-${cat.value}`}
                     style={[
                       styles.categoryButton,
                       {
@@ -284,6 +289,7 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                   onPress={() =>
                     setValue("updateTemplateChecked", !updateTemplateChecked)
                   }
+                  testID="edit-grocery-update-template-toggle"
                   style={styles.checkboxRow}
                 >
                   <View
@@ -326,6 +332,7 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
           <View style={styles.modalFooter}>
             <Pressable
               onPress={onClose}
+              testID="edit-grocery-cancel-button"
               style={[
                 styles.button,
                 styles.cancelButton,
@@ -338,6 +345,7 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
             </Pressable>
             <Pressable
               onPress={handleSave}
+              testID="edit-grocery-save-button"
               style={[
                 styles.button,
                 styles.saveButton,

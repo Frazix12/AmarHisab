@@ -70,17 +70,26 @@ export default function AddTemplateScreen() {
 
   return (
     <SafeAreaView
+      testID="screen-templates-add"
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.headerButton}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.headerButton}
+          testID="template-add-cancel-button"
+        >
           <HugeiconsIcon icon={Cancel01Icon} size={24} color={colors.text} />
         </Pressable>
         <Text style={[styles.title, { color: colors.text }]}>
           {t.templates.newTemplate}
         </Text>
-        <Pressable onPress={handleSave} style={styles.headerButton}>
+        <Pressable
+          onPress={handleSave}
+          style={styles.headerButton}
+          testID="template-add-save-button"
+        >
           <HugeiconsIcon icon={Tick02Icon} size={24} color={colors.primary} />
         </Pressable>
       </View>
@@ -100,6 +109,7 @@ export default function AddTemplateScreen() {
             }}
             render={({ field: { onChange, value } }) => (
               <TextInput
+                testID="template-add-name-input"
                 value={value}
                 onChangeText={(text) => {
                   onChange(text);
@@ -136,6 +146,7 @@ export default function AddTemplateScreen() {
             name="quantity"
             render={({ field: { onChange, value } }) => (
               <TextInput
+                testID="template-add-quantity-input"
                 value={formatNumber(value || "")}
                 onChangeText={(text) => onChange(parseBanglaNumber(text))}
                 placeholder={t.placeholders.templateQuantity}
@@ -181,6 +192,7 @@ export default function AddTemplateScreen() {
               }}
               render={({ field: { onChange, value } }) => (
                 <BanglaNumberInput
+                  testID="template-add-price-input"
                   value={value}
                   onChangeText={(text) => {
                     onChange(text);
@@ -222,6 +234,7 @@ export default function AddTemplateScreen() {
               <Pressable
                 key={cat.value}
                 onPress={() => setValue("category", cat.value)}
+                testID={`template-add-category-${cat.value}`}
                 style={[
                   styles.categoryButton,
                   {

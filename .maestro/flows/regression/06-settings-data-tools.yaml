@@ -1,0 +1,39 @@
+appId: ${APP_ID}
+tags:
+  - regression
+  - settings
+  - data
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: "tab-button-settings"
+- assertVisible:
+    id: "screen-settings"
+- scrollUntilVisible:
+    element:
+      id: "settings-add-sample-data-button"
+    direction: DOWN
+    centerElement: true
+    timeout: 20000
+- tapOn:
+    id: "settings-add-sample-data-button"
+- tapOn:
+    id: "tab-button-index"
+- assertNotVisible:
+    id: "expenses-empty-state"
+- tapOn:
+    id: "tab-button-settings"
+- scrollUntilVisible:
+    element:
+      id: "settings-clear-all-data-button"
+    direction: DOWN
+    centerElement: true
+    timeout: 20000
+- tapOn:
+    id: "settings-clear-all-data-button"
+- tapOn: "Delete All"
+- tapOn:
+    id: "tab-button-index"
+- assertVisible:
+    id: "expenses-empty-state"

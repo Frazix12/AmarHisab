@@ -49,3 +49,6 @@ app-example
 .agents/
 .agent/
 .sisyphus/
+
+# maestro artifacts
+maestro-output/

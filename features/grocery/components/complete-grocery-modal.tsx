@@ -214,6 +214,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
               { backgroundColor: colors.surface },
               animatedStyle,
             ]}
+            testID="complete-grocery-modal"
           >
             {/* Header */}
             <View style={styles.modalHeader}>
@@ -314,6 +315,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
                   }}
                   render={({ field: { onChange, onBlur, value } }) => (
                     <BanglaNumberInput
+                      testID="complete-grocery-price-input"
                       style={[
                         styles.input,
                         {
@@ -445,6 +447,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
             <View style={styles.modalFooter}>
               <Pressable
                 onPress={onClose}
+                testID="complete-grocery-cancel-button"
                 style={[
                   styles.button,
                   styles.cancelButton,
@@ -457,6 +460,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
               </Pressable>
               <Pressable
                 onPress={handleComplete}
+                testID="complete-grocery-confirm-button"
                 style={[
                   styles.button,
                   styles.completeButton,

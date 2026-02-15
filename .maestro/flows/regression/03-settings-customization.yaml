@@ -1,0 +1,38 @@
+appId: ${APP_ID}
+tags:
+  - regression
+  - settings
+  - customization
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: "tab-button-settings"
+- assertVisible:
+    id: "screen-settings"
+- tapOn:
+    id: "settings-item-customization"
+- assertVisible:
+    id: "screen-settings-customization"
+- tapOn:
+    id: "customization-currency-item"
+- assertVisible:
+    id: "setting-selection-modal"
+- tapOn:
+    id: "setting-option-usd"
+- tapOn:
+    id: "customization-language-item"
+- tapOn:
+    id: "setting-option-bn"
+- tapOn:
+    id: "customization-language-item"
+- tapOn:
+    id: "setting-option-en"
+- tapOn:
+    id: "customization-theme-item"
+- tapOn:
+    id: "setting-option-dark"
+- tapOn:
+    id: "customization-theme-item"
+- tapOn:
+    id: "setting-option-system"

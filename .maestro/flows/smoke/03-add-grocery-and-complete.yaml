@@ -1,0 +1,40 @@
+appId: ${APP_ID}
+tags:
+  - smoke
+  - grocery
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: "tab-button-list"
+- assertVisible:
+    id: "screen-grocery"
+- tapOn:
+    id: "grocery-add-fab"
+- assertVisible:
+    id: "add-grocery-modal"
+- tapOn:
+    id: "add-grocery-name-input"
+- inputText: "Smoke Milk"
+- tapOn:
+    id: "add-grocery-quantity-input"
+- inputText: "2"
+- tapOn:
+    id: "add-grocery-category-dairy"
+- tapOn:
+    id: "add-grocery-save-button"
+- assertVisible: "Smoke Milk"
+- tapOn: "Smoke Milk"
+- assertVisible:
+    id: "complete-grocery-modal"
+- tapOn:
+    id: "complete-grocery-price-input"
+- inputText: "90"
+- tapOn:
+    id: "complete-grocery-confirm-button"
+- tapOn:
+    id: "tab-button-statistics"
+- assertVisible:
+    id: "screen-statistics"
+- assertVisible:
+    text: "Smoke Milk.*"

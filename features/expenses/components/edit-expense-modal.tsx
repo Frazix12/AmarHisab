@@ -213,6 +213,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
               { backgroundColor: colors.surface },
               animatedStyle,
             ]}
+            testID="edit-expense-modal"
           >
             {/* Header */}
             <View style={styles.modalHeader}>
@@ -241,6 +242,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                   render={({ field: { onChange, value } }) => (
                     <BanglaNumberInput
                       ref={amountInputRef}
+                      testID="edit-expense-amount-input"
                       style={[
                         styles.input,
                         {
@@ -269,6 +271,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                   name="description"
                   render={({ field: { onChange, value } }) => (
                     <TextInput
+                      testID="edit-expense-description-input"
                       style={[
                         styles.input,
                         styles.textArea,
@@ -378,6 +381,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                     <Pressable
                       key={cat.value}
                       onPress={() => setValue("category", cat.value)}
+                      testID={`edit-expense-category-${cat.value}`}
                       style={[
                         styles.categoryButton,
                         {
@@ -415,6 +419,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
             <View style={styles.modalFooter}>
               <Pressable
                 onPress={onClose}
+                testID="edit-expense-cancel-button"
                 style={[
                   styles.button,
                   styles.cancelButton,
@@ -427,6 +432,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
               </Pressable>
               <Pressable
                 onPress={handleSave}
+                testID="edit-expense-save-button"
                 style={[
                   styles.button,
                   styles.saveButton,

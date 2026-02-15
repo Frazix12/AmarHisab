@@ -1,0 +1,6 @@
+flows:
+  - flows/smoke/*
+  - flows/regression/*
+  - flows/ai/*
+
+testOutputDir: ./maestro-output

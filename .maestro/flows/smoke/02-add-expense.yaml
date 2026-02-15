@@ -1,0 +1,24 @@
+appId: ${APP_ID}
+tags:
+  - smoke
+  - expenses
+---
+- launchApp:
+    clearState: true
+- assertVisible:
+    id: "screen-expenses"
+- tapOn:
+    id: "expenses-add-fab"
+- assertVisible:
+    id: "add-expense-modal"
+- tapOn:
+    id: "add-expense-amount-input"
+- inputText: "125"
+- tapOn:
+    id: "add-expense-description-input"
+- inputText: "Smoke Lunch"
+- tapOn:
+    id: "add-expense-category-food"
+- tapOn:
+    id: "add-expense-save-button"
+- assertVisible: "Smoke Lunch"

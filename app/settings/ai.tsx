@@ -115,11 +115,16 @@ export default function AiSettings() {
 
   return (
     <SafeAreaView
+      testID="screen-settings-ai"
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <Animated.View style={[styles.screenTransition, pageTransitionStyle]}>
         <View style={[styles.header, { backgroundColor: colors.surface }]}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Pressable
+            onPress={() => router.back()}
+            style={styles.backButton}
+            testID="ai-settings-back-button"
+          >
             <Text style={[styles.backText, { color: colors.primary }]}>
               ← {t.templates.back}
             </Text>
@@ -150,6 +155,7 @@ export default function AiSettings() {
               title={t.settings.manageTemplates}
               value={`${formatNumber(templates.length)} ${t.templates.title}`}
               onPress={() => router.push("/templates")}
+              testID="ai-settings-manage-templates-item"
             />
 
             <SettingItem
@@ -157,6 +163,7 @@ export default function AiSettings() {
               title={t.settings.geminiApiKey}
               value={settings.geminiApiKey ? "••••••••" : t.settings.off}
               onPress={() => openApiKeyModal("gemini")}
+              testID="ai-settings-gemini-key-item"
             />
 
             <SettingItem
@@ -164,6 +171,7 @@ export default function AiSettings() {
               title={t.settings.elevenLabsApiKey}
               value={settings.elevenLabsApiKey ? "••••••••" : t.settings.off}
               onPress={() => openApiKeyModal("elevenlabs")}
+              testID="ai-settings-elevenlabs-key-item"
             />
 
             <SettingItem
@@ -190,6 +198,7 @@ export default function AiSettings() {
                   ],
                 );
               }}
+              testID="ai-settings-enable-learning-item"
             />
           </View>
         </ScrollView>
@@ -222,6 +231,7 @@ export default function AiSettings() {
                 name="apiKeyInput"
                 render={({ field: { onChange, value } }) => (
                   <TextInput
+                    testID="ai-settings-api-key-input"
                     style={[
                       styles.input,
                       {
@@ -255,6 +265,7 @@ export default function AiSettings() {
                       { borderColor: colors.error },
                     ]}
                     onPress={handleApiKeyRemove}
+                    testID="ai-settings-remove-api-key-button"
                   >
                     <Text style={[styles.modalButtonText, { color: colors.error }]}>
                       {t.settings.removeApiKey}
@@ -265,6 +276,7 @@ export default function AiSettings() {
                 <Pressable
                   style={[styles.modalButton, styles.cancelButton]}
                   onPress={() => setIsApiKeyModalVisible(false)}
+                  testID="ai-settings-cancel-api-key-button"
                 >
                   <Text style={[styles.modalButtonText, { color: colors.primary }]}>
                     {t.form.cancel}
@@ -278,6 +290,7 @@ export default function AiSettings() {
                     { backgroundColor: colors.primary },
                   ]}
                   onPress={handleApiKeySave}
+                  testID="ai-settings-save-api-key-button"
                 >
                   <Text style={[styles.modalButtonText, { color: colors.onPrimary }]}>
                     {t.form.save}

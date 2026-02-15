@@ -146,7 +146,7 @@ export default function ExpensesScreen() {
 
   const renderEmptyState = useCallback(
     () => (
-      <View style={styles.emptyState}>
+      <View style={styles.emptyState} testID="expenses-empty-state">
         <HugeiconsIcon
           icon={Wallet03Icon}
           size={64}
@@ -189,8 +189,10 @@ export default function ExpensesScreen() {
           title={t.expenses.todayTotal}
           amount={todayExpenses}
           variant="primary"
+          testID="expenses-today-summary-card"
         />
         <View
+          testID="expenses-item-count-card"
           style={[
             styles.itemCountCard,
             { backgroundColor: colors.surface, borderColor: colors.outline },
@@ -208,6 +210,7 @@ export default function ExpensesScreen() {
 
   return (
     <SafeAreaView
+      testID="screen-expenses"
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <Animated.View style={[styles.screenTransition, pageTransitionStyle]}>
@@ -230,6 +233,7 @@ export default function ExpensesScreen() {
         ListHeaderComponent={listHeader}
         ListEmptyComponent={renderEmptyState}
         ListFooterComponent={<View style={styles.bottomSpacer} />}
+        testID="expenses-list"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -264,6 +268,7 @@ export default function ExpensesScreen() {
       >
         <Pressable
           onPress={handleAddExpense}
+          testID="expenses-add-fab"
           style={({ pressed }) => [
             styles.fabPressable,
             {

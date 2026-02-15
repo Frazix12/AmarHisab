@@ -111,11 +111,16 @@ export default function EditTemplateScreen() {
 
   return (
     <SafeAreaView
+      testID="screen-templates-edit"
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.headerButton}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.headerButton}
+          testID="template-edit-cancel-button"
+        >
           <HugeiconsIcon icon={Cancel01Icon} size={24} color={colors.text} />
         </Pressable>
         <Text style={[styles.title, { color: colors.text }]}>
@@ -125,6 +130,7 @@ export default function EditTemplateScreen() {
           onPress={handleSave}
           disabled={loading}
           style={styles.headerButton}
+          testID="template-edit-save-button"
         >
           {loading ? (
             <ActivityIndicator size="small" color={colors.primary} />
@@ -186,6 +192,7 @@ export default function EditTemplateScreen() {
             }}
             render={({ field: { onChange, value } }) => (
               <TextInput
+                testID="template-edit-name-input"
                 value={value}
                 onChangeText={(text) => {
                   onChange(text);
@@ -222,6 +229,7 @@ export default function EditTemplateScreen() {
             name="quantity"
             render={({ field: { onChange, value } }) => (
               <TextInput
+                testID="template-edit-quantity-input"
                 value={formatNumber(value || "")}
                 onChangeText={(text) => onChange(parseBanglaNumber(text))}
                 placeholder={t.placeholders.templateQuantity}
@@ -264,6 +272,7 @@ export default function EditTemplateScreen() {
               }}
               render={({ field: { onChange, value } }) => (
                 <BanglaNumberInput
+                  testID="template-edit-price-input"
                   value={value}
                   onChangeText={(text) => {
                     onChange(text);
@@ -305,6 +314,7 @@ export default function EditTemplateScreen() {
                   <Pressable
                     key={cat.value}
                     onPress={() => setValue("category", cat.value)}
+                    testID={`template-edit-category-${cat.value}`}
                     style={[
                       styles.categoryButton,
                       {

@@ -88,6 +88,7 @@ export default function TemplatesScreen() {
   const renderTemplateItem = useCallback(
     ({ item: template }: { item: (typeof templates)[number] }) => (
       <View
+        testID={`template-card-${template.id}`}
         style={[
           styles.templateCard,
           {
@@ -141,6 +142,8 @@ export default function TemplatesScreen() {
             <Pressable
               onPress={() => router.push(`/templates/edit?id=${template.id}`)}
               style={styles.actionButton}
+              testID="template-edit-button"
+              accessibilityLabel="template-edit-button"
             >
               <HugeiconsIcon
                 icon={PencilEdit02Icon}
@@ -151,6 +154,8 @@ export default function TemplatesScreen() {
             <Pressable
               onPress={() => setDeleteConfirm(template.id)}
               style={styles.actionButton}
+              testID="template-delete-button"
+              accessibilityLabel="template-delete-button"
             >
               <HugeiconsIcon
                 icon={Delete02Icon}
@@ -215,11 +220,16 @@ export default function TemplatesScreen() {
 
   return (
     <SafeAreaView
+      testID="screen-templates"
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.backButton}
+          testID="templates-back-button"
+        >
           <Text style={[styles.backText, { color: colors.primary }]}>
             ← {t.templates.back}
           </Text>
@@ -230,6 +240,7 @@ export default function TemplatesScreen() {
         <Pressable
           onPress={() => router.push("/templates/add")}
           style={[styles.addButton, { backgroundColor: colors.primary }]}
+          testID="templates-add-button"
         >
           <HugeiconsIcon icon={Add01Icon} size={20} color="#fff" />
         </Pressable>
@@ -240,6 +251,7 @@ export default function TemplatesScreen() {
         <Pressable
           haptic="medium"
           onPress={() => setFilter("all")}
+          testID="templates-filter-all"
           style={[
             styles.filterTab,
             filter === "all" && { backgroundColor: colors.primary },
@@ -257,6 +269,7 @@ export default function TemplatesScreen() {
         <Pressable
           haptic="medium"
           onPress={() => setFilter("manual")}
+          testID="templates-filter-manual"
           style={[
             styles.filterTab,
             filter === "manual" && { backgroundColor: colors.primary },
@@ -274,6 +287,7 @@ export default function TemplatesScreen() {
         <Pressable
           haptic="medium"
           onPress={() => setFilter("learned")}
+          testID="templates-filter-learned"
           style={[
             styles.filterTab,
             filter === "learned" && { backgroundColor: colors.primary },
@@ -298,6 +312,7 @@ export default function TemplatesScreen() {
         style={styles.list}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={renderEmptyState}
+        testID="templates-list"
       />
 
       {/* Delete Confirmation Modal */}
@@ -323,21 +338,23 @@ export default function TemplatesScreen() {
               {t.alerts.deleteTemplateMessage}
             </Text>
             <View style={styles.modalActions}>
-              <Pressable
-                onPress={() => setDeleteConfirm(null)}
-                style={[
-                  styles.modalButton,
-                  { backgroundColor: colors.outline },
-                ]}
-              >
+                <Pressable
+                  onPress={() => setDeleteConfirm(null)}
+                  style={[
+                    styles.modalButton,
+                    { backgroundColor: colors.outline },
+                  ]}
+                  testID="templates-delete-cancel"
+                >
                 <Text style={[styles.modalButtonText, { color: colors.text }]}>
                   {t.form.cancel}
                 </Text>
               </Pressable>
-              <Pressable
-                onPress={() => deleteConfirm && handleDelete(deleteConfirm)}
-                style={[styles.modalButton, { backgroundColor: colors.error }]}
-              >
+                <Pressable
+                  onPress={() => deleteConfirm && handleDelete(deleteConfirm)}
+                  style={[styles.modalButton, { backgroundColor: colors.error }]}
+                  testID="templates-delete-confirm"
+                >
                 <Text style={[styles.modalButtonText, { color: "#fff" }]}>
                   {t.modal.delete}
                 </Text>

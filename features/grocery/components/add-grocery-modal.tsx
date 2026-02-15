@@ -269,6 +269,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
         renderToHardwareTextureAndroid
         shouldRasterizeIOS
         style={[styles.growContainer, { backgroundColor: colors.surface }, shellStyle]}
+        testID="add-grocery-modal"
       >
         <Animated.View
           style={[styles.modalContent, contentStyle]}
@@ -301,6 +302,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                         ? handleAutofill()
                         : setShowTemplatePicker(true)
                     }
+                    testID="add-grocery-autofill-button"
                     style={[
                       styles.aiButton,
                       { backgroundColor: colors.primary + "20" },
@@ -324,6 +326,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                 name="name"
                 render={({ field: { onChange, value } }) => (
                   <TextInput
+                    testID="add-grocery-name-input"
                     style={[
                       styles.input,
                       {
@@ -371,6 +374,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                   name="quantity"
                   render={({ field: { onChange, value } }) => (
                     <TextInput
+                      testID="add-grocery-quantity-input"
                       style={[
                         styles.input,
                         {
@@ -398,6 +402,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                   name="price"
                   render={({ field: { onChange, value } }) => (
                     <BanglaNumberInput
+                      testID="add-grocery-price-input"
                       style={[
                         styles.input,
                         {
@@ -470,6 +475,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                       setValue("category", cat.value);
                       setAiDetectedCategory(false);
                     }}
+                    testID={`add-grocery-category-${cat.value}`}
                     style={[
                       styles.categoryButton,
                       {
@@ -507,6 +513,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
           <View style={styles.modalFooter}>
             <Pressable
               onPress={handleSave}
+              testID="add-grocery-save-button"
               style={[
                 styles.button,
                 { backgroundColor: colors.success },
@@ -531,6 +538,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
             haptic="none"
             style={styles.pickerOverlay}
             onPress={() => setShowTemplatePicker(false)}
+            testID="add-grocery-template-picker-overlay"
           >
             <View
               style={[
@@ -548,6 +556,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                     haptic="medium"
                     key={match.template.id}
                     onPress={() => handleAutofill(match.template.id)}
+                    testID={`add-grocery-template-option-${match.template.id}`}
                     style={[
                       styles.templateOption,
                       { backgroundColor: colors.surfaceVariant },

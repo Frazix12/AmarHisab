@@ -35,6 +35,12 @@ interface SettingSelectionModalProps {
   onSelect: (value: string) => void;
 }
 
+const toTestIdSegment = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "option";
+
 export const SettingSelectionModal = ({
   visible,
   onClose,
@@ -70,6 +76,7 @@ export const SettingSelectionModal = ({
             onSelect(option.value);
             onClose();
           }}
+          testID={`setting-option-${toTestIdSegment(option.value)}`}
           style={({ pressed }) => [
             styles.optionItem,
             {
@@ -154,6 +161,7 @@ export const SettingSelectionModal = ({
             styles.modalContent,
             { backgroundColor: colors.surface, paddingBottom: 40 },
           ]}
+          testID="setting-selection-modal"
         >
           {/* Header */}
           <View style={styles.header}>

@@ -317,7 +317,7 @@ export default function StatisticsScreen() {
 
   const renderEmptyState = useCallback(
     () => (
-      <View style={styles.emptyState}>
+      <View style={styles.emptyState} testID="statistics-empty-state">
         <HugeiconsIcon
           icon={PieChartIcon}
           size={64}
@@ -371,6 +371,7 @@ export default function StatisticsScreen() {
                   variant={item.variant}
                   description={item.description}
                   size="large"
+                  testID={`statistics-summary-card-${item.key}`}
                 />
               </View>
             )}
@@ -397,6 +398,7 @@ export default function StatisticsScreen() {
                         currentCategory === item.category ? null : item.category,
                       )
                     }
+                    testID={`statistics-category-pill-${item.category}`}
                     style={[
                       styles.categoryPill,
                       {
@@ -464,6 +466,7 @@ export default function StatisticsScreen() {
 
   return (
     <SafeAreaView
+      testID="screen-statistics"
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <Animated.View style={[styles.screenTransition, pageTransitionStyle]}>
@@ -484,6 +487,7 @@ export default function StatisticsScreen() {
         ListHeaderComponent={listHeader}
         ListEmptyComponent={renderEmptyState}
         ListFooterComponent={<View style={styles.bottomSpacer} />}
+        testID="statistics-history-list"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

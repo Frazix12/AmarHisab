@@ -592,6 +592,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
             { backgroundColor: colors.surface },
             animatedStyle,
           ]}
+          testID="voice-assistant-modal"
         >
           <View
             style={[styles.modalHeader, { borderBottomColor: colors.outline }]}
@@ -611,7 +612,11 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
                 {t.voice.subtitle}
               </Text>
             </View>
-            <Pressable onPress={onClose} style={styles.closeButton}>
+            <Pressable
+              onPress={onClose}
+              style={styles.closeButton}
+              testID="voice-assistant-close-button"
+            >
               <HugeiconsIcon
                 icon={Cancel01Icon}
                 size={22}
@@ -705,6 +710,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
                       haptic="medium"
                       key={option.value}
                       onPress={() => setLanguageMode(option.value)}
+                      testID={`voice-language-${option.value}`}
                       style={[
                         styles.selectorOption,
                         {
@@ -787,6 +793,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
                       name="transcript"
                       render={({ field: { onChange, value } }) => (
                         <TextInput
+                          testID="voice-transcript-input"
                           style={[
                             styles.transcriptInput,
                             {
@@ -823,6 +830,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
                 <Pressable
                   onPress={sendTypedTranscript}
                   disabled={!canSendText}
+                  testID="voice-send-text-button"
                   style={[
                     styles.circleActionButton,
                     {
@@ -845,6 +853,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
                 <Pressable
                   onPress={toggleMicrophone}
                   disabled={status === "processing"}
+                  testID="voice-microphone-button"
                   style={[
                     styles.circleActionButton,
                     {
@@ -1050,6 +1059,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
                       resetState();
                       startListening();
                     }}
+                    testID="voice-try-again-button"
                     style={[
                       styles.secondaryButton,
                       { borderColor: colors.outline },
@@ -1063,6 +1073,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
                   </Pressable>
                   <Pressable
                     onPress={handleConfirm}
+                    testID="voice-confirm-add-button"
                     style={[
                       styles.primaryButton,
                       { backgroundColor: colors.primary, flex: 1, marginTop: 0 },

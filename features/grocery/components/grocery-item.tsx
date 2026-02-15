@@ -59,6 +59,8 @@ export const GroceryItemComponent = React.memo(
         longPressHaptic="medium"
         onPress={handlePress}
         onLongPress={handleLongPress}
+        testID={`grocery-item-${item.id}`}
+        accessibilityLabel={`grocery-item-${item.name}`}
         style={({ pressed }) => [
           styles.container,
           {
@@ -70,6 +72,8 @@ export const GroceryItemComponent = React.memo(
       >
         <Pressable
           onPress={handleToggle}
+          testID={`grocery-item-toggle-${item.id}`}
+          accessibilityLabel={`toggle-grocery-item-${item.name}`}
           style={[
             styles.checkbox,
             {
@@ -90,6 +94,7 @@ export const GroceryItemComponent = React.memo(
 
         <View style={styles.content}>
           <Text
+            testID={`grocery-item-name-${item.id}`}
             style={[
               styles.name,
               {

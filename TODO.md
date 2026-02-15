@@ -5,8 +5,8 @@
 - [x] make a re usable internal notification system (hints will also be show through it) all other notifications will use it.
 - [x] show a notification when api is rate limited.
 - [x] show a notification when the app is updated.
+- [x] use <https://maestro.dev/> for testing learn from <https://github.com/vanGalilea/react-native-testing>
 - [ ] use <https://github.com/mrousavy/react-native-mmkv> for local storage
 - [ ] use <https://github.com/mrousavy/react-native-vision-camera> for camera
 - [ ] use expo image for image preview
-- [ ] use <https://maestro.dev/> for testing learn from <https://github.com/vanGalilea/react-native-testing>
 

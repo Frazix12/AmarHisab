@@ -90,6 +90,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
                   ]}
                   accessibilityRole="button"
                   accessibilityLabel={t.voice.title}
+                  testID="tab-button-voice"
                 >
                   <HugeiconsIcon
                     icon={AiMicIcon}
@@ -104,6 +105,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
               isActive={isFocused}
               icon={icon}
               label={label}
+              tabKey={route.name}
               color={color}
               onPress={onPress}
             />

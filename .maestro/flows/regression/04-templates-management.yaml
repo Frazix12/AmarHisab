@@ -1,0 +1,51 @@
+appId: ${APP_ID}
+tags:
+  - regression
+  - templates
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: "tab-button-settings"
+- tapOn:
+    id: "settings-item-ai"
+- assertVisible:
+    id: "screen-settings-ai"
+- tapOn:
+    id: "ai-settings-manage-templates-item"
+- assertVisible:
+    id: "screen-templates"
+- tapOn:
+    id: "templates-add-button"
+- assertVisible:
+    id: "screen-templates-add"
+- tapOn:
+    id: "template-add-name-input"
+- inputText: "Smoke Template"
+- tapOn:
+    id: "template-add-quantity-input"
+- inputText: "1"
+- tapOn:
+    id: "template-add-price-input"
+- inputText: "45"
+- tapOn:
+    id: "template-add-category-dairy"
+- tapOn:
+    id: "template-add-save-button"
+- assertVisible: "Smoke Template"
+- tapOn:
+    id: "template-edit-button"
+- assertVisible:
+    id: "screen-templates-edit"
+- tapOn:
+    id: "template-edit-name-input"
+- eraseText
+- inputText: "Smoke Template Updated"
+- tapOn:
+    id: "template-edit-save-button"
+- assertVisible: "Smoke Template Updated"
+- tapOn:
+    id: "template-delete-button"
+- tapOn:
+    id: "templates-delete-confirm"
+- assertNotVisible: "Smoke Template Updated"

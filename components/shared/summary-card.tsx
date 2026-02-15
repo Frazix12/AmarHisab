@@ -11,6 +11,7 @@ interface SummaryCardProps {
   variant?: "primary" | "secondary" | "success";
   description?: string;
   size?: "default" | "large";
+  testID?: string;
 }
 
 export const SummaryCard: React.FC<SummaryCardProps> = ({
@@ -20,6 +21,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
   variant = "primary",
   description,
   size = "default",
+  testID,
 }) => {
   const { settings, colorScheme, formatNumber } = useApp();
   const colors = Colors[colorScheme];
@@ -64,6 +66,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
 
   return (
     <View
+      testID={testID}
       style={[
         styles.container,
         size === "large" && styles.containerLarge,

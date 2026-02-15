@@ -28,6 +28,12 @@ interface ActionMenuModalProps {
   itemTitle: string;
 }
 
+const toTestIdSegment = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "action";
+
 export const ActionMenuModal: React.FC<ActionMenuModalProps> = ({
   visible,
   onClose,
@@ -55,13 +61,19 @@ export const ActionMenuModal: React.FC<ActionMenuModalProps> = ({
       accessibilityLabel={`Actions for ${itemTitle}`}
     >
       <Animated.View style={[styles.modalOverlay, backdropStyle]}>
-        <Pressable haptic="none" style={styles.backdrop} onPress={onClose} />
+        <Pressable
+          haptic="none"
+          style={styles.backdrop}
+          onPress={onClose}
+          testID="action-menu-backdrop"
+        />
         <Animated.View
           style={[
             styles.menuContent,
             { backgroundColor: colors.surface },
             animatedStyle,
           ]}
+          testID="action-menu-modal"
         >
           {/* Handle Bar */}
           <View style={styles.handleBar}>
@@ -72,7 +84,7 @@ export const ActionMenuModal: React.FC<ActionMenuModalProps> = ({
 
           {/* Actions */}
           <View style={styles.actionsContainer}>
-            {actions.map((action, index) => {
+            {actions.map((action) => {
               const isDestructive = action.variant === "destructive";
               const iconColor = isDestructive ? colors.error : colors.text;
               const textColor = isDestructive ? colors.error : colors.text;
@@ -80,7 +92,7 @@ export const ActionMenuModal: React.FC<ActionMenuModalProps> = ({
               return (
                 <Pressable
                   haptic="medium"
-                  key={index}
+                  key={action.label}
                   onPress={() => handleActionPress(action)}
                   style={({ pressed }) => [
                     styles.actionButton,
@@ -92,6 +104,7 @@ export const ActionMenuModal: React.FC<ActionMenuModalProps> = ({
                   ]}
                   accessibilityLabel={action.label}
                   accessibilityRole="button"
+                  testID={`action-menu-item-${toTestIdSegment(action.label)}`}
                 >
                   <View
                     style={[

@@ -12,6 +12,7 @@ interface SettingItemProps {
   onPress?: () => void;
   disabled?: boolean;
   selected?: boolean;
+  testID?: string;
 }
 
 export const SettingItem: React.FC<SettingItemProps> = ({
@@ -21,6 +22,7 @@ export const SettingItem: React.FC<SettingItemProps> = ({
   onPress,
   disabled = false,
   selected = false,
+  testID,
 }) => {
   const { colorScheme } = useApp();
   const colors = Colors[colorScheme];
@@ -33,6 +35,7 @@ export const SettingItem: React.FC<SettingItemProps> = ({
       accessibilityRole="button"
       accessibilityLabel={title}
       accessibilityState={{ disabled: !!disabled, selected: !!selected }}
+      testID={testID}
       style={({ pressed }) => [
         styles.settingItem,
         {

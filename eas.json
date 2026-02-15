@@ -15,6 +15,22 @@
       "environment": "preview",
       "channel": "preview"
     },
+    "e2e-android": {
+      "distribution": "internal",
+      "environment": "preview",
+      "android": {
+        "buildType": "apk"
+      },
+      "channel": "e2e-android"
+    },
+    "e2e-ios": {
+      "distribution": "internal",
+      "environment": "preview",
+      "ios": {
+        "simulator": true
+      },
+      "channel": "e2e-ios"
+    },
     "production": {
       "environment": "production",
       "autoIncrement": true,

@@ -165,6 +165,23 @@ eas build -p android --profile preview
 eas build:run -p android
 ```
 
+### E2E Testing (Maestro)
+
+This project includes full Maestro flows for smoke/regression coverage.
+
+```bash
+# Android
+bun run test:e2e:android:smoke
+bun run test:e2e:android:regression
+bun run test:e2e:android:ci
+
+# iOS
+bun run test:e2e:ios:smoke
+bun run test:e2e:ios:regression
+```
+
+Detailed workflow and CI setup: `docs/testing/maestro-workflow.md`
+
 ---
 
 ## 🛠️ Tech Stack

@@ -277,7 +277,7 @@ export default function GroceryScreen() {
 
   const renderEmptyState = useCallback(
     () => (
-      <View style={styles.emptyState}>
+      <View style={styles.emptyState} testID="grocery-empty-state">
         <HugeiconsIcon
           icon={ShoppingBasket01Icon}
           size={64}
@@ -343,6 +343,7 @@ export default function GroceryScreen() {
 
   return (
     <SafeAreaView
+      testID="screen-grocery"
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <Animated.View style={[styles.screenTransition, pageTransitionStyle]}>
@@ -354,6 +355,7 @@ export default function GroceryScreen() {
         {hasCompletedItems && (
           <Pressable
             onPress={handleClearCompleted}
+            testID="grocery-clear-completed-button"
             style={({ pressed }) => [
               styles.clearButton,
               { opacity: pressed ? 0.7 : 1 },
@@ -396,6 +398,7 @@ export default function GroceryScreen() {
         contentContainerStyle={styles.scrollContent}
         ListEmptyComponent={renderEmptyState}
         ListFooterComponent={<View style={styles.bottomSpacer} />}
+        testID="grocery-list"
       />
 
       {/* Add Grocery Modal */}
@@ -423,6 +426,7 @@ export default function GroceryScreen() {
       >
         <Pressable
           onPress={handleAddItem}
+          testID="grocery-add-fab"
           style={({ pressed }) => [
             styles.fabPressable,
             {

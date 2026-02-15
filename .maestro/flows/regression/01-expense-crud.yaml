@@ -1,0 +1,40 @@
+appId: ${APP_ID}
+tags:
+  - regression
+  - expenses
+  - crud
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: "expenses-add-fab"
+- tapOn:
+    id: "add-expense-amount-input"
+- inputText: "220"
+- tapOn:
+    id: "add-expense-description-input"
+- inputText: "CRUD Expense"
+- tapOn:
+    id: "add-expense-category-shopping"
+- tapOn:
+    id: "add-expense-save-button"
+- assertVisible: "CRUD Expense"
+- longPressOn: "CRUD Expense"
+- assertVisible:
+    id: "action-menu-modal"
+- tapOn:
+    id: "action-menu-item-edit"
+- assertVisible:
+    id: "edit-expense-modal"
+- tapOn:
+    id: "edit-expense-description-input"
+- eraseText
+- inputText: "CRUD Expense Updated"
+- tapOn:
+    id: "edit-expense-save-button"
+- assertVisible: "CRUD Expense Updated"
+- longPressOn: "CRUD Expense Updated"
+- tapOn:
+    id: "action-menu-item-delete"
+- tapOn: "Delete"
+- assertNotVisible: "CRUD Expense Updated"

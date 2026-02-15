@@ -1,0 +1,43 @@
+appId: ${APP_ID}
+tags:
+  - regression
+  - grocery
+  - crud
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: "tab-button-list"
+- tapOn:
+    id: "grocery-add-fab"
+- tapOn:
+    id: "add-grocery-name-input"
+- inputText: "CRUD Rice"
+- tapOn:
+    id: "add-grocery-quantity-input"
+- inputText: "1"
+- tapOn:
+    id: "add-grocery-price-input"
+- inputText: "75"
+- tapOn:
+    id: "add-grocery-category-household"
+- tapOn:
+    id: "add-grocery-save-button"
+- assertVisible: "CRUD Rice"
+- longPressOn: "CRUD Rice"
+- tapOn:
+    id: "action-menu-item-edit"
+- assertVisible:
+    id: "edit-grocery-modal"
+- tapOn:
+    id: "edit-grocery-name-input"
+- eraseText
+- inputText: "CRUD Rice Updated"
+- tapOn:
+    id: "edit-grocery-save-button"
+- assertVisible: "CRUD Rice Updated"
+- longPressOn: "CRUD Rice Updated"
+- tapOn:
+    id: "action-menu-item-delete"
+- tapOn: "Delete"
+- assertNotVisible: "CRUD Rice Updated"

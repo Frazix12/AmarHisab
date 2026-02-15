@@ -85,11 +85,16 @@ export default function CustomizationSettings() {
 
   return (
     <SafeAreaView
+      testID="screen-settings-customization"
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <Animated.View style={[styles.screenTransition, pageTransitionStyle]}>
         <View style={[styles.header, { backgroundColor: colors.surface }]}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Pressable
+            onPress={() => router.back()}
+            style={styles.backButton}
+            testID="customization-back-button"
+          >
             <Text style={[styles.backText, { color: colors.primary }]}>
               ← {t.templates.back}
             </Text>
@@ -120,6 +125,7 @@ export default function CustomizationSettings() {
               title={t.settings.currency}
               value={`${settings.currency.symbol} ${settings.currency.code}`}
               onPress={() => setActiveModal("currency")}
+              testID="customization-currency-item"
             />
 
             <SettingItem
@@ -127,6 +133,7 @@ export default function CustomizationSettings() {
               title={t.settings.theme}
               value={getThemeDisplayName()}
               onPress={() => setActiveModal("theme")}
+              testID="customization-theme-item"
             />
 
             <SettingItem
@@ -134,6 +141,7 @@ export default function CustomizationSettings() {
               title={t.settings.language}
               value={settings.language === "bn" ? "বাংলা" : "English"}
               onPress={() => setActiveModal("language")}
+              testID="customization-language-item"
             />
           </View>
         </ScrollView>

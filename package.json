@@ -4,12 +4,14 @@
   "version": "1.2.1",
   "scripts": {
     "start": "expo start",
-    "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
-    "ios": "expo run:ios",
-    "web": "expo start --web",
     "lint": "expo lint",
-    "test": "jest"
+    "test": "jest",
+    "test:e2e:smoke": "maestro test -e APP_ID=com.frazix.amarisab --include-tags smoke .maestro/flows/smoke",
+    "test:e2e:regression": "maestro test -e APP_ID=com.frazix.amarisab --include-tags regression .maestro/flows/regression",
+    "test:e2e:ai": "maestro test -e APP_ID=com.frazix.amarisab --include-tags ai .maestro/flows/ai",
+    "test:e2e:all": "maestro test -e APP_ID=com.frazix.amarisab .maestro/flows/smoke .maestro/flows/regression .maestro/flows/ai",
+    "test:e2e:ci": "mkdir -p maestro-output/reports && maestro test -e APP_ID=com.frazix.amarisab --include-tags smoke --format junit --output maestro-output/reports/maestro-smoke.xml --test-output-dir maestro-output/smoke .maestro/flows/smoke && maestro test -e APP_ID=com.frazix.amarisab --include-tags regression --format junit --output maestro-output/reports/maestro-regression.xml --test-output-dir maestro-output/regression .maestro/flows/regression"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
