@@ -2,7 +2,7 @@
   "expo": {
     "name": "Amar Hisab",
     "slug": "amarhisab",
-    "version": "1.2.1",
+    "version": "1.3.0",
     "orientation": "portrait",
     "icon": "./assets/icons/adaptive-icon.png",
     "scheme": "amarhisab",
