@@ -3,7 +3,7 @@ import {
   ActionMenuModal,
 } from "@/components/shared/action-menu-modal";
 import { SummaryCard } from "@/components/shared/summary-card";
-import { showToast, Toast } from "@/components/ui/toast";
+import { showToast } from "@/components/ui/toast";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
 import { EditExpenseModal } from "@/features/expenses/components/edit-expense-modal";
@@ -514,7 +514,6 @@ export default function StatisticsScreen() {
       )}
 
       {/* Toast Notifications */}
-      <Toast />
       </Animated.View>
     </SafeAreaView>
   );

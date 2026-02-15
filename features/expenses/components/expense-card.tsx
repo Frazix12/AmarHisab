@@ -1,5 +1,6 @@
 import { Colors } from "@/constants/theme";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
+import { AppImage } from "@/components/ui/app-image";
 import { TranslationKey } from "@/services/i18n";
 import { Expense, UserSettings } from "@/types";
 import { withAlpha } from "@/utils/color";
@@ -11,7 +12,6 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import React, { useCallback, useRef, useState } from "react";
 import {
-  Image,
   Modal,
   StyleSheet,
   Text,
@@ -119,10 +119,10 @@ export const ExpenseCard = React.memo(
                 accessibilityRole="button"
                 accessibilityLabel={t.form.attachment || "View attached image"}
               >
-                <Image
-                  source={{ uri: expense.imageUri }}
+                <AppImage
+                  uri={expense.imageUri}
                   style={styles.thumbnailImage}
-                  resizeMode="cover"
+                  contentFit="cover"
                 />
               </Pressable>
             ) : (
@@ -179,10 +179,10 @@ export const ExpenseCard = React.memo(
                 onPress={(event) => event.stopPropagation()}
                 style={styles.viewerImageContainer}
               >
-                <Image
-                  source={{ uri: expense.imageUri }}
+                <AppImage
+                  uri={expense.imageUri}
                   style={styles.viewerImage}
-                  resizeMode="contain"
+                  contentFit="contain"
                 />
               </Pressable>
 

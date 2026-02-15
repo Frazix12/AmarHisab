@@ -1,4 +1,5 @@
 import { TemplateLearner } from "@/features/templates/services/template-learner";
+import { LearningStorage } from "@/features/templates/services/learning-storage";
 import { TemplateStorage } from "@/features/templates/services/template-storage";
 import { normalizeProductName } from "@/features/templates/services/template-utils";
 import { setElevenLabsApiKey } from "@/services/ai/elevenlabs";
@@ -155,6 +156,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     item: Pick<GroceryItem, "expenseCategory" | "category">,
   ): ExpenseCategory => {
     return item.expenseCategory ?? getFallbackExpenseCategory(item.category);
+  };
+
+  const hasValidGroceryPrice = (
+    price: GroceryItem["price"],
+  ): price is number => {
+    return typeof price === "number" && Number.isFinite(price) && price > 0;
   };
 
   const cacheExpenseCategoryForGroceryItem = (item: GroceryItem): void => {
@@ -361,7 +368,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     if (!item) return;
 
     // Intercept: If checking item without price, trigger completion modal
-    if (!item.checked && item.price === null) {
+    if (!item.checked && !hasValidGroceryPrice(item.price)) {
       setItemPendingCompletion(item);
       return; // Don't toggle yet
     }
@@ -372,7 +379,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         if (item.id === id) {
           const newCheckedState = !item.checked;
 
-          if (newCheckedState && item.price !== null) {
+          if (newCheckedState && hasValidGroceryPrice(item.price)) {
             // Checking: Add expense and store its ID
             const newExpense = {
               amount: item.price,
@@ -412,6 +419,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     price: number,
     imageUri?: string,
   ) => {
+    if (!Number.isFinite(price) || price <= 0) {
+      return;
+    }
+
     setGroceryItems((prev) =>
       prev.map((item) => {
         if (item.id === id) {
@@ -611,6 +622,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         await Promise.all(
           allTemplates.map((template) => TemplateStorage.delete(template.id)),
         );
+      }
+
+      if (typeof LearningStorage.clear === "function") {
+        await LearningStorage.clear();
       }
 
       // Only update state after successful storage clearing

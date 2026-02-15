@@ -3,7 +3,7 @@ import {
     ActionMenuModal,
 } from "@/components/shared/action-menu-modal";
 import { OnboardingTip } from "@/components/shared/onboarding-tip";
-import { showToast, Toast } from "@/components/ui/toast";
+import { showToast } from "@/components/ui/toast";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
@@ -478,7 +478,6 @@ export default function GroceryScreen() {
       )}
 
       {/* Toast Notifications */}
-      <Toast />
       </Animated.View>
     </SafeAreaView>
   );

@@ -535,10 +535,15 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
     });
 
     parsedResult.groceries.forEach((item) => {
+      const parsedPrice =
+        typeof item.price === "number" && Number.isFinite(item.price) && item.price > 0
+          ? item.price
+          : null;
+
       addGroceryItem({
         name: item.name,
         quantity: item.quantity || "",
-        price: item.price ?? null,
+        price: parsedPrice,
         category: item.category || "other",
         checked: false,
         aiDetected: true,
@@ -1429,7 +1434,7 @@ const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
       ? Number.parseFloat(values.price)
       : undefined;
     const priceValue =
-      parsedPrice !== undefined && !Number.isNaN(parsedPrice)
+      parsedPrice !== undefined && !Number.isNaN(parsedPrice) && parsedPrice > 0
         ? parsedPrice
         : undefined;
     onSave({

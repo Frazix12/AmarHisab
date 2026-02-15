@@ -4,7 +4,7 @@ import {
 } from "@/components/shared/action-menu-modal";
 import { OnboardingTip } from "@/components/shared/onboarding-tip";
 import { SummaryCard } from "@/components/shared/summary-card";
-import { showToast, Toast } from "@/components/ui/toast";
+import { showToast } from "@/components/ui/toast";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
@@ -309,7 +309,6 @@ export default function ExpensesScreen() {
       )}
 
       {/* Toast Notifications */}
-      <Toast />
       </Animated.View>
     </SafeAreaView>
   );

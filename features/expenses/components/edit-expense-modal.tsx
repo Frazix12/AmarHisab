@@ -1,5 +1,6 @@
 import { BanglaNumberInput } from "@/components/shared/bangla-number-input";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
+import { AppImage } from "@/components/ui/app-image";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
 import { EXPENSE_CATEGORIES, Expense, ExpenseCategory } from "@/types";
@@ -16,7 +17,6 @@ import React, { useEffect, useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
   Alert,
-  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -297,10 +297,10 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
 
                 {imageUri ? (
                   <View style={styles.imagePreviewContainer}>
-                    <Image
-                      source={{ uri: imageUri }}
+                    <AppImage
+                      uri={imageUri}
                       style={styles.imagePreview}
-                      resizeMode="cover"
+                      contentFit="cover"
                     />
                     <Pressable
                       onPress={removeImage}

@@ -6,7 +6,7 @@
 // Rate limiter state
 const rateLimiter = {
   calls: [] as number[],
-  maxCalls: 10,           // Max 10 calls per window
+  maxCalls: 20,           // Max 20 calls per window
   windowMs: 60 * 1000,    // 1 minute window
 };
 

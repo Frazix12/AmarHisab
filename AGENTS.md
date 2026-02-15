@@ -8,7 +8,7 @@ It captures commands, structure, and conventions that are visible in the code.
 - Expo Router app (Expo SDK 54) using TypeScript + React Native.
 - Strict TS config with path alias `@/*` (see `tsconfig.json`).
 - State via React Context (`contexts/app-context.tsx`).
-- Local storage via AsyncStorage + SecureStore (`services/storage`).
+- Local storage via Drizzle ORM + Expo SQLite + SecureStore (`services/storage`).
 - i18n via `services/i18n/index.ts` (en + bn).
 - AI integrations live in `services/ai/*`.
 
@@ -20,8 +20,6 @@ It captures commands, structure, and conventions that are visible in the code.
 ### Dev Server
 - `bun start` (Expo dev server)
 - `bun run android` (device/emulator)
-- `bun run ios` (device/simulator)
-- `bun run web` (Expo web)
 
 ### Lint
 - `bun run lint`
@@ -33,7 +31,6 @@ It captures commands, structure, and conventions that are visible in the code.
 ### Native Builds / Dev Client
 - `bunx expo prebuild` (required after adding native modules)
 - `bunx expo run:android`
-- `bunx expo run:ios`
 
 ### Release (from README)
 - `bunx eas build -p android --profile preview`
@@ -100,7 +97,7 @@ It captures commands, structure, and conventions that are visible in the code.
 ## Data + State
 - Use context functions (`addExpense`, `addGroceryItem`, etc.) to mutate data.
 - Keep state updates immutable; use functional `setState` patterns.
-- Do not access AsyncStorage directly; use `services/storage` helpers.
+- Do not access SQLite directly from features; use `services/storage` and template storage helpers.
 - Link related entities through IDs (see grocery ↔ expenses).
 
 ## i18n + Numbers
@@ -126,9 +123,9 @@ It captures commands, structure, and conventions that are visible in the code.
 - Keep image handling optional and resilient to permission denial.
 
 ## Platform Notes
-- Native modules require a dev client build (not Expo Go).
+- Native modules require a dev client build.
 - Android audio needs RECORD_AUDIO permission (already in `app.json`).
-- Web support is limited for native audio features.
+- App is Android-only.
 
 ## Repo Rules (Cursor / Copilot)
 - No `.cursor/rules/` or `.cursorrules` found.

@@ -1,5 +1,6 @@
 import { BanglaNumberInput } from "@/components/shared/bangla-number-input";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
+import { AppImage } from "@/components/ui/app-image";
 import { Colors } from "@/constants/theme";
 import { useApp } from "@/contexts/app-context";
 import { detectExpenseCategory } from "@/services/ai/gemini";
@@ -24,7 +25,6 @@ import { Controller, useForm } from "react-hook-form";
 import {
     Alert,
     BackHandler,
-    Image,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -354,10 +354,10 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
 
                 {imageUri ? (
                   <View style={styles.imagePreviewContainer}>
-                    <Image
-                      source={{ uri: imageUri }}
+                    <AppImage
+                      uri={imageUri}
                       style={styles.imagePreview}
-                      resizeMode="cover"
+                      contentFit="cover"
                     />
                     <Pressable
                       onPress={removeImage}
