@@ -48,8 +48,16 @@ export const translations = {
       byCategory: "By Category",
       spendingTrend: "Spending Trend",
       history: "History",
+      allCategories: "All",
+      customRange: "Custom month range",
+      startMonth: "Start month",
+      endMonth: "End month",
+      applyRange: "Apply",
       noStats: "No expenses yet",
+      noPeriodData: "No expenses in this period",
+      noCategoryData: "No expenses in this category",
       startTracking: "Start tracking to see your statistics",
+      resetFilters: "Reset filters",
     },
 
     // Grocery screen
@@ -649,8 +657,16 @@ export const translations = {
       byCategory: "ক্যাটাগরি অনুযায়ী",
       spendingTrend: "খরচের গতি",
       history: "ইতিহাস",
+      allCategories: "সব",
+      customRange: "কাস্টম মাসের রেঞ্জ",
+      startMonth: "শুরুর মাস",
+      endMonth: "শেষের মাস",
+      applyRange: "প্রয়োগ করুন",
       noStats: "খরচ নেই এখনো",
+      noPeriodData: "এই সময়ে কোনো খরচ নেই",
+      noCategoryData: "এই ক্যাটাগরিতে কোনো খরচ নেই",
       startTracking: "ট্র্যাক শুরু করুন পরিসংখ্যান দেখতে",
+      resetFilters: "ফিল্টার রিসেট করুন",
     },
 
     // Grocery screen
