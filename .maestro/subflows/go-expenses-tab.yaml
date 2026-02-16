@@ -1,0 +1,5 @@
+appId: com.frazix.amarisab
+
+---
+- tapOn: "(Expenses|খরচ)"
+- assertVisible: "(Amar Hisab|আমার খরচ)"

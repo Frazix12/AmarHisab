@@ -16,6 +16,29 @@ const lines = envContent.split('\n');
 let successCount = 0;
 let failCount = 0;
 
+const stripMatchingSurroundingQuotes = (rawValue) => {
+    if (rawValue.length < 2) {
+        return rawValue;
+    }
+
+    const quoteChar = rawValue[0];
+    const lastChar = rawValue[rawValue.length - 1];
+    const charBeforeLast = rawValue[rawValue.length - 2];
+    const isQuoteChar = quoteChar === '"' || quoteChar === "'";
+    const hasMatchingQuotes = isQuoteChar && lastChar === quoteChar && charBeforeLast !== '\\';
+
+    if (!hasMatchingQuotes) {
+        return rawValue;
+    }
+
+    const innerValue = rawValue.slice(1, -1);
+    const unescapedQuotes = quoteChar === '"'
+        ? innerValue.replace(/\\"/g, '"')
+        : innerValue.replace(/\\'/g, "'");
+
+    return unescapedQuotes.replace(/\\\\/g, '\\');
+};
+
 lines.forEach((line) => {
     const trimmedLine = line.trim();
     if (!trimmedLine || trimmedLine.startsWith('#')) return;
@@ -25,10 +48,8 @@ lines.forEach((line) => {
     // Join back the rest in case value contains '='
     let value = parts.slice(1).join('=').trim();
 
-    // Remove surrounding quotes if present
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-        value = value.slice(1, -1);
-    }
+    // Remove matching surrounding quotes only when the closing quote is not escaped
+    value = stripMatchingSurroundingQuotes(value);
 
     if (!key) return; // Skip if no key
 
@@ -44,11 +65,14 @@ lines.forEach((line) => {
         'secret:create',
         '--scope', 'project',
         '--name', key,
-        '--value', value,
         '--type', 'string',
         '--force',
         '--non-interactive'
-    ], { encoding: 'utf-8', stdio: 'inherit' });
+    ], {
+        encoding: 'utf-8',
+        input: `${value}\n`,
+        stdio: ['pipe', 'pipe', 'pipe'],
+    });
 
     if (result.status === 0) {
         console.log(`Successfully set ${key}`);

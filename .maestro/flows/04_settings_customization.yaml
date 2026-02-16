@@ -1,0 +1,28 @@
+appId: com.frazix.amarisab
+name: Settings Customization
+tags:
+  - core
+  - settings
+
+---
+- killApp
+- launchApp:
+    clearState: true
+- runFlow: ../subflows/ensure-english.yaml
+- runFlow: ../subflows/go-settings-tab.yaml
+- tapOn: "Display"
+- assertVisible: "Display"
+- tapOn: "Currency"
+- tapOn: "Euro (€)"
+- tapOn: "Theme"
+- tapOn: "Dark"
+- tapOn: "Theme"
+- tapOn: "Light"
+- tapOn: "Language"
+- tapOn: "বাংলা (Bangla)"
+- assertVisible: "ডিসপ্লে"
+- tapOn: "(ভাষা.*|Language)"
+- tapOn: "English"
+- assertVisible: "Display"
+- tapOn: "Back"
+- assertVisible: "Settings"

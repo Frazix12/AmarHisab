@@ -609,6 +609,8 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
     [t],
   );
 
+  const closeButtonLabel = t.common.close || t.form.cancel || "Close";
+
   if (!shouldRender) return null;
 
   return (
@@ -647,7 +649,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
             <Pressable
               onPress={onClose}
               accessibilityRole="button"
-              accessibilityLabel={t.camera.close || t.form.cancel || "Close"}
+              accessibilityLabel={closeButtonLabel}
               style={styles.closeButton}
             >
               <HugeiconsIcon

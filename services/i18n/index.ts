@@ -57,6 +57,8 @@ export const translations = {
       noPeriodData: "No expenses in this period",
       noCategoryData: "No expenses in this category",
       startTracking: "Start tracking to see your statistics",
+      tryAnotherPeriod: "Try another period or reset filters",
+      tryAnotherCategory: "Try another category or reset filters",
       resetFilters: "Reset filters",
     },
 
@@ -187,6 +189,7 @@ export const translations = {
       thisWeek: "This Week",
       thisMonth: "This Month",
       older: "Older",
+      close: "Close",
       item: "item",
       items: "items",
       optional: "optional",
@@ -666,6 +669,8 @@ export const translations = {
       noPeriodData: "এই সময়ে কোনো খরচ নেই",
       noCategoryData: "এই ক্যাটাগরিতে কোনো খরচ নেই",
       startTracking: "ট্র্যাক শুরু করুন পরিসংখ্যান দেখতে",
+      tryAnotherPeriod: "অন্য সময় বেছে নিন বা ফিল্টার রিসেট করুন",
+      tryAnotherCategory: "অন্য ক্যাটাগরি বেছে নিন বা ফিল্টার রিসেট করুন",
       resetFilters: "ফিল্টার রিসেট করুন",
     },
 
@@ -796,6 +801,7 @@ export const translations = {
       thisWeek: "এই সপ্তাহ",
       thisMonth: "এই মাস",
       older: "আগের",
+      close: "বন্ধ করুন",
       item: "টি",
       items: "টি",
       optional: "ঐচ্ছিক",

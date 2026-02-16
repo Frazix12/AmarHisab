@@ -41,6 +41,10 @@ export const VoiceLanguageSelector: React.FC<VoiceLanguageSelectorProps> = ({
               haptic="medium"
               key={option.value}
               onPress={() => onChange(option.value)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isActive }}
+              accessibilityLabel={`${option.label}${isActive ? " selected" : ""}`}
+              accessibilityHint="Double tap to choose this language"
               style={[
                 styles.selectorOption,
                 {

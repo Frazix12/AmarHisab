@@ -10,7 +10,7 @@ import {
   templatesTable,
 } from "@/services/db/schema";
 import { Expense, GroceryItem, UserSettings } from "@/types";
-import { asc, eq, inArray, notInArray } from "drizzle-orm";
+import { asc, desc, eq, inArray, notInArray, sql } from "drizzle-orm";
 import * as SecureStore from "expo-secure-store";
 
 const GEMINI_API_KEY_STORAGE_KEY = "amar_hisab_gemini_api_key";
@@ -87,11 +87,6 @@ const runQueuedWrite = <T>(
   return queuedOperation;
 };
 
-const getExpenseSortOrder = (expense: Expense): number => {
-  const fromDate = expense.date.getTime();
-  return Number.isFinite(fromDate) ? fromDate : Date.now();
-};
-
 const getGrocerySortOrder = (item: GroceryItem): number => {
   const fromDate = item.createdAt.getTime();
   return Number.isFinite(fromDate) ? fromDate : Date.now();
@@ -161,6 +156,34 @@ const toGroceryRow = (item: GroceryItem, sortOrder: number) => ({
   sortOrder,
 });
 
+const expenseConflictUpdateSet = {
+  amount: sql`excluded.amount`,
+  category: sql`excluded.category`,
+  dateMs: sql`excluded.date_ms`,
+  description: sql`excluded.description`,
+  currency: sql`excluded.currency`,
+  imageUri: sql`excluded.image_uri`,
+  aiDetected: sql`excluded.ai_detected`,
+  sortOrder: sql`excluded.sort_order`,
+};
+
+const groceryConflictUpdateSet = {
+  name: sql`excluded.name`,
+  nameNormalized: sql`excluded.name_normalized`,
+  quantity: sql`excluded.quantity`,
+  price: sql`excluded.price`,
+  checked: sql`excluded.checked`,
+  category: sql`excluded.category`,
+  templateId: sql`excluded.template_id`,
+  createdAtMs: sql`excluded.created_at_ms`,
+  expenseId: sql`excluded.expense_id`,
+  expenseCategory: sql`excluded.expense_category`,
+  aiDetected: sql`excluded.ai_detected`,
+  checkedAtMs: sql`excluded.checked_at_ms`,
+  imageUri: sql`excluded.image_uri`,
+  sortOrder: sql`excluded.sort_order`,
+};
+
 // Expenses
 export interface SaveExpensesResult {
   savedCount: number;
@@ -183,21 +206,21 @@ export const saveExpenses = async (expenses: Expense[]): Promise<SaveExpensesRes
   await runQueuedWrite(async () => {
     await ensureDatabaseInitialized();
 
-    if (expenses.length === 0) {
-      await db.delete(expensesTable);
-      return;
-    }
+    await db.transaction(async (tx) => {
+      if (expenses.length === 0) {
+        await tx.delete(expensesTable);
+        return;
+      }
 
-    const ids = expenses.map((expense) => expense.id);
-    await db.delete(expensesTable).where(notInArray(expensesTable.id, ids));
+      const ids = expenses.map((expense) => expense.id);
+      const rows = expenses.map((expense, index) => toExpenseRow(expense, index));
 
-    for (const [index, expense] of expenses.entries()) {
-      const row = toExpenseRow(expense, index);
-      await db.insert(expensesTable).values(row).onConflictDoUpdate({
+      await tx.delete(expensesTable).where(notInArray(expensesTable.id, ids));
+      await tx.insert(expensesTable).values(rows).onConflictDoUpdate({
         target: expensesTable.id,
-        set: row,
+        set: expenseConflictUpdateSet,
       });
-    }
+    });
   }, "save_expenses_snapshot");
 
   return {
@@ -207,10 +230,35 @@ export const saveExpenses = async (expenses: Expense[]): Promise<SaveExpensesRes
   };
 };
 
-export const upsertExpense = async (expense: Expense): Promise<void> => {
+export const upsertExpense = async (
+  expense: Expense,
+  sortOrder?: number,
+): Promise<void> => {
   await runQueuedWrite(async () => {
     await ensureDatabaseInitialized();
-    const row = toExpenseRow(expense, getExpenseSortOrder(expense));
+
+    let resolvedSortOrder = sortOrder;
+
+    if (resolvedSortOrder === undefined) {
+      const existing = await db
+        .select({ sortOrder: expensesTable.sortOrder })
+        .from(expensesTable)
+        .where(eq(expensesTable.id, expense.id))
+        .limit(1);
+
+      if (existing.length > 0) {
+        resolvedSortOrder = existing[0].sortOrder;
+      } else {
+        const maxSortOrder = await db
+          .select({ sortOrder: expensesTable.sortOrder })
+          .from(expensesTable)
+          .orderBy(desc(expensesTable.sortOrder))
+          .limit(1);
+        resolvedSortOrder = (maxSortOrder[0]?.sortOrder ?? -1) + 1;
+      }
+    }
+
+    const row = toExpenseRow(expense, resolvedSortOrder);
     await db.insert(expensesTable).values(row).onConflictDoUpdate({
       target: expensesTable.id,
       set: row,
@@ -298,21 +346,27 @@ export const saveGroceryItems = async (items: GroceryItem[]): Promise<void> => {
     await runQueuedWrite(async () => {
       await ensureDatabaseInitialized();
 
-      if (limitedItems.length === 0) {
-        await db.delete(groceryItemsTable);
-        return;
-      }
+      await db.transaction(async (tx) => {
+        if (limitedItems.length === 0) {
+          await tx.delete(groceryItemsTable);
+          return;
+        }
 
-      const ids = limitedItems.map((item) => item.id);
-      await db.delete(groceryItemsTable).where(notInArray(groceryItemsTable.id, ids));
+        const normalizedItems = limitedItems.map((item, index) => ({
+          ...item,
+          sortOrder: index,
+        }));
+        const ids = normalizedItems.map((item) => item.id);
+        const rows = normalizedItems.map((item) =>
+          toGroceryRow(item, item.sortOrder ?? getGrocerySortOrder(item)),
+        );
 
-      for (const [index, item] of limitedItems.entries()) {
-        const row = toGroceryRow(item, index);
-        await db.insert(groceryItemsTable).values(row).onConflictDoUpdate({
+        await tx.delete(groceryItemsTable).where(notInArray(groceryItemsTable.id, ids));
+        await tx.insert(groceryItemsTable).values(rows).onConflictDoUpdate({
           target: groceryItemsTable.id,
-          set: row,
+          set: groceryConflictUpdateSet,
         });
-      }
+      });
     }, "save_grocery_items_snapshot");
   } catch (error) {
     console.error("Error saving grocery items:", error);
@@ -322,7 +376,9 @@ export const saveGroceryItems = async (items: GroceryItem[]): Promise<void> => {
 export const upsertGroceryItem = async (item: GroceryItem): Promise<void> => {
   await runQueuedWrite(async () => {
     await ensureDatabaseInitialized();
-    const row = toGroceryRow(item, getGrocerySortOrder(item));
+
+    const resolvedSortOrder = item.sortOrder ?? getGrocerySortOrder(item);
+    const row = toGroceryRow(item, resolvedSortOrder);
     await db.insert(groceryItemsTable).values(row).onConflictDoUpdate({
       target: groceryItemsTable.id,
       set: row,
@@ -382,6 +438,17 @@ export const updateGroceryItemById = async (
 
   await runQueuedWrite(async () => {
     await ensureDatabaseInitialized();
+
+    const existing = await db
+      .select({ id: groceryItemsTable.id })
+      .from(groceryItemsTable)
+      .where(eq(groceryItemsTable.id, id))
+      .limit(1);
+
+    if (existing.length === 0) {
+      throw new Error(`Grocery item not found: ${id}`);
+    }
+
     await db
       .update(groceryItemsTable)
       .set(setPayload)
@@ -435,6 +502,7 @@ export const loadGroceryItems = async (): Promise<GroceryItem[]> => {
       aiDetected: row.aiDetected || undefined,
       checkedAt: row.checkedAtMs ? new Date(row.checkedAtMs) : undefined,
       imageUri: row.imageUri ?? undefined,
+      sortOrder: row.sortOrder,
     }));
   } catch (error) {
     console.error("Error loading grocery items:", error);
@@ -525,16 +593,19 @@ export const clearAllData = async (): Promise<void> => {
   try {
     await runQueuedWrite(async () => {
       await ensureDatabaseInitialized();
-      await db.delete(expensesTable);
-      await db.delete(groceryItemsTable);
-      await db.delete(settingsTable);
-      await db.delete(templatesTable);
-      await db.delete(learningTelemetryTable);
-      await db.delete(onboardingTipsTable);
-      await db.delete(aiCacheTable);
-      await db
-        .delete(appMetaTable)
-        .where(eq(appMetaTable.key, APP_UPDATE_FINGERPRINT_KEY));
+
+      await db.transaction(async (tx) => {
+        await tx.delete(expensesTable);
+        await tx.delete(groceryItemsTable);
+        await tx.delete(settingsTable);
+        await tx.delete(templatesTable);
+        await tx.delete(learningTelemetryTable);
+        await tx.delete(onboardingTipsTable);
+        await tx.delete(aiCacheTable);
+        await tx
+          .delete(appMetaTable)
+          .where(eq(appMetaTable.key, APP_UPDATE_FINGERPRINT_KEY));
+      });
     }, "clear_all_data");
 
     await Promise.all([

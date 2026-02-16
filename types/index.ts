@@ -24,6 +24,7 @@ export interface GroceryItem {
   aiDetected?: boolean; // Track if category was detected by AI
   checkedAt?: Date; // Track when item was completed
   imageUri?: string; // Optional product/receipt photo
+  sortOrder?: number; // Persisted ordering index for stable list rendering
 }
 
 export interface UserSettings {

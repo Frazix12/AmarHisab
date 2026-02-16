@@ -83,9 +83,14 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
         return;
       }
 
+      const description =
+        values.description !== undefined
+          ? values.description.trim()
+          : (item?.description ?? "");
+
       onSave({
         amount: nextAmount,
-        description: values.description.trim() || item?.description || "",
+        description,
         category: values.category,
       });
     },

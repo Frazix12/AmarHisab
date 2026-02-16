@@ -1,0 +1,33 @@
+appId: com.frazix.amarisab
+name: Expenses CRUD
+tags:
+  - core
+  - expenses
+
+---
+- killApp
+- launchApp:
+    clearState: true
+- runFlow: ../subflows/ensure-english.yaml
+- runFlow: ../subflows/reset-data.yaml
+- runFlow: ../subflows/go-expenses-tab.yaml
+- tapOn: "Add Expense"
+- tapOn: "0.00"
+- inputText: "125"
+- tapOn: "Optional description..."
+- inputText: "E2E Expense Lunch"
+- tapOn: "Transport"
+- tapOn: "Save"
+- assertVisible: "E2E Expense Lunch"
+- longPressOn: "E2E Expense Lunch"
+- tapOn: "Edit"
+- tapOn: "E2E Expense Lunch"
+- eraseText
+- inputText: "E2E Expense Lunch Updated"
+- tapOn: "Save"
+- assertVisible: "E2E Expense Lunch Updated"
+- longPressOn: "E2E Expense Lunch Updated"
+- tapOn: "Delete"
+- tapOn: "Delete"
+- assertNotVisible: "E2E Expense Lunch Updated"
+- assertVisible: "No expenses today"

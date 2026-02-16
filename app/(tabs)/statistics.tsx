@@ -503,10 +503,11 @@ export default function StatisticsScreen() {
     const description = !hasExpenses
       ? t.statistics?.startTracking || "Start tracking to see your statistics"
       : noPeriodData
-        ? t.statistics?.startTracking || "Try another period or reset filters"
-        : t.statistics?.startTracking || "Try another category or reset filters";
+        ? t.statistics?.tryAnotherPeriod || "Try another period or reset filters"
+        : t.statistics?.tryAnotherCategory || "Try another category or reset filters";
 
-    const shouldShowReset = selectedCategory !== null || periodOffset !== 0;
+    const shouldShowReset =
+      selectedCategory !== null || periodOffset !== 0 || Boolean(customRange);
 
     return (
       <View style={styles.emptyState}>
@@ -539,6 +540,7 @@ export default function StatisticsScreen() {
     expenses.length,
     filteredSortedExpenses.length,
     handleResetFilters,
+    customRange,
     periodExpenses.length,
     periodOffset,
     selectedCategory,

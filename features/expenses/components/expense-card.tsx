@@ -100,7 +100,7 @@ export const ExpenseCard = React.memo(
             isStatisticsVariant && styles.statisticsContainer,
             {
               backgroundColor: colors.surface,
-              borderColor: isStatisticsVariant ? "#F3F4F6" : colors.outline,
+              borderColor: isStatisticsVariant ? colors.outlineVariant : colors.outline,
               opacity: pressed ? 0.88 : 1,
             },
           ]}
@@ -156,7 +156,7 @@ export const ExpenseCard = React.memo(
 
           <View style={styles.amountContainer}>
             {isStatisticsVariant ? (
-              <Text style={[styles.statisticsAmount, { color: colors.error }]}> 
+              <Text style={[styles.statisticsAmount, { color: colors.error }]}>
                 {formatCurrency(expense.amount, settings.currency, settings.language)}
               </Text>
             ) : (
@@ -168,7 +168,7 @@ export const ExpenseCard = React.memo(
                   },
                 ]}
               >
-                <Text style={[styles.amount, { color: colors.error }]}> 
+                <Text style={[styles.amount, { color: colors.error }]}>
                   {formatCurrency(expense.amount, settings.currency, settings.language)}
                 </Text>
               </View>

@@ -24,6 +24,7 @@ apk/
 # Metro
 .metro-health-check*
 
+
 # debug
 npm-debug.*
 yarn-debug.*
@@ -44,6 +45,8 @@ app-example
 # generated native folders
 /ios
 /android
+/maestro-output
+/build
 
 # agent
 .agents/

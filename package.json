@@ -9,7 +9,10 @@
     "db:generate": "drizzle-kit generate",
     "lint": "expo lint",
     "eas:env-sync": "node ./scripts/sync-env.js",
-    "test": "jest"
+    "test": "jest",
+    "maestro:test": "maestro test --config .maestro/config.yaml .maestro/flows",
+    "maestro:smoke": "maestro test --include-tags smoke --config .maestro/config.yaml .maestro/flows",
+    "maestro:flow": "maestro test --config .maestro/config.yaml"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

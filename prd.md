@@ -10,7 +10,7 @@ Approved planning baseline (based on audit + user decisions)
 This PRD turns the completed audit findings into an execution plan for refactoring, performance tuning, architecture cleanup, and reliability improvements.
 
 ## Decision Log (Locked)
-1. Keep current AI key/security model as-is for now (no backend proxy migration in this cycle).
+1. Keep current AI key/security model as-is for now (no backend proxy migration in this cycle; see Risks and Mitigations for client-side key extraction risk, interim controls, and Q3 2026 backend migration target).
 2. Replace full-table rewrites with incremental writes and a serialized write queue.
 3. Split monolithic `AppContext` into domain-focused context slices/selectors.
 4. Decompose `voice-assistant-modal.tsx` into smaller components/hooks.
@@ -58,6 +58,14 @@ This PRD turns the completed audit findings into an execution plan for refactori
    - Ensure grocery-expense linking updates occur in deterministic action flows.
 3. Stale closure/state consistency fixes
    - Eliminate reads from stale state prior to functional updates in toggle/edit actions.
+4. Design and implement compatibility adapters
+   - Create a compatibility adapter layer between the legacy `AppContext` API and the new split domain contexts.
+   - Define explicit adapter interfaces/classes (for example, a legacy context facade plus per-domain selector adapters) so existing screens can migrate without behavioral changes.
+   - Migrate component-by-component behind the adapter layer; keep a rollback path that can switch a migrated screen back to the legacy adapter if regressions are found.
+   - Acceptance criteria: adapter-backed flows pass unit/integration tests, no new type errors, and no measurable regression in key interaction latency for expenses/grocery flows.
+5. Runtime dependency integrity
+   - Missing runtime imports must be added as direct dependencies immediately to avoid build/runtime failures.
+   - Add `@posthog/core` as a direct runtime dependency now if imported at runtime.
 
 ### 2) High-Impact Optimizations
 1. Split global context into domain providers/selectors
@@ -87,6 +95,10 @@ This PRD turns the completed audit findings into an execution plan for refactori
 - `contexts/app-context.tsx`
   - Split into domain modules and reduce provider payload churn.
   - Move heavy computed selectors to memoized hooks.
+- `contexts/adapters/*` (new)
+  - Design and implement compatibility adapters between legacy `AppContext` consumers and split domain providers.
+  - Define adapter contracts (legacy facade interface + domain adapter interfaces), wire screen-by-screen migration order, and keep rollback wiring for each migrated screen.
+  - Validate with adapter-focused tests and performance checks before removing legacy wiring.
 - `services/storage/index.ts`
   - Introduce incremental persistence API and write queue serialization.
 - `services/db/client.ts`
@@ -127,7 +139,6 @@ This PRD turns the completed audit findings into an execution plan for refactori
 ### Dependency Validation + Cleanup
 - `package.json`
   - Validate/remove potentially unused packages (`expo-dev-client`, `expo-system-ui`) after workflow checks.
-  - Add missing direct dependency if required by runtime imports (`@posthog/core`).
 
 ## Acceptance Criteria
 - No regression in existing test suite.
@@ -137,6 +148,9 @@ This PRD turns the completed audit findings into an execution plan for refactori
 - Reduced unnecessary rerenders in key tab screens.
 - Accessibility labels/roles present on all primary interactive controls.
 - Legacy files removed only when confirmed unused.
+- Decision #5: AI category suggestions are suggest-only and are never auto-applied.
+- Decision #5: A suggested category is applied only after explicit user confirmation; cancel/dismiss keeps the current category unchanged.
+- Decision #5: UI exposes clear suggestion states (suggested badge + confirm/cancel actions) before any category update occurs.
 
 ## Verification Plan
 1. Static quality gates
@@ -149,13 +163,20 @@ This PRD turns the completed audit findings into an execution plan for refactori
    - Grocery check/uncheck -> linked expense consistency
    - Voice assistant parse/edit/save flows
    - Settings changes persistence and app reload consistency
-4. Performance spot checks
+4. Decision #5 behavior checks
+   - Trigger AI category suggestion and verify suggestion badge + confirm/cancel actions are visible.
+   - Verify suggested category is not applied until user taps confirm.
+   - Verify cancel/dismiss leaves category unchanged and no hidden/implicit category write occurs.
+   - Verify confirming suggestion applies category once and persists after reload.
+5. Performance spot checks
    - Scroll smoothness in long lists
    - Reduced jank in statistics and voice flows
 
 ## Risks and Mitigations
+- Risk: AI key/security model remains client-side and keys can be extracted from decompiled apps, leading to misuse.
+  - Mitigation: Plan backend-managed key mediation by Q3 2026; until migration completes, enforce key rotation, usage monitoring with alerts, and per-key rate limits/quotas.
 - Risk: Context split causes integration regressions.
-  - Mitigation: Introduce compatibility adapters and migrate incrementally.
+  - Mitigation: Execute the "Design and implement compatibility adapters" task and migrate incrementally with rollback checkpoints.
 - Risk: Persistence API change impacts existing assumptions.
   - Mitigation: Add migration-safe wrappers and test critical CRUD scenarios first.
 - Risk: Dependency removal breaks local dev/build.

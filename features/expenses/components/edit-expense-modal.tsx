@@ -193,7 +193,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
               <Pressable
                 onPress={onClose}
                 accessibilityRole="button"
-                accessibilityLabel={t.camera.close || t.form.cancel || "Close"}
+                accessibilityLabel={t.common.close || t.form.cancel || "Close"}
                 style={styles.closeButton}
               >
                 <HugeiconsIcon

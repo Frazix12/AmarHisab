@@ -1,0 +1,5 @@
+appId: com.frazix.amarisab
+
+---
+- tapOn: "(Statistics|হিসাব)"
+- assertVisible: "(Statistics|হিসাব নিকাশ|হিসাব)"

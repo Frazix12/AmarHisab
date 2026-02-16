@@ -1,0 +1,33 @@
+appId: com.frazix.amarisab
+name: Camera Attachment Entrypoints
+tags:
+  - core
+  - camera
+
+---
+- killApp
+- launchApp:
+    clearState: true
+- runFlow: ../subflows/ensure-english.yaml
+- runFlow: ../subflows/reset-data.yaml
+- runFlow: ../subflows/go-expenses-tab.yaml
+- tapOn: "Add Expense"
+- tapOn: "Take Photo"
+- runFlow:
+    when:
+      visible: "Permission Required"
+    commands:
+      - assertVisible: "Allow Camera"
+      - tapOn: "Cancel"
+- runFlow:
+    when:
+      visible: "Close camera"
+    commands:
+      - tapOn: "Close camera"
+- runFlow:
+    when:
+      visible: "Camera not available"
+    commands:
+      - tapOn: "Close"
+- tapOn: "Cancel"
+- assertVisible: "Amar Hisab"

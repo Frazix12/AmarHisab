@@ -300,8 +300,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         if (!detectedCategory || !isMountedRef.current) return;
 
         let categoryApplied = false;
-        setGroceryItems((prev) =>
-          prev.map((entry) => {
+        setGroceryItems((prev) => {
+          const nextItems = prev.map((entry) => {
             if (
               entry.id === item.id &&
               (!entry.expenseCategory || entry.expenseCategory === fallbackCategory)
@@ -314,10 +314,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
             }
 
             return entry;
-          }),
-        );
+          });
 
-        if (categoryApplied) {
+          groceryItemsRef.current = nextItems;
+          return nextItems;
+        });
+
+        const currentEntry = groceryItemsRef.current.find((entry) => entry.id === item.id);
+        const shouldPersistCategory =
+          categoryApplied &&
+          isMountedRef.current &&
+          currentEntry?.expenseCategory === detectedCategory;
+
+        if (shouldPersistCategory) {
           void updateGroceryItemById(item.id, {
             expenseCategory: detectedCategory,
           }).catch((error) => {
@@ -528,7 +537,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       prev.map((item) => (item.id === id ? updatedItem : item)),
     );
 
-    void Promise.resolve(upsertGroceryItem(updatedItem)).catch((error) => {
+    void Promise.resolve(updateGroceryItemById(id, sanitizedUpdates)).catch((error) => {
       handlePersistenceFailure(error, "update_grocery_item");
     });
 

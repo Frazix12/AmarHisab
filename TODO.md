@@ -7,8 +7,8 @@
 - [x] show a notification when the app is updated.
 - [x] use expo image for image preview
 - [x] use <https://github.com/mrousavy/react-native-vision-camera> for camera
+- [x] use <https://maestro.dev/> for testing learn from <https://github.com/vanGalilea/react-native-testing>
 - [ ] use <https://github.com/mrousavy/react-native-mmkv> for local storage
-- [ ] use <https://maestro.dev/> for testing learn from <https://github.com/vanGalilea/react-native-testing>
 - [ ] use <https://docs.swmansion.com/react-native-gesture-handler/> for gesture handling and tab switching.
-- [ ] add recipt scaner ai to AI MODE.
+- [ ] add receipt scanner AI to AI MODE.
 

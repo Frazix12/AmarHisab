@@ -1,0 +1,5 @@
+appId: com.frazix.amarisab
+
+---
+- tapOn: "(Grocery|বাজার)"
+- assertVisible: "(Grocery List|বাজারের তালিকা)"

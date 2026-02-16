@@ -1,0 +1,11 @@
+appId: com.frazix.amarisab
+
+---
+- runFlow: go-settings-tab.yaml
+- assertVisible: "(Display|ডিসপ্লে)"
+- tapOn: "(Display|ডিসপ্লে)"
+- assertVisible: "(Language|ভাষা)"
+- tapOn: "(Language|ভাষা)"
+- tapOn: "English"
+- tapOn: "(Back|ফেরত|ফিরে|ফিরত)"
+- assertVisible: "Settings"
