@@ -1,5 +1,5 @@
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import { useTheme } from "@/contexts/app-selectors";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { useReducedMotionPreference } from "@/utils/animations";
 import { Tick02Icon } from "@hugeicons/core-free-icons";
@@ -43,7 +43,7 @@ export const SettingSelectionModal = ({
   currentValue,
   onSelect,
 }: SettingSelectionModalProps) => {
-  const { colorScheme } = useApp();
+  const colorScheme = useTheme();
   const colors = Colors[colorScheme];
   const reduceMotion = useReducedMotionPreference();
 

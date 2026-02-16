@@ -3,7 +3,12 @@ import { CameraModal } from "@/components/camera/camera-modal";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { AppImage } from "@/components/ui/app-image";
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import {
+  useExpenseDomain,
+  useI18n,
+  useSettingsDomain,
+  useTheme,
+} from "@/contexts/app-selectors";
 import { detectExpenseCategory } from "@/services/ai/gemini";
 import { showNotification } from "@/services/notifications";
 import { validateAmount, validateDescription, checkRateLimit } from "@/services/validation";
@@ -58,7 +63,10 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   onClose,
   fabConfig,
 }) => {
-  const { addExpense, settings, colorScheme, t } = useApp();
+  const colorScheme = useTheme();
+  const { t } = useI18n();
+  const { settings } = useSettingsDomain();
+  const { addExpense } = useExpenseDomain();
   const colors = Colors[colorScheme];
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { shellStyle, backdropStyle, contentStyle, shouldRender } =
@@ -341,6 +349,8 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                     />
                     <Pressable
                       onPress={removeImage}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t.modal.delete || "Delete"} ${t.form.attachment || "Attachment"}`}
                       style={[
                         styles.removeImageButton,
                         { backgroundColor: colors.error || "#DC2626" },
@@ -357,10 +367,12 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                 ) : (
                   <View style={styles.imageButtonsContainer}>
                      <Pressable
-                       onPress={openCamera}
-                       style={[
-                         styles.imageButton,
-                        {
+                        onPress={openCamera}
+                        accessibilityRole="button"
+                        accessibilityLabel={t.form.takePhoto || "Take Photo"}
+                        style={[
+                          styles.imageButton,
+                         {
                           backgroundColor: colors.surfaceVariant,
                           borderColor: colors.outline,
                         },
@@ -381,6 +393,8 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
 
                     <Pressable
                       onPress={pickImageFromGallery}
+                      accessibilityRole="button"
+                      accessibilityLabel={t.form.choosePhoto || "Choose Photo"}
                       style={[
                         styles.imageButton,
                         {

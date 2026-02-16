@@ -1,6 +1,6 @@
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import { useTheme } from "@/contexts/app-selectors";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -22,7 +22,7 @@ export const SettingItem: React.FC<SettingItemProps> = ({
   disabled = false,
   selected = false,
 }) => {
-  const { colorScheme } = useApp();
+  const colorScheme = useTheme();
   const colors = Colors[colorScheme];
 
   return (

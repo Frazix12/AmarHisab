@@ -1,7 +1,12 @@
 import { BanglaNumberInput } from "@/components/shared/bangla-number-input";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import {
+  useI18n,
+  useSettingsDomain,
+  useTemplateDomain,
+  useTheme,
+} from "@/contexts/app-selectors";
 import { normalizeProductName } from "@/features/templates/services/template-utils";
 import { GROCERY_CATEGORIES, GroceryCategory } from "@/types";
 import { parseBanglaNumber } from "@/utils/format";
@@ -31,8 +36,10 @@ interface EditTemplateFormValues {
 
 export default function EditTemplateScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { templates, updateTemplate, colorScheme, settings, formatNumber, t } =
-    useApp();
+  const colorScheme = useTheme();
+  const { t, formatNumber } = useI18n();
+  const { settings } = useSettingsDomain();
+  const { templates, updateTemplate } = useTemplateDomain();
   const colors = Colors[colorScheme];
 
   const template = templates.find((t) => t.id === id);
@@ -115,7 +122,12 @@ export default function EditTemplateScreen() {
     >
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.headerButton}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.headerButton}
+          accessibilityRole="button"
+          accessibilityLabel={t.form.cancel}
+        >
           <HugeiconsIcon icon={Cancel01Icon} size={24} color={colors.text} />
         </Pressable>
         <Text style={[styles.title, { color: colors.text }]}>
@@ -125,6 +137,8 @@ export default function EditTemplateScreen() {
           onPress={handleSave}
           disabled={loading}
           style={styles.headerButton}
+          accessibilityRole="button"
+          accessibilityLabel={t.form.save}
         >
           {loading ? (
             <ActivityIndicator size="small" color={colors.primary} />

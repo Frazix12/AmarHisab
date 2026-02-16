@@ -1,8 +1,19 @@
-import { BanglaNumberInput } from "@/components/shared/bangla-number-input";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { showToast } from "@/components/ui/toast";
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import {
+  useExpenseDomain,
+  useGroceryDomain,
+  useI18n,
+  useSettingsDomain,
+  useTheme,
+} from "@/contexts/app-selectors";
+import { EditExpenseModal } from "@/features/ai/components/edit-expense-modal";
+import { EditGroceryModal } from "@/features/ai/components/edit-grocery-modal";
+import { VoiceLanguageSelector } from "@/features/ai/components/voice-language-selector";
+import { VoiceReviewSection } from "@/features/ai/components/voice-review-section";
+import { VoiceStatusIndicator } from "@/features/ai/components/voice-status-indicator";
+import { VoiceTranscriptInput } from "@/features/ai/components/voice-transcript-input";
 import { AudioRecord } from "@/services/ai/audio-record";
 import { getElevenLabsApiKey, transcribeAudioFile } from "@/services/ai/elevenlabs";
 import {
@@ -14,35 +25,26 @@ import {
   VoiceParsedResult,
 } from "@/services/ai/gemini";
 import {
-  EXPENSE_CATEGORIES,
   ExpenseCategory,
-  GROCERY_CATEGORIES,
   GroceryCategory,
 } from "@/types";
-import { parseBanglaNumber } from "@/utils/format";
 import { useModalAnimation } from "@/utils/animations";
-import { triggerLightHaptic } from "@/utils/haptics";
 import {
   Cancel01Icon,
-  AiMicIcon,
-  SentIcon,
-  Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
   Modal,
   PermissionsAndroid,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import Animated, {
   Easing,
   interpolate,
@@ -83,8 +85,11 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
   visible,
   onClose,
 }) => {
-  const { addExpense, addGroceryItem, settings, colorScheme, t, formatNumber } =
-    useApp();
+  const { addExpense } = useExpenseDomain();
+  const { addGroceryItem } = useGroceryDomain();
+  const { settings } = useSettingsDomain();
+  const colorScheme = useTheme();
+  const { t, formatNumber } = useI18n();
   const colors = Colors[colorScheme];
   const { animatedStyle, backdropStyle, shouldRender } = useModalAnimation(visible);
 
@@ -581,6 +586,29 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
     return normalized.toUpperCase();
   }, [detectedLanguage, t]);
 
+  const statusLabel =
+    status === "listening"
+      ? t.voice.listening
+      : status === "processing"
+        ? t.voice.processing
+        : status === "review"
+          ? t.voice.review
+          : t.voice.ready;
+
+  const detectedLanguageLabel = languageLabel
+    ? `${t.voice.detectedLanguage}: ${languageLabel}`
+    : "";
+
+  const languageOptions = useMemo(
+    () =>
+      [
+        { value: "auto", label: t.voice.languageAuto },
+        { value: "bn", label: t.voice.languageBangla },
+        { value: "en", label: t.voice.languageEnglish },
+      ] as const,
+    [t],
+  );
+
   if (!shouldRender) return null;
 
   return (
@@ -616,7 +644,12 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
                 {t.voice.subtitle}
               </Text>
             </View>
-            <Pressable onPress={onClose} style={styles.closeButton}>
+            <Pressable
+              onPress={onClose}
+              accessibilityRole="button"
+              accessibilityLabel={t.camera.close || t.form.cancel || "Close"}
+              style={styles.closeButton}
+            >
               <HugeiconsIcon
                 icon={Cancel01Icon}
                 size={22}
@@ -641,262 +674,49 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
               </View>
             )}
 
-            <View style={styles.statusRow}>
-              <View style={styles.statusLeft}>
-                <View
-                  style={[
-                    styles.statusPill,
-                    {
-                      backgroundColor:
-                        status === "listening"
-                          ? colors.primary + "20"
-                          : colors.surfaceVariant,
-                      borderColor: colors.outline,
-                    },
-                  ]}
-                >
-                  {status === "idle" ? (
-                    <Animated.View
-                      style={[
-                        styles.readyIndicator,
-                        readyPulseStyle,
-                        {
-                          backgroundColor: colors.success,
-                          shadowColor: colors.success,
-                        },
-                      ]}
-                      accessibilityElementsHidden
-                      importantForAccessibility="no"
-                    />
-                  ) : null}
-                  <Text
-                    style={[styles.statusText, { color: colors.text }]}
-                    numberOfLines={1}
-                  >
-                    {status === "listening"
-                      ? t.voice.listening
-                      : status === "processing"
-                        ? t.voice.processing
-                        : status === "review"
-                          ? t.voice.review
-                          : t.voice.ready}
-                  </Text>
-                </View>
-              </View>
-              {languageLabel ? (
-                <Text style={[styles.languageText, { color: colors.textSecondary }]}
-                >
-                  {t.voice.detectedLanguage}: {languageLabel}
-                </Text>
-              ) : null}
-            </View>
+            <VoiceStatusIndicator
+              status={status}
+              statusLabel={statusLabel}
+              detectedLanguageLabel={detectedLanguageLabel}
+              readyPulseStyle={readyPulseStyle}
+              colors={colors}
+            />
 
-            <View style={styles.languageSelector}>
-              <Text style={[styles.selectorLabel, { color: colors.text }]}
-              >
-                {t.voice.language}
-              </Text>
-              <View style={styles.selectorRow}>
-                {(
-                  [
-                    { value: "auto", label: t.voice.languageAuto },
-                    { value: "bn", label: t.voice.languageBangla },
-                    { value: "en", label: t.voice.languageEnglish },
-                  ] as const
-                ).map((option) => {
-                  const isActive = languageMode === option.value;
-                  return (
-                    <Pressable
-                      haptic="medium"
-                      key={option.value}
-                      onPress={() => setLanguageMode(option.value)}
-                      style={[
-                        styles.selectorOption,
-                        {
-                          backgroundColor: isActive
-                            ? colors.primaryContainer
-                            : colors.surfaceVariant,
-                          borderColor: isActive
-                            ? colors.primary
-                            : colors.outline,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.selectorOptionText,
-                          { color: isActive ? colors.primary : colors.text },
-                        ]}
-                      >
-                        {option.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
+            <VoiceLanguageSelector
+              label={t.voice.language}
+              options={languageOptions}
+              value={languageMode}
+              onChange={setLanguageMode}
+              colors={colors}
+            />
 
-            <View style={styles.textEntrySection}>
-              <View style={styles.inputActionRow}>
-                <View
-                  style={[
-                    styles.transcriptInputWrapper,
-                    {
-                      borderColor: colors.outline,
-                      backgroundColor: colors.surface,
-                    },
-                  ]}
-                >
-                  {status === "listening" ? (
-                    <View style={styles.transcriptListeningInline}>
-                      <Animated.View
-                        style={[
-                          styles.recordingDot,
-                          recordingDotStyle,
-                          {
-                            backgroundColor: colors.error,
-                            shadowColor: colors.error,
-                          },
-                        ]}
-                      />
-                      <Text style={[styles.recordingText, { color: colors.text }]}>
-                        {t.voice.listening}
-                      </Text>
-                      <View style={styles.recordingWaveInline}>
-                        <Animated.View
-                          style={[
-                            styles.recordingWaveBar,
-                            { backgroundColor: colors.primary },
-                            waveBarOneStyle,
-                          ]}
-                        />
-                        <Animated.View
-                          style={[
-                            styles.recordingWaveBar,
-                            { backgroundColor: colors.primary },
-                            waveBarTwoStyle,
-                          ]}
-                        />
-                        <Animated.View
-                          style={[
-                            styles.recordingWaveBar,
-                            { backgroundColor: colors.primary },
-                            waveBarThreeStyle,
-                          ]}
-                        />
-                      </View>
-                    </View>
-                  ) : (
-                    <Controller
-                      control={transcriptControl}
-                      name="transcript"
-                      render={({ field: { onChange, value } }) => (
-                        <TextInput
-                          style={[
-                            styles.transcriptInput,
-                            {
-                              color: colors.text,
-                            },
-                          ]}
-                          placeholder={
-                            status === "processing"
-                              ? t.voice.processing
-                              : t.voice.transcriptPlaceholder
-                          }
-                          placeholderTextColor={colors.textSecondary}
-                          multiline={false}
-                          editable={status !== "processing"}
-                          value={value}
-                          returnKeyType="send"
-                          onSubmitEditing={() => {
-                            if (canSendText) {
-                              void sendTypedTranscript();
-                            }
-                          }}
-                          onChangeText={(text) => {
-                            onChange(text);
-                            if (errorMessage) {
-                              setErrorMessage(null);
-                            }
-                          }}
-                        />
-                      )}
-                    />
-                  )}
-                </View>
-
-                <Pressable
-                  onPress={sendTypedTranscript}
-                  disabled={!canSendText}
-                  style={[
-                    styles.circleActionButton,
-                    {
-                      backgroundColor: canSendText ? colors.primary : colors.surface,
-                      borderColor: canSendText ? colors.primary : colors.outline,
-                      opacity: canSendText ? 1 : 0.55,
-                    },
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel={t.voice.sendText}
-                >
-                  <HugeiconsIcon
-                    icon={SentIcon}
-                    size={18}
-                    color={canSendText ? colors.onPrimary : colors.textSecondary}
-                    strokeWidth={2.2}
-                  />
-                </Pressable>
-
-                <Pressable
-                  onPress={toggleMicrophone}
-                  disabled={status === "processing"}
-                  style={[
-                    styles.circleActionButton,
-                    {
-                      backgroundColor:
-                        status === "listening" ? colors.error + "18" : colors.surface,
-                      borderColor:
-                        status === "listening" ? colors.error : colors.outline,
-                      opacity: status === "processing" ? 0.55 : 1,
-                    },
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    status === "listening"
-                      ? t.voice.stopListening
-                      : t.voice.startListening
-                  }
-                >
-                  <Animated.View
-                    style={[styles.actionIconContainer, micIconContainerStyle]}
-                  >
-                    <Animated.View style={[styles.actionIconLayer, micIconStyle]}>
-                      <HugeiconsIcon
-                        icon={AiMicIcon}
-                        size={18}
-                        color={colors.textSecondary}
-                        strokeWidth={2.2}
-                      />
-                    </Animated.View>
-                    <Animated.View
-                      style={[
-                        styles.actionIconLayer,
-                        styles.actionIconOverlay,
-                        closeIconStyle,
-                      ]}
-                    >
-                      <HugeiconsIcon
-                        icon={Cancel01Icon}
-                        size={18}
-                        color={colors.error}
-                        strokeWidth={2.2}
-                      />
-                    </Animated.View>
-                  </Animated.View>
-                </Pressable>
-              </View>
-
-            </View>
+            <VoiceTranscriptInput
+              status={status}
+              transcriptControl={transcriptControl}
+              canSendText={canSendText}
+              hasError={!!errorMessage}
+              onClearError={() => setErrorMessage(null)}
+              onSendText={() => {
+                void sendTypedTranscript();
+              }}
+              onToggleMicrophone={toggleMicrophone}
+              labels={{
+                listening: t.voice.listening,
+                processing: t.voice.processing,
+                transcriptPlaceholder: t.voice.transcriptPlaceholder,
+                sendText: t.voice.sendText,
+                startListening: t.voice.startListening,
+                stopListening: t.voice.stopListening,
+              }}
+              colors={colors}
+              recordingDotStyle={recordingDotStyle}
+              waveBarOneStyle={waveBarOneStyle}
+              waveBarTwoStyle={waveBarTwoStyle}
+              waveBarThreeStyle={waveBarThreeStyle}
+              micIconContainerStyle={micIconContainerStyle}
+              micIconStyle={micIconStyle}
+              closeIconStyle={closeIconStyle}
+            />
 
             {status === "processing" && (
               <View style={styles.processingRow}>
@@ -909,187 +729,20 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
             )}
 
             {status === "review" && parsedResult && (
-              <View>
-                <View style={styles.reviewHeader}>
-                  <Text style={[styles.reviewTitle, { color: colors.text }]}
-                  >
-                    {t.voice.review}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.reviewHint,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {t.voice.reviewHint}
-                  </Text>
-                </View>
-
-                <View style={styles.reviewSection}>
-                  <Text
-                    style={[styles.sectionTitle, { color: colors.text }]}
-                  >
-                    {t.voice.expenses}
-                  </Text>
-                  {parsedResult.expenses.length === 0 ? (
-                    <Text
-                      style={[
-                        styles.emptyText,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      {t.voice.emptyExpenses}
-                    </Text>
-                  ) : (
-                    parsedResult.expenses.map((expense, index) => (
-                      <Pressable
-                        key={`${(expense as { id?: string }).id ?? `${expense.description}-${expense.amount}-${expense.category || "other"}`}-${index}`}
-                        onPress={() =>
-                          setEditingExpense({ index, item: expense })
-                        }
-                        style={[
-                          styles.reviewCard,
-                          {
-                            backgroundColor: colors.surfaceVariant,
-                            borderColor: colors.outline,
-                          },
-                        ]}
-                      >
-                        <View style={styles.reviewRow}>
-                          <Text
-                            style={[styles.reviewMain, { color: colors.text }]}
-                            numberOfLines={1}
-                          >
-                            {expense.description}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.reviewAmount,
-                              { color: colors.text },
-                            ]}
-                          >
-                            {settings.currency.symbol}
-                            {formatNumber(expense.amount)}
-                          </Text>
-                        </View>
-                        <Text
-                          style={[
-                            styles.reviewMeta,
-                            { color: colors.textSecondary },
-                          ]}
-                        >
-                          {t.categories[
-                            (expense.category || "other") as keyof typeof t.categories
-                          ]}
-                        </Text>
-                      </Pressable>
-                    ))
-                  )}
-                </View>
-
-                <View style={styles.reviewSection}>
-                  <Text
-                    style={[styles.sectionTitle, { color: colors.text }]}
-                  >
-                    {t.voice.groceries}
-                  </Text>
-                  {parsedResult.groceries.length === 0 ? (
-                    <Text
-                      style={[
-                        styles.emptyText,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      {t.voice.emptyGroceries}
-                    </Text>
-                  ) : (
-                    parsedResult.groceries.map((item, index) => (
-                      <Pressable
-                        key={`${item.name}-${item.quantity || ""}-${item.price ?? ""}-${item.category || "other"}-${index}`}
-                        onPress={() => setEditingGrocery({ index, item })}
-                        style={[
-                          styles.reviewCard,
-                          {
-                            backgroundColor: colors.surfaceVariant,
-                            borderColor: colors.outline,
-                          },
-                        ]}
-                      >
-                        <View style={styles.reviewRow}>
-                          <Text
-                            style={[styles.reviewMain, { color: colors.text }]}
-                            numberOfLines={1}
-                          >
-                            {item.name}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.reviewAmount,
-                              { color: colors.text },
-                            ]}
-                          >
-                            {item.price !== undefined
-                              ? `${settings.currency.symbol}${formatNumber(item.price)}`
-                              : "-"}
-                          </Text>
-                        </View>
-                        <Text
-                          style={[
-                            styles.reviewMeta,
-                            { color: colors.textSecondary },
-                          ]}
-                        >
-                          {(item.quantity ? `${item.quantity} • ` : "") +
-                            t.categories[
-                              (item.category || "other") as keyof typeof t.categories
-                            ]}
-                        </Text>
-                      </Pressable>
-                    ))
-                  )}
-                </View>
-
-                <View style={styles.reviewActions}>
-                  <Pressable
-                    onPress={() => {
-                      resetState();
-                      startListening();
-                    }}
-                    style={[
-                      styles.secondaryButton,
-                      { borderColor: colors.outline },
-                    ]}
-                  >
-                    <Text
-                      style={[styles.secondaryButtonText, { color: colors.text }]}
-                    >
-                      {t.voice.tryAgain}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={handleConfirm}
-                    style={[
-                      styles.primaryButton,
-                      { backgroundColor: colors.primary, flex: 1, marginTop: 0 },
-                    ]}
-                  >
-                    <HugeiconsIcon
-                      icon={Tick02Icon}
-                      size={20}
-                      color={colors.onPrimary}
-                      strokeWidth={2.2}
-                    />
-                    <Text
-                      style={[
-                        styles.primaryButtonText,
-                        { color: colors.onPrimary },
-                      ]}
-                    >
-                      {t.voice.confirmAdd}
-                    </Text>
-                  </Pressable>
-                </View>
-              </View>
+              <VoiceReviewSection
+                parsedResult={parsedResult}
+                settings={settings}
+                t={t}
+                formatNumber={formatNumber}
+                colors={colors}
+                onEditExpense={(index, item) => setEditingExpense({ index, item })}
+                onEditGrocery={(index, item) => setEditingGrocery({ index, item })}
+                onTryAgain={() => {
+                  resetState();
+                  void startListening();
+                }}
+                onConfirm={handleConfirm}
+              />
             )}
           </ScrollView>
         </Animated.View>
@@ -1116,532 +769,6 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
           setEditingGrocery(null);
         }}
       />
-    </Modal>
-  );
-};
-
-interface EditExpenseModalProps {
-  visible: boolean;
-  item: VoiceParsedExpense | null;
-  onClose: () => void;
-  onSave: (item: VoiceParsedExpense) => void;
-}
-
-interface EditExpenseModalFormValues {
-  amount: string;
-  description: string;
-  category: ExpenseCategory;
-}
-
-const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
-  visible,
-  item,
-  onClose,
-  onSave,
-}) => {
-  const { colorScheme, t, settings } = useApp();
-  const colors = Colors[colorScheme];
-  const amountInputRef = useRef<TextInput | null>(null);
-  const {
-    control,
-    handleSubmit,
-    reset,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<EditExpenseModalFormValues>({
-    defaultValues: {
-      amount: "",
-      description: "",
-      category: "other",
-    },
-  });
-
-  const amount = watch("amount");
-  const description = watch("description");
-  const category = watch("category");
-  const parsedAmount = Number.parseFloat(amount);
-  const isAmountValid = !Number.isNaN(parsedAmount) && parsedAmount > 0;
-  const isSaveDisabled = !isAmountValid;
-  const displayAmountError =
-    errors.amount?.message ||
-    (!isAmountValid && amount.trim() ? t.alerts.invalidAmount : null);
-
-  useEffect(() => {
-    if (!visible || !item) return;
-    reset({
-      amount: item.amount.toString(),
-      description: item.description,
-      category: item.category || "other",
-    });
-  }, [visible, item, reset]);
-
-  const handleSave = handleSubmit(
-    (values) => {
-      const nextAmount = Number.parseFloat(values.amount);
-      if (Number.isNaN(nextAmount) || nextAmount <= 0) {
-        return;
-      }
-
-      onSave({
-        amount: nextAmount,
-        description: values.description.trim() || item?.description || "",
-        category: values.category,
-      });
-    },
-    () => {
-      amountInputRef.current?.focus();
-    },
-  );
-
-  if (!item) return null;
-
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View style={styles.editOverlay}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.editContainer}
-        >
-          <View
-            style={[styles.editCard, { backgroundColor: colors.surface }]}
-          >
-            <View style={styles.editHeader}>
-              <Text style={[styles.editTitle, { color: colors.text }]}
-              >
-                {t.expenses.editExpense}
-              </Text>
-              <Pressable onPress={onClose} style={styles.closeButton}>
-                <HugeiconsIcon
-                  icon={Cancel01Icon}
-                  size={20}
-                  color={colors.text}
-                  strokeWidth={2}
-                />
-              </Pressable>
-            </View>
-
-            <View style={styles.editBody}>
-              <Text style={[styles.fieldLabel, { color: colors.text }]}
-              >
-                {t.form.amount} ({settings.currency.symbol})
-              </Text>
-              <Controller
-                control={control}
-                name="amount"
-                rules={{
-                  validate: (value) => {
-                    const parsed = Number.parseFloat(value);
-                    if (Number.isNaN(parsed) || parsed <= 0) {
-                      return t.alerts.invalidAmount;
-                    }
-                    return true;
-                  },
-                }}
-                render={({ field: { onChange, value } }) => (
-                  <BanglaNumberInput
-                    ref={amountInputRef}
-                    style={[
-                      styles.input,
-                      {
-                        backgroundColor: colors.surfaceVariant,
-                        borderColor: colors.outline,
-                        color: colors.text,
-                      },
-                    ]}
-                    value={value}
-                    onChangeText={onChange}
-                    isBanglaMode={settings.language === "bn"}
-                  />
-                )}
-              />
-              {displayAmountError ? (
-                <Text style={[styles.inputErrorText, { color: colors.error }]}>
-                  {displayAmountError}
-                </Text>
-              ) : null}
-
-              <Text style={[styles.fieldLabel, { color: colors.text }]}
-              >
-                {t.form.description}
-              </Text>
-              <Controller
-                control={control}
-                name="description"
-                render={({ field: { onChange, value } }) => (
-                  <TextInput
-                    style={[
-                      styles.input,
-                      styles.textArea,
-                      {
-                        backgroundColor: colors.surfaceVariant,
-                        borderColor: colors.outline,
-                        color: colors.text,
-                      },
-                    ]}
-                    value={value}
-                    onChangeText={onChange}
-                    onFocus={() => triggerLightHaptic()}
-                    multiline
-                    numberOfLines={3}
-                  />
-                )}
-              />
-
-              <Text style={[styles.fieldLabel, { color: colors.text }]}
-              >
-                {t.form.category}
-              </Text>
-              <View style={styles.categoryGrid}>
-                {EXPENSE_CATEGORIES.map((cat) => (
-                  <Pressable
-                    key={cat.value}
-                    onPress={() => setValue("category", cat.value)}
-                    style={[
-                      styles.categoryButton,
-                      {
-                        backgroundColor:
-                          category === cat.value
-                            ? colors.primaryContainer
-                            : colors.surfaceVariant,
-                        borderColor:
-                          category === cat.value
-                            ? colors.primary
-                            : colors.outline,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.categoryText,
-                        {
-                          color:
-                            category === cat.value
-                              ? colors.primary
-                              : colors.text,
-                        },
-                      ]}
-                    >
-                      {t.categories[cat.value as keyof typeof t.categories]}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.editActions}>
-              <Pressable
-                onPress={onClose}
-                style={[
-                  styles.secondaryButton,
-                  { borderColor: colors.outline },
-                ]}
-              >
-                <Text
-                  style={[styles.secondaryButtonText, { color: colors.text }]}
-                >
-                  {t.form.cancel}
-                </Text>
-              </Pressable>
-              <Pressable
-                disabled={isSaveDisabled}
-                onPress={handleSave}
-                style={[
-                  styles.primaryButton,
-                  {
-                    backgroundColor: colors.primary,
-                    flex: 1,
-                    marginTop: 0,
-                    opacity: isSaveDisabled ? 0.6 : 1,
-                  },
-                ]}
-              >
-                <Text
-                  style={[styles.primaryButtonText, { color: colors.onPrimary }]}
-                >
-                  {t.form.save}
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </View>
-    </Modal>
-  );
-};
-
-interface EditGroceryModalProps {
-  visible: boolean;
-  item: VoiceParsedGrocery | null;
-  onClose: () => void;
-  onSave: (item: VoiceParsedGrocery) => void;
-}
-
-interface EditGroceryModalFormValues {
-  name: string;
-  quantity: string;
-  price: string;
-  category: GroceryCategory;
-}
-
-const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
-  visible,
-  item,
-  onClose,
-  onSave,
-}) => {
-  const { colorScheme, t, settings } = useApp();
-  const colors = Colors[colorScheme];
-  const {
-    control,
-    handleSubmit,
-    reset,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<EditGroceryModalFormValues>({
-    defaultValues: {
-      name: "",
-      quantity: "",
-      price: "",
-      category: "other",
-    },
-  });
-
-  const name = watch("name");
-  const quantity = watch("quantity");
-  const price = watch("price");
-  const category = watch("category");
-  const isNameValid = name.trim().length > 0;
-
-  useEffect(() => {
-    if (!visible || !item) return;
-    reset({
-      name: item.name,
-      quantity: item.quantity || "",
-      price: item.price?.toString() || "",
-      category: item.category || "other",
-    });
-  }, [visible, item, reset]);
-
-  const handleSave = handleSubmit((values) => {
-    const parsedPrice = values.price.trim()
-      ? Number.parseFloat(values.price)
-      : undefined;
-    const priceValue =
-      parsedPrice !== undefined && !Number.isNaN(parsedPrice) && parsedPrice > 0
-        ? parsedPrice
-        : undefined;
-    onSave({
-      name: values.name.trim(),
-      quantity: values.quantity.trim() || undefined,
-      price: priceValue,
-      category: values.category,
-    });
-  });
-
-  if (!item) return null;
-
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View style={styles.editOverlay}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.editContainer}
-        >
-          <View
-            style={[styles.editCard, { backgroundColor: colors.surface }]}
-          >
-            <View style={styles.editHeader}>
-              <Text style={[styles.editTitle, { color: colors.text }]}
-              >
-                {t.grocery.editItem}
-              </Text>
-              <Pressable onPress={onClose} style={styles.closeButton}>
-                <HugeiconsIcon
-                  icon={Cancel01Icon}
-                  size={20}
-                  color={colors.text}
-                  strokeWidth={2}
-                />
-              </Pressable>
-            </View>
-
-            <View style={styles.editBody}>
-              <Text style={[styles.fieldLabel, { color: colors.text }]}
-              >
-                {t.form.name}
-              </Text>
-              <Controller
-                control={control}
-                name="name"
-                rules={{
-                  validate: (value) =>
-                    value.trim().length > 0 ? true : t.alerts.requiredName,
-                }}
-                render={({ field: { onChange, value } }) => (
-                  <TextInput
-                    style={[
-                      styles.input,
-                      {
-                        backgroundColor: colors.surfaceVariant,
-                        borderColor: colors.outline,
-                        color: colors.text,
-                      },
-                    ]}
-                    value={value}
-                    onChangeText={onChange}
-                    onFocus={() => triggerLightHaptic()}
-                  />
-                )}
-              />
-              {errors.name?.message ? (
-                <Text style={[styles.inputErrorText, { color: colors.error }]}>
-                  {errors.name.message}
-                </Text>
-              ) : null}
-
-              <View style={styles.row}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldLabel, { color: colors.text }]}
-                  >
-                    {t.form.quantity}
-                  </Text>
-                  <Controller
-                    control={control}
-                    name="quantity"
-                    render={({ field: { onChange, value } }) => (
-                      <TextInput
-                        style={[
-                          styles.input,
-                          {
-                            backgroundColor: colors.surfaceVariant,
-                            borderColor: colors.outline,
-                            color: colors.text,
-                          },
-                        ]}
-                        value={value}
-                        onChangeText={(text) => onChange(parseBanglaNumber(text))}
-                        onFocus={() => triggerLightHaptic()}
-                      />
-                    )}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldLabel, { color: colors.text }]}
-                  >
-                    {t.form.price} ({settings.currency.symbol})
-                  </Text>
-                  <Controller
-                    control={control}
-                    name="price"
-                    render={({ field: { onChange, value } }) => (
-                      <BanglaNumberInput
-                        style={[
-                          styles.input,
-                          {
-                            backgroundColor: colors.surfaceVariant,
-                            borderColor: colors.outline,
-                            color: colors.text,
-                          },
-                        ]}
-                        value={value}
-                        onChangeText={onChange}
-                        isBanglaMode={settings.language === "bn"}
-                      />
-                    )}
-                  />
-                </View>
-              </View>
-
-              <Text style={[styles.fieldLabel, { color: colors.text }]}
-              >
-                {t.form.category}
-              </Text>
-              <View style={styles.categoryGrid}>
-                {GROCERY_CATEGORIES.map((cat) => (
-                  <Pressable
-                    key={cat.value}
-                    onPress={() => setValue("category", cat.value)}
-                    style={[
-                      styles.categoryButton,
-                      {
-                        backgroundColor:
-                          category === cat.value
-                            ? colors.primaryContainer
-                            : colors.surfaceVariant,
-                        borderColor:
-                          category === cat.value
-                            ? colors.primary
-                            : colors.outline,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.categoryText,
-                        {
-                          color:
-                            category === cat.value
-                              ? colors.primary
-                              : colors.text,
-                        },
-                      ]}
-                    >
-                      {t.categories[cat.value as keyof typeof t.categories]}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.editActions}>
-              <Pressable
-                onPress={onClose}
-                style={[
-                  styles.secondaryButton,
-                  { borderColor: colors.outline },
-                ]}
-              >
-                <Text
-                  style={[styles.secondaryButtonText, { color: colors.text }]}
-                >
-                  {t.form.cancel}
-                </Text>
-              </Pressable>
-              <Pressable
-                disabled={!isNameValid}
-                onPress={handleSave}
-                style={[
-                  styles.primaryButton,
-                  {
-                    backgroundColor: colors.primary,
-                    flex: 1,
-                    marginTop: 0,
-                    opacity: isNameValid ? 1 : 0.8,
-                  },
-                ]}
-              >
-                <Text
-                  style={[styles.primaryButtonText, { color: colors.onPrimary }]}
-                >
-                  {t.form.save}
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </View>
     </Modal>
   );
 };
@@ -1696,206 +823,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
   },
-  statusRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 16,
-    flexWrap: "wrap",
-    rowGap: 8,
-    columnGap: 8,
-  },
-  statusLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    flexShrink: 1,
-    minWidth: 0,
-  },
-  statusPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    flexShrink: 1,
-  },
-  readyIndicator: {
-    width: 10,
-    height: 10,
-    borderRadius: 999,
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 3,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "600",
-    lineHeight: 16,
-    flexShrink: 1,
-  },
-  languageText: {
-    fontSize: 12,
-    fontWeight: "500",
-    lineHeight: 16,
-    flexShrink: 1,
-    textAlign: "right",
-    minWidth: 0,
-  },
-  languageSelector: {
-    marginTop: 16,
-    gap: 8,
-  },
-  selectorLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  selectorRow: {
-    flexDirection: "row",
-    gap: 8,
-    flexWrap: "wrap",
-    rowGap: 8,
-  },
-  selectorOption: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    borderWidth: 1,
-    alignSelf: "flex-start",
-  },
-  selectorOptionText: {
-    fontSize: 12,
-    fontWeight: "600",
-    lineHeight: 16,
-  },
-  textEntrySection: {
-    marginTop: 16,
-  },
-  inputActionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  transcriptInputWrapper: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 40,
-    justifyContent: "center",
-  },
-  circleActionButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  actionIconContainer: {
-    width: 20,
-    height: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  actionIconLayer: {
-    width: 20,
-    height: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  actionIconOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-  },
-  transcriptInput: {
-    flex: 1,
-    fontSize: 14,
-    lineHeight: 18,
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-    height: "100%",
-  },
-  transcriptListeningInline: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  recordingIndicator: {
-    marginTop: 12,
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  recordingDot: {
-    width: 9,
-    height: 9,
-    borderRadius: 999,
-    shadowOpacity: 0.55,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 2,
-  },
-  recordingText: {
-    fontSize: 12,
-    fontWeight: "600",
-    lineHeight: 16,
-    flex: 1,
-  },
-  recordingWave: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 3,
-    height: 22,
-  },
-  recordingWaveInline: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 3,
-    height: 18,
-    marginLeft: "auto",
-  },
-  recordingWaveBar: {
-    width: 4,
-    borderRadius: 4,
-    minHeight: 7,
-  },
-  primaryButton: {
-    marginTop: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 14,
-  },
-  primaryButtonText: {
-    fontSize: 15,
-    fontWeight: "700",
-    lineHeight: 20,
-  },
-  secondaryButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  secondaryButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    lineHeight: 18,
-  },
   processingRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1907,145 +834,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     lineHeight: 18,
   },
-  reviewHeader: {
-    marginTop: 20,
-    marginBottom: 12,
-  },
-  reviewTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    lineHeight: 24,
-  },
-  reviewHint: {
-    fontSize: 12,
-    marginTop: 4,
-    lineHeight: 16,
-  },
-  reviewSection: {
-    marginTop: 16,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    marginBottom: 8,
-    lineHeight: 18,
-  },
-  reviewCard: {
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 10,
-  },
-  reviewRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 8,
-  },
-  reviewMain: {
-    fontSize: 15,
-    fontWeight: "600",
-    flex: 1,
-    lineHeight: 20,
-  },
-  reviewAmount: {
-    fontSize: 14,
-    fontWeight: "700",
-    lineHeight: 18,
-  },
-  reviewMeta: {
-    fontSize: 12,
-    marginTop: 4,
-    lineHeight: 16,
-  },
-  emptyText: {
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  reviewActions: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 18,
-  },
-  editOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  editContainer: {
-    width: "100%",
-  },
-  editCard: {
-    borderRadius: 16,
-    padding: 18,
-  },
-  editHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
   closeButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-  },
-  editTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  editBody: {
-    gap: 12,
-  },
-  editActions: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 16,
-  },
-  fieldLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    lineHeight: 18,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 12,
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  inputErrorText: {
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 6,
-    fontWeight: "600",
-  },
-  textArea: {
-    minHeight: 80,
-    textAlignVertical: "top",
-  },
-  categoryGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  categoryButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 18,
-    borderWidth: 1,
-  },
-  categoryText: {
-    fontSize: 12,
-    fontWeight: "600",
-    lineHeight: 16,
-  },
-  row: {
-    flexDirection: "row",
-    gap: 12,
   },
 });

@@ -3,10 +3,11 @@ import React from "react";
 
 import { CustomTabBar } from "@/components/navigation/custom-tab-bar";
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import { useI18n, useTheme } from "@/contexts/app-selectors";
 
 export default function TabLayout() {
-  const { colorScheme, t } = useApp();
+  const colorScheme = useTheme();
+  const { t } = useI18n();
 
   return (
     <Tabs

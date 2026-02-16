@@ -1,5 +1,5 @@
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import { useTheme } from "@/contexts/app-selectors";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { useReducedMotionPreference } from "@/utils/animations";
 import { HugeiconsIcon } from "@hugeicons/react-native";
@@ -34,7 +34,7 @@ export const AnimatedTabButton: React.FC<AnimatedTabButtonProps> = ({
   color,
   onPress,
 }) => {
-  const { colorScheme } = useApp();
+  const colorScheme = useTheme();
   const colors = Colors[colorScheme];
   const reduceMotion = useReducedMotionPreference();
 

@@ -1,7 +1,13 @@
 import { BanglaNumberInput } from "@/components/shared/bangla-number-input";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import {
+  useGroceryDomain,
+  useI18n,
+  useSettingsDomain,
+  useTemplateDomain,
+  useTheme,
+} from "@/contexts/app-selectors";
 import { GROCERY_CATEGORIES, GroceryCategory, GroceryItem } from "@/types";
 import { useModalAnimation } from "@/utils/animations";
 import { parseBanglaNumber } from "@/utils/format";
@@ -43,14 +49,11 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
   item,
   onSave,
 }) => {
-  const {
-    updateGroceryItem,
-    updateTemplate,
-    settings,
-    colorScheme,
-    t,
-    formatNumber,
-  } = useApp();
+  const colorScheme = useTheme();
+  const { t, formatNumber } = useI18n();
+  const { settings } = useSettingsDomain();
+  const { updateGroceryItem } = useGroceryDomain();
+  const { updateTemplate } = useTemplateDomain();
   const colors = Colors[colorScheme];
   const { animatedStyle, backdropStyle, shouldRender } = useModalAnimation(visible);
   const { control, handleSubmit, reset, setValue, watch } =
@@ -139,7 +142,12 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
             <Text style={[styles.modalTitle, { color: colors.text }]}>
               {t.grocery.editItem || "Edit Item"}
             </Text>
-            <Pressable onPress={onClose} style={styles.closeButton}>
+            <Pressable
+              onPress={onClose}
+              accessibilityRole="button"
+              accessibilityLabel={t.camera.close || t.form.cancel || "Close"}
+              style={styles.closeButton}
+            >
               <HugeiconsIcon
                 icon={Cancel01Icon}
                 size={24}

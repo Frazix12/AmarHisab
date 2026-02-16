@@ -1,4 +1,4 @@
-import { useApp } from "@/contexts/app-context";
+import { useI18n } from "@/contexts/app-selectors";
 import { showHint } from "@/services/notifications";
 import {
   loadOnboardingTipDismissed,
@@ -11,7 +11,7 @@ interface OnboardingTipProps {
 }
 
 export const OnboardingTip: React.FC<OnboardingTipProps> = ({ screenKey }) => {
-  const { t } = useApp();
+  const { t } = useI18n();
   const tipMessage =
     t.tips?.longPressTip || "Long-press an item to edit or delete it quickly.";
 

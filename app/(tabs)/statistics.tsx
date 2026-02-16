@@ -5,7 +5,12 @@ import {
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { showToast } from "@/components/ui/toast";
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import {
+  useExpenseDomain,
+  useI18n,
+  useSettingsDomain,
+  useTheme,
+} from "@/contexts/app-selectors";
 import { EditExpenseModal } from "@/features/expenses/components/edit-expense-modal";
 import { ExpenseCard } from "@/features/expenses/components/expense-card";
 import { Expense, ExpenseCategory } from "@/types";
@@ -123,14 +128,10 @@ const getPeriodWindow = (offset: number): PeriodWindow => {
 };
 
 export default function StatisticsScreen() {
-  const {
-    expenses,
-    deleteExpense,
-    colorScheme,
-    t,
-    formatNumber,
-    settings,
-  } = useApp();
+  const { expenses, deleteExpense } = useExpenseDomain();
+  const { settings } = useSettingsDomain();
+  const colorScheme = useTheme();
+  const { t, formatNumber } = useI18n();
 
   const colors = Colors[colorScheme];
   const { width: screenWidth } = useWindowDimensions();
@@ -645,6 +646,9 @@ export default function StatisticsScreen() {
                       isSelected && styles.categoryPillActive,
                       pressed && styles.pressedScale,
                     ]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
+                    accessibilityLabel={`${t.statistics?.byCategory || "By Category"}: ${item.label}`}
                   >
                     <Text
                       style={[

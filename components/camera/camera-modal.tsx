@@ -3,7 +3,7 @@ import { CameraPreview } from "@/components/camera/camera-preview";
 import { CameraView } from "@/components/camera/camera-view";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import { useI18n, useTheme } from "@/contexts/app-selectors";
 import { useCamera } from "@/services/camera";
 import { useModalAnimation } from "@/utils/animations";
 import { withAlpha } from "@/utils/color";
@@ -23,7 +23,8 @@ export const CameraModal: React.FC<CameraModalProps> = ({
   onCapture,
   onClose,
 }) => {
-  const { colorScheme, t } = useApp();
+  const colorScheme = useTheme();
+  const { t } = useI18n();
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
   const { animatedStyle, backdropStyle, shouldRender } = useModalAnimation(visible);

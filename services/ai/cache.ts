@@ -1,6 +1,6 @@
 import { db, ensureDatabaseInitialized } from "@/services/db/client";
 import { aiCacheTable } from "@/services/db/schema";
-import { and, eq, lte } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 const MIN_TTL_MS = 1_000;
 const MAX_TTL_MS = 30 * 24 * 60 * 60 * 1_000;
@@ -93,37 +93,5 @@ export const setAiCacheValue = async <T>(
     });
   } catch (error) {
     console.error("Error saving AI cache value:", error);
-  }
-};
-
-export const deleteAiCacheValue = async (
-  cacheType: string,
-  key: string,
-): Promise<void> => {
-  const cacheKey = toCacheKey(cacheType, key);
-
-  try {
-    await ensureDatabaseInitialized();
-
-    await db
-      .delete(aiCacheTable)
-      .where(
-        and(
-          eq(aiCacheTable.cacheType, cacheType),
-          eq(aiCacheTable.cacheKey, cacheKey),
-        ),
-      );
-  } catch (error) {
-    console.error("Error deleting AI cache value:", error);
-  }
-};
-
-export const clearExpiredAiCacheEntries = async (): Promise<void> => {
-  try {
-    await ensureDatabaseInitialized();
-
-    await db.delete(aiCacheTable).where(lte(aiCacheTable.expiresAtMs, Date.now()));
-  } catch (error) {
-    console.error("Error clearing expired AI cache entries:", error);
   }
 };

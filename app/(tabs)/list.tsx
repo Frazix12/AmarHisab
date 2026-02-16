@@ -6,7 +6,13 @@ import { OnboardingTip } from "@/components/shared/onboarding-tip";
 import { showToast } from "@/components/ui/toast";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import {
+  useGroceryDomain,
+  useI18n,
+  useLearningDomain,
+  useSettingsDomain,
+  useTheme,
+} from "@/contexts/app-selectors";
 import { AddGroceryModal } from "@/features/grocery/components/add-grocery-modal";
 import { CompleteGroceryModal } from "@/features/grocery/components/complete-grocery-modal";
 import { EditGroceryModal } from "@/features/grocery/components/edit-grocery-modal";
@@ -71,15 +77,16 @@ export default function GroceryScreen() {
     itemPendingCompletion,
     setItemPendingCompletion,
     completeGroceryItem,
-    colorScheme,
-    t,
-    settings,
-    formatNumber,
+  } = useGroceryDomain();
+  const {
     checkForSuggestions,
     acceptSuggestion,
     dismissSuggestion,
     smartSuggestionsEnabled,
-  } = useApp();
+  } = useLearningDomain();
+  const { settings } = useSettingsDomain();
+  const { t, formatNumber } = useI18n();
+  const colorScheme = useTheme();
   const colors = Colors[colorScheme];
   const isBangla = settings.language === "bn";
   const [modalVisible, setModalVisible] = useState(false);
@@ -358,6 +365,8 @@ export default function GroceryScreen() {
               styles.clearButton,
               { opacity: pressed ? 0.7 : 1 },
             ]}
+            accessibilityRole="button"
+            accessibilityLabel={t.grocery.clearCompleted}
           >
             <Text
               style={[

@@ -1,7 +1,12 @@
 import { showNotification } from "@/services/notifications";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import {
+  useI18n,
+  useLearningDomain,
+  useSettingsDomain,
+  useTheme,
+} from "@/contexts/app-selectors";
 import { SettingItem } from "@/features/settings/components/setting-item";
 import { usePageTransition } from "@/utils/animations";
 import { triggerHeavyHaptic } from "@/utils/haptics";
@@ -29,13 +34,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import packageJson from "../../package.json";
 
 export default function Settings() {
-  const {
-    settings,
-    colorScheme,
-    t,
-    smartSuggestionsEnabled,
-    clearAllData,
-  } = useApp();
+  const colorScheme = useTheme();
+  const { t } = useI18n();
+  const { settings, clearAllData } = useSettingsDomain();
+  const { smartSuggestionsEnabled } = useLearningDomain();
   const colors = Colors[colorScheme];
   const isBangla = settings.language === "bn";
   const { addSampleExpenses, addSampleGroceryItems } = useSampleData();

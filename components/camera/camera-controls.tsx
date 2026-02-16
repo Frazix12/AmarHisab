@@ -1,6 +1,6 @@
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import { useI18n, useTheme } from "@/contexts/app-selectors";
 import { withAlpha } from "@/utils/color";
 import { Cancel01Icon, Sun03Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
@@ -36,7 +36,8 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
   onRetake,
   onUsePhoto,
 }) => {
-  const { colorScheme, t } = useApp();
+  const colorScheme = useTheme();
+  const { t } = useI18n();
   const colors = Colors[colorScheme];
 
   const flashLabel = useMemo(() => {

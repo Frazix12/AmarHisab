@@ -1,5 +1,5 @@
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import { useTheme } from "@/contexts/app-selectors";
 import {
   getCurrentNotification,
   NotificationPayload,
@@ -79,7 +79,7 @@ const getVisualConfig = (
 };
 
 export const Toast: React.FC = () => {
-  const { colorScheme } = useApp();
+  const colorScheme = useTheme();
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotionPreference();

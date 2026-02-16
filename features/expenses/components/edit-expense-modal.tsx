@@ -3,7 +3,12 @@ import { CameraModal } from "@/components/camera/camera-modal";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { AppImage } from "@/components/ui/app-image";
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import {
+  useExpenseDomain,
+  useI18n,
+  useSettingsDomain,
+  useTheme,
+} from "@/contexts/app-selectors";
 import { EXPENSE_CATEGORIES, Expense, ExpenseCategory } from "@/types";
 import { useModalAnimation } from "@/utils/animations";
 import {
@@ -49,7 +54,10 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
   expense,
   onSave,
 }) => {
-  const { updateExpense, colorScheme, t, settings } = useApp();
+  const colorScheme = useTheme();
+  const { t } = useI18n();
+  const { settings } = useSettingsDomain();
+  const { updateExpense } = useExpenseDomain();
   const colors = Colors[colorScheme];
   const { animatedStyle, backdropStyle, shouldRender } = useModalAnimation(visible);
 
@@ -182,7 +190,12 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
               <Text style={[styles.modalTitle, { color: colors.text }]}>
                 {t.expenses.editExpense || "Edit Expense"}
               </Text>
-              <Pressable onPress={onClose} style={styles.closeButton}>
+              <Pressable
+                onPress={onClose}
+                accessibilityRole="button"
+                accessibilityLabel={t.camera.close || t.form.cancel || "Close"}
+                style={styles.closeButton}
+              >
                 <HugeiconsIcon
                   icon={Cancel01Icon}
                   size={24}
@@ -267,6 +280,8 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                     />
                     <Pressable
                       onPress={removeImage}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t.modal.delete || "Delete"} ${t.form.attachment || "Attachment"}`}
                       style={[
                         styles.removeImageButton,
                         { backgroundColor: colors.error || "#DC2626" },
@@ -284,6 +299,8 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                   <View style={styles.imageButtonsContainer}>
                     <Pressable
                       onPress={openCamera}
+                      accessibilityRole="button"
+                      accessibilityLabel={t.form.takePhoto || "Take Photo"}
                       style={[
                         styles.imageButton,
                         {
@@ -307,6 +324,8 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
 
                     <Pressable
                       onPress={pickImageFromGallery}
+                      accessibilityRole="button"
+                      accessibilityLabel={t.form.choosePhoto || "Choose Photo"}
                       style={[
                         styles.imageButton,
                         {
