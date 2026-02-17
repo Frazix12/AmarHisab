@@ -1,4 +1,5 @@
 import { TemplateLearner } from "@/features/templates/services/template-learner";
+import { LearningStorage } from "@/features/templates/services/learning-storage";
 import { TemplateStorage } from "@/features/templates/services/template-storage";
 import { normalizeProductName } from "@/features/templates/services/template-utils";
 import { setElevenLabsApiKey } from "@/services/ai/elevenlabs";
@@ -9,8 +10,14 @@ import {
   loadExpenses,
   loadGroceryItems,
   loadSettings,
-  saveExpenses,
-  saveGroceryItems,
+  upsertExpense,
+  updateExpenseById,
+  deleteExpenseById,
+  upsertGroceryItem,
+  updateGroceryItemById,
+  deleteGroceryItemById,
+  deleteGroceryItemsByIds,
+  clearAllData as clearStorageData,
   saveSettings,
 } from "@/services/storage";
 import {
@@ -30,9 +37,11 @@ import { formatNumber as formatNumberUtil } from "@/utils/format";
 import React, {
   createContext,
   ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useColorScheme as useNativeColorScheme } from "react-native";
@@ -115,6 +124,101 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+interface ThemeSliceContextType {
+  colorScheme: "light" | "dark";
+}
+
+interface I18nSliceContextType {
+  t: TranslationKey;
+  formatNumber: (value: number | string) => string;
+}
+
+interface ExpenseSliceContextType {
+  expenses: Expense[];
+  addExpense: (expense: Omit<Expense, "id">) => string;
+  updateExpense: (id: string, expense: Partial<Expense>) => void;
+  deleteExpense: (id: string) => void;
+  totalExpenses: number;
+  todayExpenses: number;
+  monthExpenses: number;
+  weekExpenses: number;
+  todaysExpensesList: Expense[];
+  categoryBreakdown: {
+    category: ExpenseCategory;
+    amount: number;
+    percentage: number;
+    count: number;
+  }[];
+}
+
+interface GrocerySliceContextType {
+  groceryItems: GroceryItem[];
+  addGroceryItem: (
+    item: Omit<GroceryItem, "id" | "nameNormalized" | "createdAt">,
+  ) => void;
+  updateGroceryItem: (id: string, item: Partial<GroceryItem>) => void;
+  deleteGroceryItem: (id: string) => void;
+  toggleGroceryItem: (id: string) => void;
+  clearCompletedGroceryItems: () => void;
+  itemPendingCompletion: GroceryItem | null;
+  setItemPendingCompletion: (item: GroceryItem | null) => void;
+  completeGroceryItem: (id: string, price: number, imageUri?: string) => void;
+}
+
+interface SettingsSliceContextType {
+  settings: UserSettings;
+  updateCurrency: (currency: Currency) => void;
+  updateTheme: (theme: "light" | "dark" | "system") => void;
+  updateLanguage: (language: string) => void;
+  updateApiKey: (apiKey: string) => void;
+  updateElevenLabsApiKey: (apiKey: string) => void;
+  clearAllData: () => Promise<void>;
+}
+
+interface TemplateSliceContextType {
+  templates: GroceryTemplate[];
+  addTemplate: (
+    template: Omit<
+      GroceryTemplate,
+      "id" | "createdAt" | "lastUsedAt" | "usageCount"
+    >,
+  ) => Promise<GroceryTemplate>;
+  updateTemplate: (id: string, updates: Partial<GroceryTemplate>) => Promise<void>;
+  deleteTemplate: (id: string) => Promise<void>;
+  findMatchingTemplates: (input: string) => Promise<TemplateMatch[]>;
+  applyTemplate: (templateId: string) => Promise<Partial<GroceryItem> | null>;
+}
+
+interface LearningSliceContextType {
+  checkForSuggestions: () => Promise<LearningCandidate | null>;
+  acceptSuggestion: (candidate: LearningCandidate) => Promise<GroceryTemplate>;
+  dismissSuggestion: (normalizedName: string, forever: boolean) => Promise<void>;
+  smartSuggestionsEnabled: boolean;
+  toggleSmartSuggestions: () => void;
+}
+
+const ThemeSliceContext = createContext<ThemeSliceContextType | undefined>(
+  undefined,
+);
+const I18nSliceContext = createContext<I18nSliceContextType | undefined>(
+  undefined,
+);
+const ExpenseSliceContext = createContext<ExpenseSliceContextType | undefined>(
+  undefined,
+);
+const GrocerySliceContext = createContext<GrocerySliceContextType | undefined>(
+  undefined,
+);
+const SettingsSliceContext = createContext<SettingsSliceContextType | undefined>(
+  undefined,
+);
+const TemplateSliceContext = createContext<TemplateSliceContextType | undefined>(
+  undefined,
+);
+const LearningSliceContext = createContext<LearningSliceContextType | undefined>(
+  undefined,
+);
+
 const DEFAULT_SETTINGS: UserSettings = {
   currency: CURRENCIES[0], // USD
   theme: "system",
@@ -141,44 +245,105 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [templates, setTemplates] = useState<GroceryTemplate[]>([]);
   const [smartSuggestionsEnabled, setSmartSuggestionsEnabled] = useState(true);
-  const [isLoaded, setIsLoaded] = useState(false);
   const [itemPendingCompletion, setItemPendingCompletion] =
     useState<GroceryItem | null>(null);
+  const isMountedRef = useRef(true);
+  const groceryItemsRef = useRef<GroceryItem[]>([]);
+  const settingsRef = useRef<UserSettings>(DEFAULT_SETTINGS);
 
-  const getFallbackExpenseCategory = (
-    groceryCategory: GroceryItem["category"],
-  ): ExpenseCategory => {
-    return FALLBACK_GROCERY_TO_EXPENSE_CATEGORY[groceryCategory] ?? "other";
-  };
+  useEffect(() => {
+    groceryItemsRef.current = groceryItems;
+  }, [groceryItems]);
 
-  const resolveExpenseCategoryForGroceryItem = (
-    item: Pick<GroceryItem, "expenseCategory" | "category">,
-  ): ExpenseCategory => {
-    return item.expenseCategory ?? getFallbackExpenseCategory(item.category);
-  };
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
 
-  const cacheExpenseCategoryForGroceryItem = (item: GroceryItem): void => {
+  const createEntityId = useCallback((): string => {
+    return Date.now().toString() + Math.random().toString(36).slice(2, 11);
+  }, []);
+
+  const handlePersistenceFailure = useCallback(
+    (error: unknown, context: string): void => {
+      console.error(`Failed to persist ${context}:`, error);
+      captureError(error, { context });
+    },
+    [],
+  );
+
+  const getFallbackExpenseCategory = useCallback(
+    (groceryCategory: GroceryItem["category"]): ExpenseCategory => {
+      return FALLBACK_GROCERY_TO_EXPENSE_CATEGORY[groceryCategory] ?? "other";
+    },
+    [],
+  );
+
+  const resolveExpenseCategoryForGroceryItem = useCallback(
+    (item: Pick<GroceryItem, "expenseCategory" | "category">): ExpenseCategory => {
+      return item.expenseCategory ?? getFallbackExpenseCategory(item.category);
+    },
+    [getFallbackExpenseCategory],
+  );
+
+  const hasValidGroceryPrice = useCallback(
+    (price: GroceryItem["price"]): price is number => {
+      return typeof price === "number" && Number.isFinite(price) && price > 0;
+    },
+    [],
+  );
+
+  const cacheExpenseCategoryForGroceryItem = useCallback((item: GroceryItem): void => {
     const fallbackCategory = getFallbackExpenseCategory(item.category);
 
     Promise.resolve(detectExpenseCategory(item.name))
       .then((detectedCategory) => {
-        if (!detectedCategory) return;
-        setGroceryItems((prev) =>
-          prev.map((entry) =>
-            entry.id === item.id &&
-            (!entry.expenseCategory || entry.expenseCategory === fallbackCategory)
-              ? {
-                  ...entry,
-                  expenseCategory: detectedCategory,
-                }
-              : entry,
-          ),
-        );
+        if (!detectedCategory || !isMountedRef.current) return;
+
+        let categoryApplied = false;
+        setGroceryItems((prev) => {
+          const nextItems = prev.map((entry) => {
+            if (
+              entry.id === item.id &&
+              (!entry.expenseCategory || entry.expenseCategory === fallbackCategory)
+            ) {
+              categoryApplied = true;
+              return {
+                ...entry,
+                expenseCategory: detectedCategory,
+              };
+            }
+
+            return entry;
+          });
+
+          groceryItemsRef.current = nextItems;
+          return nextItems;
+        });
+
+        const currentEntry = groceryItemsRef.current.find((entry) => entry.id === item.id);
+        const shouldPersistCategory =
+          categoryApplied &&
+          isMountedRef.current &&
+          currentEntry?.expenseCategory === detectedCategory;
+
+        if (shouldPersistCategory) {
+          void updateGroceryItemById(item.id, {
+            expenseCategory: detectedCategory,
+          }).catch((error) => {
+            handlePersistenceFailure(error, "update_grocery_expense_category");
+          });
+        }
       })
       .catch((error) => {
         console.error("Failed to detect expense category for grocery item:", error);
       });
-  };
+  }, [getFallbackExpenseCategory, handlePersistenceFailure]);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Load data on mount
   useEffect(() => {
@@ -192,10 +357,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
             TemplateStorage.getAll(),
           ]);
 
+        if (!isMountedRef.current) {
+          return;
+        }
+
         setExpenses(loadedExpenses);
         setGroceryItems(loadedGrocery);
         setSettings(loadedSettings || DEFAULT_SETTINGS);
         setTemplates(loadedTemplates);
+        groceryItemsRef.current = loadedGrocery;
+        settingsRef.current = loadedSettings || DEFAULT_SETTINGS;
 
         if (loadedSettings?.geminiApiKey) {
           setGeminiApiKey(loadedSettings.geminiApiKey);
@@ -207,80 +378,102 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       } catch (error) {
         console.error("Failed to load app data:", error);
         captureError(error, { context: "load_app_data" });
+
+        if (!isMountedRef.current) {
+          return;
+        }
+
         setExpenses([]);
         setGroceryItems([]);
         setSettings(DEFAULT_SETTINGS);
         setTemplates([]);
-      } finally {
-        setIsLoaded(true);
+        groceryItemsRef.current = [];
+        settingsRef.current = DEFAULT_SETTINGS;
       }
     };
 
-    loadData();
+    void loadData();
   }, []);
 
-  // Save expenses whenever they change
-  useEffect(() => {
-    if (isLoaded) {
-      Promise.resolve(saveExpenses(expenses)).catch((error) => {
-        console.error("Failed to save expenses:", error);
-        captureError(error, { context: "save_expenses" });
-      });
-    }
-  }, [expenses, isLoaded]);
+  const persistSettings = useCallback((nextSettings: UserSettings): void => {
+    void Promise.resolve(saveSettings(nextSettings)).catch((error) => {
+      handlePersistenceFailure(error, "save_settings");
+    });
+  }, [handlePersistenceFailure]);
 
-  // Save grocery items whenever they change
-  useEffect(() => {
-    if (isLoaded) {
-      saveGroceryItems(groceryItems);
-    }
-  }, [groceryItems, isLoaded]);
+  const recordExpenseAdded = useCallback((expense: Expense): void => {
+    trackEvent(AnalyticsEvents.EXPENSE_ADDED, {
+      expense_id: expense.id,
+      amount: expense.amount,
+      category: expense.category,
+      currency: expense.currency,
+      has_image: !!expense.imageUri,
+      ai_detected: !!expense.aiDetected,
+    });
+  }, []);
 
-  // Save settings whenever they change
-  useEffect(() => {
-    if (isLoaded) {
-      saveSettings(settings);
-    }
-  }, [settings, isLoaded]);
+  const addExpenseRecord = useCallback((expense: Expense): string => {
+    setExpenses((prev) => [expense, ...prev]);
+    void Promise.resolve(upsertExpense(expense)).catch((error) => {
+      handlePersistenceFailure(error, "upsert_expense");
+    });
+    recordExpenseAdded(expense);
+    return expense.id;
+  }, [handlePersistenceFailure, recordExpenseAdded]);
 
   // Expense functions
-  const addExpense = (expense: Omit<Expense, "id">): string => {
+  const addExpense = useCallback((expense: Omit<Expense, "id">): string => {
     const newExpense: Expense = {
       ...expense,
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      id: createEntityId(),
     };
-    setExpenses((prev) => [newExpense, ...prev]);
 
-    // Track expense added
-    trackEvent(AnalyticsEvents.EXPENSE_ADDED, {
-      expense_id: newExpense.id,
-      amount: newExpense.amount,
-      category: newExpense.category,
-      currency: newExpense.currency,
-      has_image: !!newExpense.imageUri,
-      ai_detected: !!newExpense.aiDetected,
-    });
+    return addExpenseRecord(newExpense);
+  }, [addExpenseRecord, createEntityId]);
 
-    return newExpense.id;
-  };
-
-  const updateExpense = (id: string, updates: Partial<Expense>) => {
+  const updateExpense = useCallback((id: string, updates: Partial<Expense>) => {
     setExpenses((prev) =>
       prev.map((expense) =>
         expense.id === id ? { ...expense, ...updates } : expense,
       ),
     );
-  };
 
-  const deleteExpense = (id: string) => {
+    void Promise.resolve(updateExpenseById(id, updates)).catch((error) => {
+      handlePersistenceFailure(error, "update_expense");
+    });
+  }, [handlePersistenceFailure]);
+
+  const deleteExpense = useCallback((id: string) => {
     setExpenses((prev) => prev.filter((expense) => expense.id !== id));
 
-    // Track expense deleted
+    void Promise.resolve(deleteExpenseById(id)).catch((error) => {
+      handlePersistenceFailure(error, "delete_expense");
+    });
+
     trackEvent(AnalyticsEvents.EXPENSE_DELETED, { expense_id: id });
-  };
+  }, [handlePersistenceFailure]);
+
+  const buildExpenseFromGrocery = useCallback((
+    item: Pick<
+      GroceryItem,
+      "name" | "quantity" | "category" | "expenseCategory" | "imageUri"
+    >,
+    amount: number,
+    imageUri?: string,
+  ): Expense => {
+    return {
+      id: createEntityId(),
+      amount,
+      category: resolveExpenseCategoryForGroceryItem(item),
+      date: new Date(),
+      description: `${item.name}${item.quantity ? ` (${item.quantity})` : ""}`,
+      currency: settingsRef.current.currency.code,
+      imageUri: imageUri ?? item.imageUri,
+    };
+  }, [createEntityId, resolveExpenseCategoryForGroceryItem]);
 
   // Grocery functions
-  const addGroceryItem = (
+  const addGroceryItem = useCallback((
     item: Omit<GroceryItem, "id" | "nameNormalized" | "createdAt">,
   ) => {
     const nameNormalized = normalizeProductName(item.name);
@@ -290,17 +483,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       nameNormalized,
       createdAt: new Date(),
       expenseCategory: item.expenseCategory ?? fallbackExpenseCategory,
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      id: createEntityId(),
     };
+
     setGroceryItems((prev) => [newItem, ...prev]);
+
+    void Promise.resolve(upsertGroceryItem(newItem)).catch((error) => {
+      handlePersistenceFailure(error, "upsert_grocery_item");
+    });
+
     cacheExpenseCategoryForGroceryItem(newItem);
 
-    // Track for learning (async, don't await)
-    TemplateLearner.trackGroceryItem(newItem);
+    void Promise.resolve(TemplateLearner.trackGroceryItem(newItem)).catch((error) => {
+      captureError(error, { context: "track_grocery_item" });
+    });
 
-    // Track grocery item added
-    // Privacy: item_name intentionally omitted to avoid PII in analytics.
-    // See AnalyticsEvents.GROCERY_ITEM_ADDED - only non-PII metadata is sent.
     trackEvent(AnalyticsEvents.GROCERY_ITEM_ADDED, {
       item_id: newItem.id,
       category: newItem.category,
@@ -308,200 +505,278 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       has_template: !!newItem.templateId,
       ai_detected: !!newItem.aiDetected,
     });
-  };
+  }, [
+    cacheExpenseCategoryForGroceryItem,
+    createEntityId,
+    getFallbackExpenseCategory,
+    handlePersistenceFailure,
+  ]);
 
-  const updateGroceryItem = (id: string, updates: Partial<GroceryItem>) => {
-    setGroceryItems((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          const updatedItem = { ...item, ...updates };
-
-          // If this is a checked item with a linked expense, sync changes
-          if (item.expenseId) {
-            const expenseUpdates: Partial<Expense> = {};
-
-            // Sync price change
-            if (
-              updates.price !== undefined &&
-              updates.price !== null &&
-              updates.price !== item.price
-            ) {
-              expenseUpdates.amount = updates.price;
-            }
-
-            // Sync name/quantity change (rebuild description)
-            if (updates.name !== undefined || updates.quantity !== undefined) {
-              const newName = updates.name ?? item.name;
-              const newQuantity = updates.quantity ?? item.quantity;
-              expenseUpdates.description = `${newName}${newQuantity ? ` (${newQuantity})` : ""}`;
-            }
-
-            // Apply expense updates if any
-            if (Object.keys(expenseUpdates).length > 0) {
-              updateExpense(item.expenseId, expenseUpdates);
-            }
-          }
-
-          return updatedItem;
-        }
-        return item;
-      }),
-    );
-  };
-
-  const deleteGroceryItem = (id: string) => {
-    setGroceryItems((prev) => prev.filter((item) => item.id !== id));
-
-    // Track grocery item deleted
-    trackEvent(AnalyticsEvents.GROCERY_ITEM_DELETED, { item_id: id });
-  };
-
-  const toggleGroceryItem = (id: string) => {
-    const item = groceryItems.find((i) => i.id === id);
-    if (!item) return;
-
-    // Intercept: If checking item without price, trigger completion modal
-    if (!item.checked && item.price === null) {
-      setItemPendingCompletion(item);
-      return; // Don't toggle yet
+  const updateGroceryItem = useCallback((id: string, updates: Partial<GroceryItem>) => {
+    const currentItem = groceryItemsRef.current.find((item) => item.id === id);
+    if (!currentItem) {
+      return;
     }
 
-    // Normal toggle logic
+    const normalizedName =
+      updates.name !== undefined && updates.nameNormalized === undefined
+        ? normalizeProductName(updates.name)
+        : updates.nameNormalized;
+
+    const sanitizedUpdates: Partial<GroceryItem> = {
+      ...updates,
+      ...(normalizedName !== undefined ? { nameNormalized: normalizedName } : {}),
+    };
+
+    const updatedItem: GroceryItem = {
+      ...currentItem,
+      ...sanitizedUpdates,
+    };
+
     setGroceryItems((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          const newCheckedState = !item.checked;
-
-          if (newCheckedState && item.price !== null) {
-            // Checking: Add expense and store its ID
-            const newExpense = {
-              amount: item.price,
-              category: resolveExpenseCategoryForGroceryItem(item),
-              date: new Date(),
-              description: `${item.name}${item.quantity ? ` (${item.quantity})` : ""}`,
-              currency: settings.currency.code,
-              imageUri: item.imageUri,
-            };
-            const expenseId = addExpense(newExpense);
-            return {
-              ...item,
-              checked: newCheckedState,
-              expenseId,
-              checkedAt: new Date(),
-            };
-          } else if (!newCheckedState && item.expenseId) {
-            // Unchecking: Remove the linked expense
-            deleteExpense(item.expenseId);
-            return { ...item, checked: newCheckedState, expenseId: undefined };
-            // Keep price and imageUri when unchecking
-          }
-
-          return { ...item, checked: newCheckedState };
-        }
-        return item;
-      }),
+      prev.map((item) => (item.id === id ? updatedItem : item)),
     );
-  };
 
-  const clearCompletedGroceryItems = () => {
+    void Promise.resolve(updateGroceryItemById(id, sanitizedUpdates)).catch((error) => {
+      handlePersistenceFailure(error, "update_grocery_item");
+    });
+
+    if (currentItem.expenseId) {
+      const expenseUpdates: Partial<Expense> = {};
+
+      if (
+        sanitizedUpdates.price !== undefined &&
+        sanitizedUpdates.price !== null &&
+        sanitizedUpdates.price !== currentItem.price
+      ) {
+        expenseUpdates.amount = sanitizedUpdates.price;
+      }
+
+      if (
+        sanitizedUpdates.name !== undefined ||
+        sanitizedUpdates.quantity !== undefined
+      ) {
+        const newName = sanitizedUpdates.name ?? currentItem.name;
+        const newQuantity = sanitizedUpdates.quantity ?? currentItem.quantity;
+        expenseUpdates.description = `${newName}${newQuantity ? ` (${newQuantity})` : ""}`;
+      }
+
+      if (Object.keys(expenseUpdates).length > 0) {
+        updateExpense(currentItem.expenseId, expenseUpdates);
+      }
+    }
+  }, [handlePersistenceFailure, updateExpense]);
+
+  const deleteGroceryItem = useCallback((id: string) => {
+    const exists = groceryItemsRef.current.some((item) => item.id === id);
+    if (!exists) {
+      return;
+    }
+
+    setGroceryItems((prev) => prev.filter((item) => item.id !== id));
+
+    if (itemPendingCompletion?.id === id) {
+      setItemPendingCompletion(null);
+    }
+
+    void Promise.resolve(deleteGroceryItemById(id)).catch((error) => {
+      handlePersistenceFailure(error, "delete_grocery_item");
+    });
+
+    trackEvent(AnalyticsEvents.GROCERY_ITEM_DELETED, { item_id: id });
+  }, [handlePersistenceFailure, itemPendingCompletion]);
+
+  const toggleGroceryItem = useCallback((id: string) => {
+    const currentItem = groceryItemsRef.current.find((item) => item.id === id);
+    if (!currentItem) {
+      return;
+    }
+
+    const nextCheckedState = !currentItem.checked;
+
+    if (nextCheckedState && !hasValidGroceryPrice(currentItem.price)) {
+      setItemPendingCompletion(currentItem);
+      return;
+    }
+
+    let expenseToCreate: Expense | null = null;
+    let expenseIdToDelete: string | null = null;
+    let groceryPatch: Partial<GroceryItem>;
+
+    if (nextCheckedState && hasValidGroceryPrice(currentItem.price)) {
+      const nextExpense = buildExpenseFromGrocery(currentItem, currentItem.price);
+      const checkedAt = new Date();
+      expenseToCreate = nextExpense;
+      groceryPatch = {
+        checked: true,
+        expenseId: nextExpense.id,
+        checkedAt,
+      };
+    } else if (!nextCheckedState && currentItem.expenseId) {
+      expenseIdToDelete = currentItem.expenseId;
+      groceryPatch = {
+        checked: false,
+        expenseId: undefined,
+        checkedAt: undefined,
+      };
+    } else {
+      groceryPatch = { checked: nextCheckedState };
+    }
+
+    setGroceryItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...groceryPatch } : item)),
+    );
+
+    if (expenseToCreate) {
+      addExpenseRecord(expenseToCreate);
+    }
+
+    void Promise.resolve(updateGroceryItemById(id, groceryPatch)).catch((error) => {
+      handlePersistenceFailure(error, "toggle_grocery_item");
+    });
+
+    if (expenseIdToDelete) {
+      deleteExpense(expenseIdToDelete);
+    }
+  }, [
+    addExpenseRecord,
+    buildExpenseFromGrocery,
+    deleteExpense,
+    handlePersistenceFailure,
+    hasValidGroceryPrice,
+  ]);
+
+  const clearCompletedGroceryItems = useCallback(() => {
+    const completedIds = groceryItemsRef.current
+      .filter((item) => item.checked)
+      .map((item) => item.id);
+
+    if (completedIds.length === 0) {
+      return;
+    }
+
     setGroceryItems((prev) => prev.filter((item) => !item.checked));
-  };
 
-  const completeGroceryItem = (
+    void Promise.resolve(deleteGroceryItemsByIds(completedIds)).catch((error) => {
+      handlePersistenceFailure(error, "clear_completed_grocery_items");
+    });
+  }, [handlePersistenceFailure]);
+
+  const completeGroceryItem = useCallback((
     id: string,
     price: number,
     imageUri?: string,
   ) => {
+    if (!Number.isFinite(price) || price <= 0) {
+      return;
+    }
+
+    const currentItem = groceryItemsRef.current.find((item) => item.id === id);
+    if (!currentItem) {
+      return;
+    }
+
+    const nextExpense = buildExpenseFromGrocery(currentItem, price, imageUri);
+    const checkedAt = new Date();
+    const groceryPatch: Partial<GroceryItem> = {
+      price,
+      imageUri,
+      checked: true,
+      expenseId: nextExpense.id,
+      checkedAt,
+    };
+
     setGroceryItems((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          // Update price and image
-          const updatedItem = { ...item, price, imageUri };
-
-          // Create expense
-          const newExpense = {
-            amount: price,
-            category: resolveExpenseCategoryForGroceryItem(item),
-            date: new Date(),
-            description: `${item.name}${item.quantity ? ` (${item.quantity})` : ""}`,
-            currency: settings.currency.code,
-            imageUri,
-          };
-          const expenseId = addExpense(newExpense);
-
-          return {
-            ...updatedItem,
-            checked: true,
-            expenseId,
-            checkedAt: new Date(),
-          };
-        }
-        return item;
-      }),
+      prev.map((item) => (item.id === id ? { ...item, ...groceryPatch } : item)),
     );
 
-    // Track grocery item completed
+    addExpenseRecord(nextExpense);
+
+    void Promise.resolve(updateGroceryItemById(id, groceryPatch)).catch((error) => {
+      handlePersistenceFailure(error, "complete_grocery_item");
+    });
+
     trackEvent(AnalyticsEvents.GROCERY_ITEM_COMPLETED, {
       item_id: id,
-      price: price,
+      price,
       has_image: !!imageUri,
     });
 
     setItemPendingCompletion(null);
-  };
+  }, [addExpenseRecord, buildExpenseFromGrocery, handlePersistenceFailure]);
 
   // Settings functions
-  const updateCurrency = (currency: Currency) => {
-    const oldCurrency = settings.currency.code;
-    setSettings((prev) => ({ ...prev, currency }));
+  const updateCurrency = useCallback((currency: Currency) => {
+    const previousSettings = settingsRef.current;
+    const nextSettings: UserSettings = { ...previousSettings, currency };
+    settingsRef.current = nextSettings;
+    setSettings(nextSettings);
 
-    // Track currency change
+    persistSettings(nextSettings);
+
     trackEvent(AnalyticsEvents.CURRENCY_CHANGED, {
       setting_name: "currency",
-      old_value: oldCurrency,
+      old_value: previousSettings.currency.code,
       new_value: currency.code,
     });
-  };
+  }, [persistSettings]);
 
-  const updateTheme = (theme: "light" | "dark" | "system") => {
-    const oldTheme = settings.theme;
-    setSettings((prev) => ({ ...prev, theme }));
+  const updateTheme = useCallback((theme: "light" | "dark" | "system") => {
+    const previousSettings = settingsRef.current;
+    const nextSettings: UserSettings = { ...previousSettings, theme };
+    settingsRef.current = nextSettings;
+    setSettings(nextSettings);
 
-    // Track theme change
+    persistSettings(nextSettings);
+
     trackEvent(AnalyticsEvents.THEME_CHANGED, {
       setting_name: "theme",
-      old_value: oldTheme,
+      old_value: previousSettings.theme,
       new_value: theme,
     });
-  };
+  }, [persistSettings]);
 
-  const updateLanguage = (language: string) => {
-    const oldLanguage = settings.language;
-    const newSettings = { ...settings, language };
-    setSettings(newSettings);
+  const updateLanguage = useCallback((language: string) => {
+    const previousSettings = settingsRef.current;
+    const nextSettings: UserSettings = { ...previousSettings, language };
+    settingsRef.current = nextSettings;
+    setSettings(nextSettings);
 
-    // Track language change
+    persistSettings(nextSettings);
+
     trackEvent(AnalyticsEvents.LANGUAGE_CHANGED, {
       setting_name: "language",
-      old_value: oldLanguage,
+      old_value: previousSettings.language,
       new_value: language,
     });
-  };
+  }, [persistSettings]);
 
-  const updateApiKey = (apiKey: string) => {
-    const newSettings = { ...settings, geminiApiKey: apiKey };
-    setSettings(newSettings);
+  const updateApiKey = useCallback((apiKey: string) => {
+    const nextSettings: UserSettings = {
+      ...settingsRef.current,
+      geminiApiKey: apiKey,
+    };
+    settingsRef.current = nextSettings;
+    setSettings(nextSettings);
+
+    persistSettings(nextSettings);
     setGeminiApiKey(apiKey);
-  };
+  }, [persistSettings]);
 
-  const updateElevenLabsApiKey = (apiKey: string) => {
-    const newSettings = { ...settings, elevenLabsApiKey: apiKey };
-    setSettings(newSettings);
+  const updateElevenLabsApiKey = useCallback((apiKey: string) => {
+    const nextSettings: UserSettings = {
+      ...settingsRef.current,
+      elevenLabsApiKey: apiKey,
+    };
+    settingsRef.current = nextSettings;
+    setSettings(nextSettings);
+
+    persistSettings(nextSettings);
     setElevenLabsApiKey(apiKey);
-  };
+  }, [persistSettings]);
 
   // Template functions
-  const addTemplate = async (
+  const addTemplate = useCallback(async (
     template: Omit<
       GroceryTemplate,
       "id" | "createdAt" | "lastUsedAt" | "usageCount"
@@ -510,9 +785,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     const newTemplate = await TemplateStorage.create(template);
     setTemplates((prev) => [...prev, newTemplate]);
     return newTemplate;
-  };
+  }, []);
 
-  const updateTemplate = async (
+  const updateTemplate = useCallback(async (
     id: string,
     updates: Partial<GroceryTemplate>,
   ): Promise<void> => {
@@ -520,21 +795,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     setTemplates((prev) =>
       prev.map((t) => (t.id === id ? { ...t, ...updates } : t)),
     );
-  };
+  }, []);
 
-  const deleteTemplate = async (id: string): Promise<void> => {
+  const deleteTemplate = useCallback(async (id: string): Promise<void> => {
     await TemplateStorage.delete(id);
     setTemplates((prev) => prev.filter((t) => t.id !== id));
-  };
+  }, []);
 
-  const findMatchingTemplates = async (
+  const findMatchingTemplates = useCallback(async (
     input: string,
   ): Promise<TemplateMatch[]> => {
     const normalized = normalizeProductName(input);
     return await TemplateStorage.findMatching(normalized);
-  };
+  }, []);
 
-  const applyTemplate = async (
+  const applyTemplate = useCallback(async (
     templateId: string,
   ): Promise<Partial<GroceryItem> | null> => {
     const template = templates.find((t) => t.id === templateId);
@@ -558,15 +833,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       category: template.category,
       templateId: template.id,
     };
-  };
+  }, [templates]);
 
   // Learning functions
-  const checkForSuggestions = async (): Promise<LearningCandidate | null> => {
+  const checkForSuggestions = useCallback(async (): Promise<LearningCandidate | null> => {
     if (!smartSuggestionsEnabled) return null;
     return await TemplateLearner.detectLearningCandidates(groceryItems);
-  };
+  }, [groceryItems, smartSuggestionsEnabled]);
 
-  const acceptSuggestion = async (
+  const acceptSuggestion = useCallback(async (
     candidate: LearningCandidate,
   ): Promise<GroceryTemplate> => {
     const newTemplate = await addTemplate({
@@ -583,9 +858,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     await TemplateLearner.recordSuggestion(candidate.productNameNormalized);
 
     return newTemplate;
-  };
+  }, [addTemplate]);
 
-  const dismissSuggestion = async (
+  const dismissSuggestion = useCallback(async (
     normalizedName: string,
     forever: boolean,
   ): Promise<void> => {
@@ -595,28 +870,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       // Just record that we showed it (24h cooldown)
       await TemplateLearner.recordSuggestion(normalizedName);
     }
-  };
+  }, []);
 
-  const toggleSmartSuggestions = () => {
+  const toggleSmartSuggestions = useCallback(() => {
     setSmartSuggestionsEnabled((prev) => !prev);
-  };
+  }, []);
 
-  const clearAllData = async (): Promise<void> => {
+  const clearAllData = useCallback(async (): Promise<void> => {
     try {
-      // Clear template storage first - await before mutating state
-      if (typeof TemplateStorage.clear === "function") {
-        await TemplateStorage.clear();
-      } else {
-        const allTemplates = await TemplateStorage.getAll();
-        await Promise.all(
-          allTemplates.map((template) => TemplateStorage.delete(template.id)),
-        );
+      await clearStorageData();
+
+      if (typeof LearningStorage.clear === "function") {
+        await LearningStorage.clear();
       }
 
       // Only update state after successful storage clearing
       setExpenses([]);
       setGroceryItems([]);
+      setSettings(DEFAULT_SETTINGS);
       setTemplates([]);
+      groceryItemsRef.current = [];
+      settingsRef.current = DEFAULT_SETTINGS;
+      setGeminiApiKey("");
+      setElevenLabsApiKey("");
 
       // Track data cleared after successful operation
       trackEvent(AnalyticsEvents.DATA_CLEARED, {
@@ -628,7 +904,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       captureError(error, { context: "clear_all_data" });
       throw error instanceof Error ? error : new Error(String(error));
     }
-  };
+  }, []);
 
   // Computed values
   const {
@@ -716,9 +992,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   const t = getTranslation(settings.language);
 
   // Helper for components
-  const formatNumber = (value: number | string) => {
-    return formatNumberUtil(value, settings.language);
-  };
+  const formatNumber = useCallback(
+    (value: number | string) => {
+      return formatNumberUtil(value, settings.language);
+    },
+    [settings.language],
+  );
 
   // Color scheme
   const colorScheme =
@@ -726,56 +1005,226 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       ? (nativeColorScheme ?? "light")
       : settings.theme;
 
-  const value: AppContextType = {
-    expenses,
-    addExpense,
-    updateExpense,
-    deleteExpense,
-    groceryItems,
-    addGroceryItem,
-    updateGroceryItem,
-    deleteGroceryItem,
-    toggleGroceryItem,
-    clearCompletedGroceryItems,
-    itemPendingCompletion,
-    setItemPendingCompletion,
-    completeGroceryItem,
-    settings,
-    updateCurrency,
-    updateTheme,
-    updateLanguage,
-    updateApiKey,
-    updateElevenLabsApiKey,
-    totalExpenses,
-    todayExpenses,
-    monthExpenses,
-    weekExpenses,
-    todaysExpensesList,
-    categoryBreakdown,
-    t,
-    formatNumber,
-    colorScheme,
-    templates,
-    addTemplate,
-    updateTemplate,
-    deleteTemplate,
-    findMatchingTemplates,
-    applyTemplate,
-    checkForSuggestions,
-    acceptSuggestion,
-    dismissSuggestion,
-    smartSuggestionsEnabled,
-    toggleSmartSuggestions,
-    clearAllData,
-  };
+  const themeSliceValue = useMemo<ThemeSliceContextType>(
+    () => ({ colorScheme }),
+    [colorScheme],
+  );
 
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  const i18nSliceValue = useMemo<I18nSliceContextType>(
+    () => ({ t, formatNumber }),
+    [formatNumber, t],
+  );
+
+  const expenseSliceValue = useMemo<ExpenseSliceContextType>(
+    () => ({
+      expenses,
+      addExpense,
+      updateExpense,
+      deleteExpense,
+      totalExpenses,
+      todayExpenses,
+      monthExpenses,
+      weekExpenses,
+      todaysExpensesList,
+      categoryBreakdown,
+    }),
+    [
+      addExpense,
+      categoryBreakdown,
+      deleteExpense,
+      expenses,
+      monthExpenses,
+      todayExpenses,
+      todaysExpensesList,
+      totalExpenses,
+      updateExpense,
+      weekExpenses,
+    ],
+  );
+
+  const grocerySliceValue = useMemo<GrocerySliceContextType>(
+    () => ({
+      groceryItems,
+      addGroceryItem,
+      updateGroceryItem,
+      deleteGroceryItem,
+      toggleGroceryItem,
+      clearCompletedGroceryItems,
+      itemPendingCompletion,
+      setItemPendingCompletion,
+      completeGroceryItem,
+    }),
+    [
+      addGroceryItem,
+      clearCompletedGroceryItems,
+      completeGroceryItem,
+      deleteGroceryItem,
+      groceryItems,
+      itemPendingCompletion,
+      toggleGroceryItem,
+      updateGroceryItem,
+    ],
+  );
+
+  const settingsSliceValue = useMemo<SettingsSliceContextType>(
+    () => ({
+      settings,
+      updateCurrency,
+      updateTheme,
+      updateLanguage,
+      updateApiKey,
+      updateElevenLabsApiKey,
+      clearAllData,
+    }),
+    [
+      clearAllData,
+      settings,
+      updateApiKey,
+      updateCurrency,
+      updateElevenLabsApiKey,
+      updateLanguage,
+      updateTheme,
+    ],
+  );
+
+  const templateSliceValue = useMemo<TemplateSliceContextType>(
+    () => ({
+      templates,
+      addTemplate,
+      updateTemplate,
+      deleteTemplate,
+      findMatchingTemplates,
+      applyTemplate,
+    }),
+    [
+      addTemplate,
+      applyTemplate,
+      deleteTemplate,
+      findMatchingTemplates,
+      templates,
+      updateTemplate,
+    ],
+  );
+
+  const learningSliceValue = useMemo<LearningSliceContextType>(
+    () => ({
+      checkForSuggestions,
+      acceptSuggestion,
+      dismissSuggestion,
+      smartSuggestionsEnabled,
+      toggleSmartSuggestions,
+    }),
+    [
+      acceptSuggestion,
+      checkForSuggestions,
+      dismissSuggestion,
+      smartSuggestionsEnabled,
+      toggleSmartSuggestions,
+    ],
+  );
+
+  const value = useMemo<AppContextType>(
+    () => ({
+      ...expenseSliceValue,
+      ...grocerySliceValue,
+      ...settingsSliceValue,
+      t,
+      formatNumber,
+      colorScheme,
+      ...templateSliceValue,
+      ...learningSliceValue,
+    }),
+    [
+      colorScheme,
+      expenseSliceValue,
+      formatNumber,
+      grocerySliceValue,
+      learningSliceValue,
+      settingsSliceValue,
+      t,
+      templateSliceValue,
+    ],
+  );
+
+  return (
+    <ThemeSliceContext.Provider value={themeSliceValue}>
+      <I18nSliceContext.Provider value={i18nSliceValue}>
+        <ExpenseSliceContext.Provider value={expenseSliceValue}>
+          <GrocerySliceContext.Provider value={grocerySliceValue}>
+            <SettingsSliceContext.Provider value={settingsSliceValue}>
+              <TemplateSliceContext.Provider value={templateSliceValue}>
+                <LearningSliceContext.Provider value={learningSliceValue}>
+                  <AppContext.Provider value={value}>{children}</AppContext.Provider>
+                </LearningSliceContext.Provider>
+              </TemplateSliceContext.Provider>
+            </SettingsSliceContext.Provider>
+          </GrocerySliceContext.Provider>
+        </ExpenseSliceContext.Provider>
+      </I18nSliceContext.Provider>
+    </ThemeSliceContext.Provider>
+  );
 };
 
 export const useApp = (): AppContextType => {
   const context = useContext(AppContext);
   if (context === undefined) {
     throw new Error("useApp must be used within an AppProvider");
+  }
+  return context;
+};
+
+export const useThemeSlice = (): ThemeSliceContextType => {
+  const context = useContext(ThemeSliceContext);
+  if (context === undefined) {
+    throw new Error("useThemeSlice must be used within an AppProvider");
+  }
+  return context;
+};
+
+export const useI18nSlice = (): I18nSliceContextType => {
+  const context = useContext(I18nSliceContext);
+  if (context === undefined) {
+    throw new Error("useI18nSlice must be used within an AppProvider");
+  }
+  return context;
+};
+
+export const useExpenseSlice = (): ExpenseSliceContextType => {
+  const context = useContext(ExpenseSliceContext);
+  if (context === undefined) {
+    throw new Error("useExpenseSlice must be used within an AppProvider");
+  }
+  return context;
+};
+
+export const useGrocerySlice = (): GrocerySliceContextType => {
+  const context = useContext(GrocerySliceContext);
+  if (context === undefined) {
+    throw new Error("useGrocerySlice must be used within an AppProvider");
+  }
+  return context;
+};
+
+export const useSettingsSlice = (): SettingsSliceContextType => {
+  const context = useContext(SettingsSliceContext);
+  if (context === undefined) {
+    throw new Error("useSettingsSlice must be used within an AppProvider");
+  }
+  return context;
+};
+
+export const useTemplateSlice = (): TemplateSliceContextType => {
+  const context = useContext(TemplateSliceContext);
+  if (context === undefined) {
+    throw new Error("useTemplateSlice must be used within an AppProvider");
+  }
+  return context;
+};
+
+export const useLearningSlice = (): LearningSliceContextType => {
+  const context = useContext(LearningSliceContext);
+  if (context === undefined) {
+    throw new Error("useLearningSlice must be used within an AppProvider");
   }
   return context;
 };

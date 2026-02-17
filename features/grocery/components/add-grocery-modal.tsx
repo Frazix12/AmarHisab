@@ -1,7 +1,13 @@
 import { BanglaNumberInput } from "@/components/shared/bangla-number-input";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import {
+  useGroceryDomain,
+  useI18n,
+  useSettingsDomain,
+  useTemplateDomain,
+  useTheme,
+} from "@/contexts/app-selectors";
 import { detectItemCategory } from "@/services/ai/gemini";
 import { showNotification } from "@/services/notifications";
 import { validateName, validateQuantity, validateAmount, checkRateLimit } from "@/services/validation";
@@ -54,15 +60,11 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
   onClose,
   fabConfig,
 }) => {
-  const {
-    addGroceryItem,
-    settings,
-    colorScheme,
-    t,
-    findMatchingTemplates,
-    applyTemplate,
-    formatNumber,
-  } = useApp();
+  const colorScheme = useTheme();
+  const { t, formatNumber } = useI18n();
+  const { settings } = useSettingsDomain();
+  const { addGroceryItem } = useGroceryDomain();
+  const { findMatchingTemplates, applyTemplate } = useTemplateDomain();
   const colors = Colors[colorScheme];
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { shellStyle, backdropStyle, contentStyle, shouldRender } =

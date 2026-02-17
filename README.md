@@ -6,6 +6,8 @@
 
 _A beautiful, minimalistic expense tracker with integrated grocery list management_
 
+**Platform: Android only**
+
 [![Expo](https://img.shields.io/badge/Expo-52.0.0-000020?style=for-the-badge&logo=expo&logoColor=white)](https://expo.dev)
 [![React Native](https://img.shields.io/badge/React_Native-0.76-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactnative.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
@@ -59,7 +61,7 @@ _A beautiful, minimalistic expense tracker with integrated grocery list manageme
 - **Smooth Animations** - 60fps animations powered by React Native Reanimated
   - Bouncy modal slide-ups
   - Animated tab navigation with icon scaling and label transitions
-  - Haptic feedback on iOS and Android (Expo Haptics `impactAsync`; vibration feel may vary by device/OS)
+  - Haptic feedback on Android (Expo Haptics `impactAsync`; vibration feel may vary by device/OS)
   - Fluid interactions throughout
 - **HugeIcons** - Consistent, professional iconography
 
@@ -106,7 +108,7 @@ Support for 8 major currencies:
 
 ### 💾 Local Data Storage
 
-- All data stored locally using AsyncStorage
+- All data stored locally using SQLite (Drizzle ORM + Expo SQLite)
 - No internet required
 - Privacy-focused - your data never leaves your device
 
@@ -119,7 +121,7 @@ Support for 8 major currencies:
 - Node.js 18+ or Bun
 - Expo CLI
 - Android Studio or Xcode (for native development)
-- Expo Go app (for testing on physical devices)
+- Android device or emulator
 
 ### Installation
 
@@ -147,9 +149,7 @@ Support for 8 major currencies:
    ```
 
 4. **Run on your device**
-   - Scan the QR code with Expo Go (Android/iOS)
    - Press `a` for Android emulator
-   - Press `i` for iOS simulator
 
 ### Building for Production
 
@@ -169,13 +169,13 @@ eas build:run -p android
 
 ## 🛠️ Tech Stack
 
-- **Framework**: [Expo](https://expo.dev) SDK 52
+- **Framework**: [Expo](https://expo.dev) SDK 54
 - **Language**: [TypeScript](https://www.typescriptlang.org)
 - **UI Library**: [React Native](https://reactnative.dev) 0.76
 - **Navigation**: [Expo Router](https://docs.expo.dev/router/introduction/) (File-based routing)
 - **Animations**: [React Native Reanimated](https://docs.swmansion.com/react-native-reanimated/) 4.1
 - **Icons**: [HugeIcons](https://hugeicons.com)
-- **Storage**: AsyncStorage + Expo SecureStore
+- **Storage**: Drizzle ORM + Expo SQLite + Expo SecureStore
 - **State Management**: React Context API
 - **Design System**: Material Design 3
 - **Media**: Expo Camera, Expo Image Picker
@@ -203,7 +203,7 @@ app/
 │   └── settings/           # Settings feature
 ├── services/                # Backend/External services
 │   ├── ai/                 # Gemini AI integration
-│   ├── storage/            # Data persistence (AsyncStorage + SecureStore)
+│   ├── storage/            # Data persistence (Drizzle + Expo SQLite + SecureStore)
 │   └── i18n/               # Internationalization
 ├── contexts/                # React Context providers
 │   └── app-context.tsx      # Global state management

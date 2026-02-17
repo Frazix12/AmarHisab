@@ -12,9 +12,82 @@ import TemplatesScreen from "@/app/templates/index";
 import AddTemplateScreen from "@/app/templates/add";
 import EditTemplateScreen from "@/app/templates/edit";
 
-jest.mock("@/contexts/app-context", () => ({
-  useApp: jest.fn(),
-}));
+jest.mock("@/contexts/app-context", () => {
+  const useApp = jest.fn();
+
+  return {
+    useApp,
+    useExpenseSlice: jest.fn(() => {
+      const context = useApp();
+      return {
+        expenses: context.expenses,
+        addExpense: context.addExpense,
+        updateExpense: context.updateExpense,
+        deleteExpense: context.deleteExpense,
+        totalExpenses: context.totalExpenses,
+        todayExpenses: context.todayExpenses,
+        monthExpenses: context.monthExpenses,
+        weekExpenses: context.weekExpenses,
+        todaysExpensesList: context.todaysExpensesList,
+        categoryBreakdown: context.categoryBreakdown,
+      };
+    }),
+    useGrocerySlice: jest.fn(() => {
+      const context = useApp();
+      return {
+        groceryItems: context.groceryItems,
+        addGroceryItem: context.addGroceryItem,
+        updateGroceryItem: context.updateGroceryItem,
+        deleteGroceryItem: context.deleteGroceryItem,
+        toggleGroceryItem: context.toggleGroceryItem,
+        clearCompletedGroceryItems: context.clearCompletedGroceryItems,
+        itemPendingCompletion: context.itemPendingCompletion,
+        setItemPendingCompletion: context.setItemPendingCompletion,
+        completeGroceryItem: context.completeGroceryItem,
+      };
+    }),
+    useSettingsSlice: jest.fn(() => {
+      const context = useApp();
+      return {
+        settings: context.settings,
+        updateCurrency: context.updateCurrency,
+        updateTheme: context.updateTheme,
+        updateLanguage: context.updateLanguage,
+        updateApiKey: context.updateApiKey,
+        updateElevenLabsApiKey: context.updateElevenLabsApiKey,
+        clearAllData: context.clearAllData,
+      };
+    }),
+    useTemplateSlice: jest.fn(() => {
+      const context = useApp();
+      return {
+        templates: context.templates,
+        addTemplate: context.addTemplate,
+        updateTemplate: context.updateTemplate,
+        deleteTemplate: context.deleteTemplate,
+        findMatchingTemplates: context.findMatchingTemplates,
+        applyTemplate: context.applyTemplate,
+      };
+    }),
+    useLearningSlice: jest.fn(() => {
+      const context = useApp();
+      return {
+        checkForSuggestions: context.checkForSuggestions,
+        acceptSuggestion: context.acceptSuggestion,
+        dismissSuggestion: context.dismissSuggestion,
+        smartSuggestionsEnabled: context.smartSuggestionsEnabled,
+        toggleSmartSuggestions: context.toggleSmartSuggestions,
+      };
+    }),
+    useThemeSlice: jest.fn(() => ({
+      colorScheme: useApp().colorScheme,
+    })),
+    useI18nSlice: jest.fn(() => {
+      const context = useApp();
+      return { t: context.t, formatNumber: context.formatNumber };
+    }),
+  };
+});
 
 jest.mock("@/components/shared/action-menu-modal", () => ({
   ActionMenuModal: () => null,

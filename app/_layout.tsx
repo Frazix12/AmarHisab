@@ -14,7 +14,8 @@ import { AppState, AppStateStatus, Platform } from "react-native";
 import { PostHogProvider, usePostHog } from "posthog-react-native";
 
 import { Toast } from "@/components/ui/toast";
-import { AppProvider, useApp } from "@/contexts/app-context";
+import { AppProvider } from "@/contexts/app-context";
+import { useI18n, useSettingsDomain, useTheme } from "@/contexts/app-selectors";
 import { subscribeToApiRateLimited } from "@/services/ai/rate-limiter";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
 import {
@@ -34,7 +35,9 @@ export const unstable_settings = {
 };
 
 const RootLayoutContent = () => {
-  const { colorScheme, settings, t } = useApp();
+  const colorScheme = useTheme();
+  const { settings } = useSettingsDomain();
+  const { t } = useI18n();
   const posthog = usePostHog();
 
   useEffect(() => {
@@ -144,15 +147,6 @@ const RootLayoutContent = () => {
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="modal"
-          options={{
-            presentation: "modal",
-            title: "Modal",
-            animation: "slide_from_bottom",
-            animationDuration: 240,
-          }}
-        />
         <Stack.Screen
           name="templates"
           options={{

@@ -1,0 +1,24 @@
+appId: com.frazix.amarisab
+name: Navigation Smoke
+tags:
+  - smoke
+  - core
+  - navigation
+
+---
+- killApp
+- launchApp:
+    clearState: true
+- runFlow: ../subflows/ensure-english.yaml
+- runFlow: ../subflows/go-expenses-tab.yaml
+- assertVisible: "Today's Total"
+- runFlow: ../subflows/go-grocery-tab.yaml
+- assertVisible: "Grocery List"
+- runFlow: ../subflows/go-statistics-tab.yaml
+- assertVisible: "By Category"
+- runFlow: ../subflows/go-settings-tab.yaml
+- assertVisible: "Developer Tools"
+- tapOn: "AI Voice"
+- assertVisible: "Speak naturally to add expenses and groceries"
+- tapOn: "Close"
+- assertVisible: "Settings"

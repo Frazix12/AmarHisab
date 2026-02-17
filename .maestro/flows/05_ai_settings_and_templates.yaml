@@ -1,0 +1,61 @@
+appId: com.frazix.amarisab
+name: AI Settings And Templates
+tags:
+  - core
+  - ai
+  - templates
+
+---
+- killApp
+- launchApp:
+    clearState: true
+- runFlow: ../subflows/ensure-english.yaml
+- runFlow: ../subflows/reset-data.yaml
+- runFlow: ../subflows/go-settings-tab.yaml
+- tapOn: "AI"
+- assertVisible: "AI & Smart Features"
+- tapOn: "Smart Suggestions"
+- tapOn: "Disable"
+- tapOn: "Smart Suggestions"
+- tapOn: "Enable"
+- tapOn: "Gemini API Key"
+- tapOn: "Enter Gemini API Key"
+- inputText: "test-gemini-key"
+- tapOn: "Save"
+- tapOn: "OK"
+- tapOn: "Gemini API Key"
+- tapOn: "Remove Key"
+- tapOn: "Remove Key"
+- tapOn: "OK"
+- tapOn: "ElevenLabs API Key"
+- tapOn: "Enter ElevenLabs API Key"
+- inputText: "test-elevenlabs-key"
+- tapOn: "Save"
+- tapOn: "OK"
+- tapOn: "ElevenLabs API Key"
+- tapOn: "Remove Key"
+- tapOn: "Remove Key"
+- tapOn: "OK"
+- tapOn: "Manage Templates"
+- assertVisible: "Templates"
+- tapOn: "New Template"
+- tapOn: "e.g., Eggs, Milk, Bread..."
+- inputText: "E2E Template Rice"
+- tapOn: "0.00"
+- inputText: "120"
+- tapOn: "Household"
+- tapOn: "Save"
+- assertVisible: "E2E Template Rice"
+- tapOn: "Edit: E2E Template Rice"
+- tapOn: "E2E Template Rice"
+- inputText: " Updated"
+- tapOn: "Save"
+- assertVisible: "E2E Template Rice Updated"
+- tapOn: "Delete: E2E Template Rice Updated"
+- tapOn: "Delete"
+- assertNotVisible: "E2E Template Rice Updated"
+- tapOn: "Manual.*"
+- tapOn: "Learned.*"
+- tapOn: "All.*"
+- tapOn: "Back"
+- assertVisible: "AI"

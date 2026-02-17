@@ -4,10 +4,15 @@ import {
 } from "@/components/shared/action-menu-modal";
 import { OnboardingTip } from "@/components/shared/onboarding-tip";
 import { SummaryCard } from "@/components/shared/summary-card";
-import { showToast, Toast } from "@/components/ui/toast";
+import { showToast } from "@/components/ui/toast";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import {
+  useExpenseDomain,
+  useI18n,
+  useSettingsDomain,
+  useTheme,
+} from "@/contexts/app-selectors";
 import { AddExpenseModal } from "@/features/expenses/components/add-expense-modal";
 import { EditExpenseModal } from "@/features/expenses/components/edit-expense-modal";
 import { ExpenseCard } from "@/features/expenses/components/expense-card";
@@ -41,15 +46,10 @@ const FAB_TO_CLOSE_X = -8;
 const FAB_CLOSE_CENTER_Y = 44;
 
 export default function ExpensesScreen() {
-  const {
-    deleteExpense,
-    colorScheme,
-    t,
-    todayExpenses,
-    todaysExpensesList,
-    settings,
-    formatNumber,
-  } = useApp();
+  const { deleteExpense, todayExpenses, todaysExpensesList } = useExpenseDomain();
+  const colorScheme = useTheme();
+  const { t, formatNumber } = useI18n();
+  const { settings } = useSettingsDomain();
   const colors = Colors[colorScheme];
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -309,7 +309,6 @@ export default function ExpensesScreen() {
       )}
 
       {/* Toast Notifications */}
-      <Toast />
       </Animated.View>
     </SafeAreaView>
   );

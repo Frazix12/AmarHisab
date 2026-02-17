@@ -7,22 +7,39 @@ import {
 } from "@/types";
 import type { PostHogEventProperties } from "@posthog/core";
 import { createLlmTraceId, trackLlmGeneration } from "@/services/analytics/llm";
+import { getAiCacheValue, setAiCacheValue } from "@/services/ai/cache";
 import { sanitizeForAIPrompt } from "@/services/validation";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { retryWithBackoff } from "./rate-limiter";
 
 // Initialize the Gemini API client
 let genAI: GoogleGenerativeAI | null = null;
+const parseApiKeys = (rawValue?: string): string[] => {
+  if (!rawValue) return [];
+  return rawValue
+    .split(/[\n,]+/)
+    .map((apiKey) => apiKey.trim())
+    .filter(Boolean);
+};
+
 const ENV_API_KEYS = [
   process.env.EXPO_PUBLIC_GEMINI_API_KEY,
   process.env.EXPO_PUBLIC_GEMINI_API_KEY2,
   process.env.EXPO_PUBLIC_GEMINI_API_KEY3,
   process.env.EXPO_PUBLIC_GEMINI_API_KEY4,
+  process.env.EXPO_PUBLIC_GEMINI_API_KEY5,
+  process.env.EXPO_PUBLIC_GEMINI_API_KEY6,
+  process.env.EXPO_PUBLIC_GEMINI_API_KEY7,
+  process.env.EXPO_PUBLIC_GEMINI_API_KEY8,
+  ...parseApiKeys(process.env.EXPO_PUBLIC_GEMINI_API_KEYS),
 ]
   .map((apiKey) => apiKey?.trim())
   .filter((apiKey): apiKey is string => Boolean(apiKey));
 
-let geminiApiKeys = [...ENV_API_KEYS];
+const uniqueApiKeys = (apiKeys: string[]): string[] =>
+  Array.from(new Set(apiKeys));
+
+let geminiApiKeys = uniqueApiKeys([...ENV_API_KEYS]);
 let geminiApiKeyIndex = 0;
 
 const updateGeminiClient = (): void => {
@@ -51,16 +68,18 @@ if (geminiApiKeys.length > 0) {
  * @param apiKey - The new API key to use
  */
 export function setGeminiApiKey(apiKey: string): void {
-  const trimmedApiKey = apiKey.trim();
+  const customApiKeys = parseApiKeys(apiKey);
 
-  if (trimmedApiKey) {
-    console.log("Setting custom Gemini API key");
-    geminiApiKeys = [trimmedApiKey];
+  if (customApiKeys.length > 0) {
+    console.log(
+      `Setting custom Gemini API key${customApiKeys.length > 1 ? "s" : ""}`,
+    );
+    geminiApiKeys = uniqueApiKeys([...customApiKeys, ...ENV_API_KEYS]);
     geminiApiKeyIndex = 0;
     updateGeminiClient();
   } else if (ENV_API_KEYS.length > 0) {
     console.log("Reverting to environment Gemini API keys");
-    geminiApiKeys = [...ENV_API_KEYS];
+    geminiApiKeys = uniqueApiKeys([...ENV_API_KEYS]);
     geminiApiKeyIndex = 0;
     updateGeminiClient();
   } else {
@@ -79,6 +98,14 @@ const groceryCategoryCache = new Map<
 const expenseCategoryCache = new Map<
   string,
   { category: ExpenseCategory; timestamp: number }
+>();
+const groceryCategoryInFlight = new Map<
+  string,
+  Promise<GroceryCategory | null>
+>();
+const expenseCategoryInFlight = new Map<
+  string,
+  Promise<ExpenseCategory | null>
 >();
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 const VOICE_PARSE_TIMEOUT_MS = 10_000;
@@ -196,17 +223,52 @@ export async function detectItemCategory(
       return cached.category;
     }
 
-    // Check if API key is configured
-    if (!genAI) {
-      console.warn("Gemini API key not configured");
-      return null;
+    const sqliteCachedCategory = await getAiCacheValue<GroceryCategory>(
+      "grocery_category",
+      normalizedName,
+    );
+    if (sqliteCachedCategory) {
+      groceryCategoryCache.set(normalizedName, {
+        category: sqliteCachedCategory,
+        timestamp: Date.now(),
+      });
+
+      trackGeminiGeneration({
+        spanName,
+        traceId,
+        startedAt,
+        inputText: itemName,
+        outputText: sqliteCachedCategory,
+        properties: {
+          llm_feature: "grocery_category_detection",
+          llm_cache_layer: "sqlite",
+          llm_cache_hit: true,
+        },
+      });
+
+      return sqliteCachedCategory;
     }
 
-    // Create the prompt with available categories
-    // Sanitize user input to prevent prompt injection
-    const sanitizedItemName = sanitizeForAIPrompt(itemName, 100);
-    const categoryList = GROCERY_CATEGORIES.map((cat) => cat.value).join(", ");
-    const prompt = `You are a grocery categorization assistant. Given a grocery item name, classify it into ONE of these categories: ${categoryList}.
+    const inFlight = groceryCategoryInFlight.get(normalizedName);
+    if (inFlight) {
+      return inFlight;
+    }
+
+    const requestPromise = (async (): Promise<GroceryCategory | null> => {
+      try {
+        // Check if API key is configured
+        if (!genAI) {
+          console.warn("Gemini API key not configured");
+          return null;
+        }
+
+        // Create the prompt with available categories
+        // Sanitize user input to prevent prompt injection
+        const sanitizedItemName = sanitizeForAIPrompt(itemName, 100);
+        const categoryList = GROCERY_CATEGORIES.map((cat) => cat.value).join(
+          ", ",
+        );
+        const prompt = `You are a grocery categorization assistant. Given a grocery item name, classify it into ONE of these categories: ${categoryList}.
 
 Item name: "${sanitizedItemName}"
 
@@ -218,57 +280,87 @@ Rules:
 
 Category:`;
 
-    // Generate content with timeout and retry
-    const result = await retryWithBackoff(
-      async () => {
-        if (!genAI) {
-          throw new Error("Gemini API key not configured");
+        // Generate content with timeout and retry
+        const result = await retryWithBackoff(
+          async () => {
+            if (!genAI) {
+              throw new Error("Gemini API key not configured");
+            }
+
+            const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_ID });
+            return await Promise.race([
+              model.generateContent(prompt),
+              new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error("Timeout")), 5000),
+              ),
+            ]);
+          },
+          "detectItemCategory",
+          rotateGeminiApiKey,
+        );
+
+        // Extract the response
+        const response = await result.response;
+        const text = response.text().trim().toLowerCase();
+
+        // Validate the response is a valid category
+        const category = GROCERY_CATEGORIES.find(
+          (cat) => cat.value === text,
+        )?.value;
+
+        trackGeminiGeneration({
+          spanName,
+          traceId,
+          startedAt,
+          inputText: sanitizedItemName,
+          outputText: text,
+          response,
+          properties: {
+            llm_feature: "grocery_category_detection",
+            llm_detection_success: Boolean(category),
+            llm_cache_hit: false,
+          },
+        });
+
+        if (category) {
+          // Cache the result
+          groceryCategoryCache.set(normalizedName, {
+            category,
+            timestamp: Date.now(),
+          });
+          await setAiCacheValue(
+            "grocery_category",
+            normalizedName,
+            category,
+            CACHE_DURATION,
+          );
+          return category;
         }
 
-        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_ID });
-        return await Promise.race([
-          model.generateContent(prompt),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Timeout")), 5000),
-          ),
-        ]);
-      },
-      "detectItemCategory",
-      rotateGeminiApiKey,
-    );
+        return null;
+      } catch (error) {
+        trackGeminiGeneration({
+          spanName,
+          traceId,
+          startedAt,
+          inputText: itemName,
+          isError: true,
+          error,
+          properties: {
+            llm_feature: "grocery_category_detection",
+            llm_cache_hit: false,
+          },
+        });
 
-    // Extract the response
-    const response = await result.response;
-    const text = response.text().trim().toLowerCase();
-
-    // Validate the response is a valid category
-    const category = GROCERY_CATEGORIES.find(
-      (cat) => cat.value === text,
-    )?.value;
-
-    trackGeminiGeneration({
-      spanName,
-      traceId,
-      startedAt,
-      inputText: sanitizedItemName,
-      outputText: text,
-      response,
-      properties: {
-        llm_feature: "grocery_category_detection",
-        llm_detection_success: Boolean(category),
-      },
+        console.error("Error detecting category with Gemini:", error);
+        return null;
+      }
+    })().finally(() => {
+      groceryCategoryInFlight.delete(normalizedName);
     });
 
-    if (category) {
-      // Cache the result
-      groceryCategoryCache.set(normalizedName, {
-        category,
-        timestamp: Date.now(),
-      });
-      return category;
-    }
-
-    return null;
+    groceryCategoryInFlight.set(normalizedName, requestPromise);
+    return requestPromise;
   } catch (error) {
     trackGeminiGeneration({
       spanName,
@@ -279,6 +371,7 @@ Category:`;
       error,
       properties: {
         llm_feature: "grocery_category_detection",
+        llm_cache_hit: false,
       },
     });
 
@@ -321,18 +414,53 @@ export async function detectExpenseCategory(
       return cached.category;
     }
 
-    // Check if API key is configured
-    if (!genAI) {
-      console.warn("Gemini API key not configured");
-      return null;
+    const sqliteCachedCategory = await getAiCacheValue<ExpenseCategory>(
+      "expense_category",
+      normalizedDesc,
+    );
+    if (sqliteCachedCategory) {
+      expenseCategoryCache.set(normalizedDesc, {
+        category: sqliteCachedCategory,
+        timestamp: Date.now(),
+      });
+
+      trackGeminiGeneration({
+        spanName,
+        traceId,
+        startedAt,
+        inputText: description,
+        outputText: sqliteCachedCategory,
+        properties: {
+          llm_feature: "expense_category_detection",
+          llm_cache_layer: "sqlite",
+          llm_cache_hit: true,
+        },
+      });
+
+      return sqliteCachedCategory;
     }
 
-    const categoryList = EXPENSE_CATEGORIES.map((cat) => cat.value).join(", ");
+    const inFlight = expenseCategoryInFlight.get(normalizedDesc);
+    if (inFlight) {
+      return inFlight;
+    }
 
-    // Sanitize user input to prevent prompt injection
-    const sanitizedDescription = sanitizeForAIPrompt(description, 200);
+    const requestPromise = (async (): Promise<ExpenseCategory | null> => {
+      try {
+        // Check if API key is configured
+        if (!genAI) {
+          console.warn("Gemini API key not configured");
+          return null;
+        }
 
-    const prompt = `You are an expense categorization assistant. Given an expense description, classify it into ONE of these categories: ${categoryList}.
+        const categoryList = EXPENSE_CATEGORIES.map((cat) => cat.value).join(
+          ", ",
+        );
+
+        // Sanitize user input to prevent prompt injection
+        const sanitizedDescription = sanitizeForAIPrompt(description, 200);
+
+        const prompt = `You are an expense categorization assistant. Given an expense description, classify it into ONE of these categories: ${categoryList}.
 
 Description: "${sanitizedDescription}"
 
@@ -353,58 +481,88 @@ Examples:
 
 Category:`;
 
-    // Generate content with timeout and retry
-    const result = await retryWithBackoff(
-      async () => {
-        if (!genAI) {
-          throw new Error("Gemini API key not configured");
+        // Generate content with timeout and retry
+        const result = await retryWithBackoff(
+          async () => {
+            if (!genAI) {
+              throw new Error("Gemini API key not configured");
+            }
+
+            const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_ID });
+            return await Promise.race([
+              model.generateContent(prompt),
+              new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error("Timeout")), 5000),
+              ),
+            ]);
+          },
+          "detectExpenseCategory",
+          rotateGeminiApiKey,
+        );
+
+        // Extract the response
+        const response = await result.response;
+        const text = response.text().trim().toLowerCase();
+
+        const matchedCategory = EXPENSE_CATEGORIES.find(
+          (category) => category.value === text,
+        )?.value;
+        const isValidCategory = Boolean(matchedCategory);
+
+        trackGeminiGeneration({
+          spanName,
+          traceId,
+          startedAt,
+          inputText: sanitizedDescription,
+          outputText: text,
+          response,
+          properties: {
+            llm_feature: "expense_category_detection",
+            llm_detection_success: isValidCategory,
+            llm_cache_hit: false,
+          },
+        });
+
+        // Validate the response is a valid category
+        if (matchedCategory) {
+          // Cache the result
+          expenseCategoryCache.set(normalizedDesc, {
+            category: matchedCategory,
+            timestamp: Date.now(),
+          });
+          await setAiCacheValue(
+            "expense_category",
+            normalizedDesc,
+            matchedCategory,
+            CACHE_DURATION,
+          );
+          return matchedCategory;
         }
 
-        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_ID });
-        return await Promise.race([
-          model.generateContent(prompt),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Timeout")), 5000),
-          ),
-        ]);
-      },
-      "detectExpenseCategory",
-      rotateGeminiApiKey,
-    );
+        return null;
+      } catch (error) {
+        trackGeminiGeneration({
+          spanName,
+          traceId,
+          startedAt,
+          inputText: description,
+          isError: true,
+          error,
+          properties: {
+            llm_feature: "expense_category_detection",
+            llm_cache_hit: false,
+          },
+        });
 
-    // Extract the response
-    const response = await result.response;
-    const text = response.text().trim().toLowerCase();
-
-    const matchedCategory = EXPENSE_CATEGORIES.find(
-      (category) => category.value === text,
-    )?.value;
-    const isValidCategory = Boolean(matchedCategory);
-
-    trackGeminiGeneration({
-      spanName,
-      traceId,
-      startedAt,
-      inputText: sanitizedDescription,
-      outputText: text,
-      response,
-      properties: {
-        llm_feature: "expense_category_detection",
-        llm_detection_success: isValidCategory,
-      },
+        console.error("Error detecting expense category with Gemini:", error);
+        return null;
+      }
+    })().finally(() => {
+      expenseCategoryInFlight.delete(normalizedDesc);
     });
 
-    // Validate the response is a valid category
-    if (matchedCategory) {
-      // Cache the result
-      expenseCategoryCache.set(normalizedDesc, {
-        category: matchedCategory,
-        timestamp: Date.now(),
-      });
-      return matchedCategory;
-    }
-
-    return null;
+    expenseCategoryInFlight.set(normalizedDesc, requestPromise);
+    return requestPromise;
   } catch (error) {
     trackGeminiGeneration({
       spanName,
@@ -415,6 +573,7 @@ Category:`;
       error,
       properties: {
         llm_feature: "expense_category_detection",
+        llm_cache_hit: false,
       },
     });
 
@@ -610,10 +769,12 @@ ${sanitizedTranscript}
           if (!name) return null;
           const quantity = normalizeString((item as any)?.quantity);
           const price = normalizeNumber((item as any)?.price);
+          const normalizedPrice =
+            price !== null && price > 0 ? price : undefined;
           return {
             name,
             quantity: quantity || undefined,
-            price: price ?? undefined,
+            price: normalizedPrice,
             category: normalizeGroceryCategory((item as any)?.category),
           } as VoiceParsedGrocery;
         })

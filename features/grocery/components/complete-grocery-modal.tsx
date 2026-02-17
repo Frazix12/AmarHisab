@@ -1,7 +1,9 @@
 import { BanglaNumberInput } from "@/components/shared/bangla-number-input";
+import { CameraModal } from "@/components/camera/camera-modal";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
+import { AppImage } from "@/components/ui/app-image";
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import { useI18n, useSettingsDomain, useTheme } from "@/contexts/app-selectors";
 import { GroceryItem } from "@/types";
 import { useModalAnimation } from "@/utils/animations";
 import {
@@ -16,7 +18,6 @@ import React, { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
     Alert,
-    Image,
     Keyboard,
     KeyboardAvoidingView,
     Modal,
@@ -46,7 +47,9 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
   onClose,
   onComplete,
 }) => {
-  const { colorScheme, t, settings, formatNumber } = useApp();
+  const colorScheme = useTheme();
+  const { t, formatNumber } = useI18n();
+  const { settings } = useSettingsDomain();
   const colors = Colors[colorScheme];
   const { animatedStyle, backdropStyle, shouldRender } = useModalAnimation(visible);
   const expenseCategoryLabel = item?.expenseCategory
@@ -57,6 +60,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
   const [isPriceFocused, setIsPriceFocused] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [priceInputY, setPriceInputY] = useState(0);
+  const [cameraVisible, setCameraVisible] = useState(false);
   const scrollRef = React.useRef<ScrollView>(null);
   const {
     control,
@@ -84,6 +88,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
       });
       setIsPriceFocused(false);
       setKeyboardHeight(0);
+      return;
     } else {
       reset({
         price: "",
@@ -92,6 +97,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
       setIsPriceFocused(false);
       setKeyboardHeight(0);
     }
+    setCameraVisible(false);
     clearErrors("price");
   }, [visible, item, reset, clearErrors]);
 
@@ -156,31 +162,8 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
     }
   };
 
-  const captureImageFromCamera = async () => {
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-
-      if (status !== "granted") {
-        Alert.alert(
-          t.form.permission || "Permission Required",
-          t.alerts.cameraPermission,
-        );
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        setValue("imageUri", result.assets[0].uri);
-      }
-    } catch (err) {
-      console.error("Error capturing image:", err);
-      Alert.alert(t.alerts.errorTitle, t.alerts.captureImageFailed);
-    }
+  const openCamera = () => {
+    setCameraVisible(true);
   };
 
   const removeImage = () => {
@@ -197,13 +180,14 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
   if (!shouldRender) return null;
 
   return (
-    <Modal
-      visible={shouldRender}
-      transparent
-      animationType="none"
-      onRequestClose={onClose}
-    >
-      <Animated.View style={[styles.modalOverlay, backdropStyle]}>
+    <>
+      <Modal
+        visible={shouldRender}
+        transparent
+        animationType="none"
+        onRequestClose={onClose}
+      >
+        <Animated.View style={[styles.modalOverlay, backdropStyle]}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardAvoid}
@@ -220,7 +204,12 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
               <Text style={[styles.modalTitle, { color: colors.text }]}>
                 {t.grocery?.completeItem || "Complete Item"}
               </Text>
-              <Pressable onPress={onClose} style={styles.closeButton}>
+              <Pressable
+                onPress={onClose}
+                accessibilityRole="button"
+                accessibilityLabel={t.camera.close || t.form.cancel || "Close"}
+                style={styles.closeButton}
+              >
                 <HugeiconsIcon
                   icon={Cancel01Icon}
                   size={24}
@@ -369,10 +358,10 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
 
                 {imageUri ? (
                   <View style={styles.imagePreviewContainer}>
-                    <Image
-                      source={{ uri: imageUri }}
+                    <AppImage
+                      uri={imageUri}
                       style={styles.imagePreview}
-                      resizeMode="cover"
+                      contentFit="cover"
                     />
                     <Pressable
                       onPress={removeImage}
@@ -392,7 +381,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
                 ) : (
                   <View style={styles.imageButtonsContainer}>
                     <Pressable
-                      onPress={captureImageFromCamera}
+                      onPress={openCamera}
                       style={[
                         styles.imageButton,
                         {
@@ -476,8 +465,19 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
             </View>
           </Animated.View>
         </KeyboardAvoidingView>
-      </Animated.View>
-    </Modal>
+        </Animated.View>
+      </Modal>
+      <CameraModal
+        visible={cameraVisible}
+        onClose={() => {
+          setCameraVisible(false);
+        }}
+        onCapture={(uri) => {
+          setValue("imageUri", uri);
+          setCameraVisible(false);
+        }}
+      />
+    </>
   );
 };
 

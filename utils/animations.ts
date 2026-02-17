@@ -168,41 +168,6 @@ export const useModalAnimation = (visible: boolean) => {
   return { animatedStyle, backdropStyle, shouldRender };
 };
 
-export const useFadeAnimation = (visible: boolean) => {
-  const reduceMotion = useReducedMotionPreference();
-  const opacity = useSharedValue(visible ? 1 : 0);
-
-  useEffect(() => {
-    opacity.value = withTiming(visible ? 1 : 0, {
-      duration: reduceMotion ? 0 : ANIMATION_CONFIGS.fade.duration,
-      easing: Easing.out(Easing.quad),
-    });
-  }, [opacity, reduceMotion, visible]);
-
-  return useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }));
-};
-
-export const useScaleAnimation = (pressed: boolean) => {
-  const reduceMotion = useReducedMotionPreference();
-  const scale = useSharedValue(1);
-
-  useEffect(() => {
-    scale.value = reduceMotion
-      ? withTiming(pressed ? 0.98 : 1, { duration: 0 })
-      : withSpring(pressed ? 0.96 : 1, {
-          damping: 14,
-          stiffness: 260,
-          mass: 0.6,
-        });
-  }, [pressed, reduceMotion, scale]);
-
-  return useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-};
-
 export const usePageTransition = () => {
   const reduceMotion = useReducedMotionPreference();
   const progress = useSharedValue(0);

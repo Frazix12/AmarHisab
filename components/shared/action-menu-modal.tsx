@@ -1,5 +1,5 @@
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import { useTheme } from "@/contexts/app-selectors";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { useModalAnimation } from "@/utils/animations";
 import { withAlpha } from "@/utils/color";
@@ -34,7 +34,7 @@ export const ActionMenuModal: React.FC<ActionMenuModalProps> = ({
   actions,
   itemTitle,
 }) => {
-  const { colorScheme } = useApp();
+  const colorScheme = useTheme();
   const colors = Colors[colorScheme];
   const { animatedStyle, backdropStyle, shouldRender } = useModalAnimation(visible);
 

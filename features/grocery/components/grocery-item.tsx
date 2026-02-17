@@ -53,12 +53,16 @@ export const GroceryItemComponent = React.memo(
         }
       : undefined;
     const handleLongPress = onLongPress ? () => onLongPress(item) : undefined;
+    const isRowInteractive = Boolean(handlePress || handleLongPress);
+    const completeItemLabel = t.grocery?.completeItem || "Complete item";
 
     return (
       <Pressable
         longPressHaptic="medium"
         onPress={handlePress}
         onLongPress={handleLongPress}
+        accessibilityRole={isRowInteractive ? "button" : undefined}
+        accessibilityLabel={isRowInteractive ? item.name : undefined}
         style={({ pressed }) => [
           styles.container,
           {
@@ -70,6 +74,9 @@ export const GroceryItemComponent = React.memo(
       >
         <Pressable
           onPress={handleToggle}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: item.checked, disabled: !handleToggle }}
+          accessibilityLabel={`${completeItemLabel}: ${item.name}`}
           style={[
             styles.checkbox,
             {
@@ -162,6 +169,8 @@ export const GroceryItemComponent = React.memo(
     );
   },
 );
+
+GroceryItemComponent.displayName = "GroceryItemComponent";
 
 const styles = StyleSheet.create({
   container: {

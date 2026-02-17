@@ -1,0 +1,19 @@
+appId: com.frazix.amarisab
+name: Voice Assistant UI
+tags:
+  - core
+  - voice
+
+---
+- killApp
+- launchApp:
+    clearState: true
+- runFlow: ../subflows/ensure-english.yaml
+- runFlow: ../subflows/go-expenses-tab.yaml
+- tapOn: "AI Voice"
+- assertVisible: "Speak naturally to add expenses and groceries"
+- assertVisible: "Transcription Language"
+- assertVisible: "Send to AI"
+- assertVisible: "Start Listening"
+- tapOn: "Close"
+- assertVisible: "Expenses"

@@ -1,6 +1,6 @@
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import { useI18n, useSettingsDomain, useTheme } from "@/contexts/app-selectors";
 import { SettingSelectionModal } from "@/features/settings/components/setting-selection-modal";
 import { SettingItem } from "@/features/settings/components/setting-item";
 import { CURRENCIES } from "@/types";
@@ -26,14 +26,10 @@ const isThemeType = (value: string): value is ThemeType =>
   THEME_VALUES.has(value);
 
 export default function CustomizationSettings() {
-  const {
-    settings,
-    updateCurrency,
-    updateTheme,
-    updateLanguage,
-    colorScheme,
-    t,
-  } = useApp();
+  const colorScheme = useTheme();
+  const { t } = useI18n();
+  const { settings, updateCurrency, updateTheme, updateLanguage } =
+    useSettingsDomain();
   const colors = Colors[colorScheme];
   const isBangla = settings.language === "bn";
   const pageTransitionStyle = usePageTransition();
@@ -89,7 +85,12 @@ export default function CustomizationSettings() {
     >
       <Animated.View style={[styles.screenTransition, pageTransitionStyle]}>
         <View style={[styles.header, { backgroundColor: colors.surface }]}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Pressable
+            onPress={() => router.back()}
+            style={styles.backButton}
+            accessibilityRole="button"
+            accessibilityLabel={t.templates.back}
+          >
             <Text style={[styles.backText, { color: colors.primary }]}>
               ← {t.templates.back}
             </Text>

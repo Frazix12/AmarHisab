@@ -1,4 +1,8 @@
-import { useApp } from "@/contexts/app-context";
+import {
+  useExpenseDomain,
+  useGroceryDomain,
+  useSettingsDomain,
+} from "@/contexts/app-selectors";
 import {
   EXPENSE_CATEGORIES,
   GROCERY_CATEGORIES,
@@ -7,7 +11,9 @@ import {
 } from "@/types";
 
 export const useSampleData = () => {
-  const { addExpense, addGroceryItem, settings } = useApp();
+  const { addExpense } = useExpenseDomain();
+  const { addGroceryItem } = useGroceryDomain();
+  const { settings } = useSettingsDomain();
 
   const randomFrom = <T,>(items: T[]): T =>
     items[Math.floor(Math.random() * items.length)];

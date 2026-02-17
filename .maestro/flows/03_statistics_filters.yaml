@@ -1,0 +1,28 @@
+appId: com.frazix.amarisab
+name: Statistics Filters And Range
+tags:
+  - core
+  - statistics
+
+---
+- killApp
+- launchApp:
+    clearState: true
+- runFlow: ../subflows/ensure-english.yaml
+- runFlow: ../subflows/reset-data.yaml
+- runFlow: ../subflows/go-settings-tab.yaml
+- scrollUntilVisible:
+    element: "Add Sample Data"
+    direction: DOWN
+- tapOn: "Add Sample Data"
+- runFlow: ../subflows/go-statistics-tab.yaml
+- assertVisible: "Statistics"
+- assertVisible: "By Category"
+- assertVisible: "History"
+- tapOn: "Custom month range"
+- assertVisible: "Start month"
+- tapOn: "Apply"
+- assertNotVisible: "Start month"
+- tapOn: "Next date range"
+- tapOn: "Previous date range"
+- tapOn: "All"

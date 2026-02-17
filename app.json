@@ -2,20 +2,12 @@
   "expo": {
     "name": "Amar Hisab",
     "slug": "amarhisab",
-    "version": "1.2.1",
+    "version": "1.3.0",
     "orientation": "portrait",
     "icon": "./assets/icons/adaptive-icon.png",
     "scheme": "amarhisab",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.frazix.amarhisab",
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false,
-        "NSMicrophoneUsageDescription": "Allow Amar Hisab to access your microphone for voice input."
-      }
-    },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -30,10 +22,6 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.CAMERA"
       ]
-    },
-    "web": {
-      "output": "static",
-      "favicon": "./assets/icons/adaptive-icon.png"
     },
     "plugins": [
       "expo-router",
@@ -51,10 +39,10 @@
         }
       ],
       [
-        "expo-camera",
+        "react-native-vision-camera",
         {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to capture expense receipts",
-          "recordAudioAndroid": false
+          "cameraPermissionText": "Allow $(PRODUCT_NAME) to access your camera to capture expense receipts",
+          "enableMicrophonePermission": false
         }
       ],
       [

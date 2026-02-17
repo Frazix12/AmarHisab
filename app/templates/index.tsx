@@ -1,5 +1,10 @@
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import {
+  useI18n,
+  useSettingsDomain,
+  useTemplateDomain,
+  useTheme,
+} from "@/contexts/app-selectors";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import {
   Add01Icon,
@@ -19,8 +24,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function TemplatesScreen() {
-  const { templates, colorScheme, settings, deleteTemplate, formatNumber, t } =
-    useApp();
+  const colorScheme = useTheme();
+  const { t, formatNumber } = useI18n();
+  const { settings } = useSettingsDomain();
+  const { templates, deleteTemplate } = useTemplateDomain();
   const colors = Colors[colorScheme];
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "manual" | "learned">("all");
@@ -141,6 +148,8 @@ export default function TemplatesScreen() {
             <Pressable
               onPress={() => router.push(`/templates/edit?id=${template.id}`)}
               style={styles.actionButton}
+              accessibilityRole="button"
+              accessibilityLabel={`${t.modal.edit}: ${template.productNameDisplay}`}
             >
               <HugeiconsIcon
                 icon={PencilEdit02Icon}
@@ -151,6 +160,8 @@ export default function TemplatesScreen() {
             <Pressable
               onPress={() => setDeleteConfirm(template.id)}
               style={styles.actionButton}
+              accessibilityRole="button"
+              accessibilityLabel={`${t.modal.delete}: ${template.productNameDisplay}`}
             >
               <HugeiconsIcon
                 icon={Delete02Icon}
@@ -219,7 +230,12 @@ export default function TemplatesScreen() {
     >
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel={t.templates.back}
+        >
           <Text style={[styles.backText, { color: colors.primary }]}>
             ← {t.templates.back}
           </Text>
@@ -230,6 +246,8 @@ export default function TemplatesScreen() {
         <Pressable
           onPress={() => router.push("/templates/add")}
           style={[styles.addButton, { backgroundColor: colors.primary }]}
+          accessibilityRole="button"
+          accessibilityLabel={t.templates.newTemplate}
         >
           <HugeiconsIcon icon={Add01Icon} size={20} color="#fff" />
         </Pressable>
@@ -240,6 +258,9 @@ export default function TemplatesScreen() {
         <Pressable
           haptic="medium"
           onPress={() => setFilter("all")}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: filter === "all" }}
+          accessibilityLabel={`${t.templates.all} (${formatNumber(templates.length)})`}
           style={[
             styles.filterTab,
             filter === "all" && { backgroundColor: colors.primary },
@@ -257,6 +278,9 @@ export default function TemplatesScreen() {
         <Pressable
           haptic="medium"
           onPress={() => setFilter("manual")}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: filter === "manual" }}
+          accessibilityLabel={`${t.templates.manual} (${formatNumber(manualCount)})`}
           style={[
             styles.filterTab,
             filter === "manual" && { backgroundColor: colors.primary },
@@ -274,6 +298,9 @@ export default function TemplatesScreen() {
         <Pressable
           haptic="medium"
           onPress={() => setFilter("learned")}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: filter === "learned" }}
+          accessibilityLabel={`${t.templates.learned} (${formatNumber(learnedCount)})`}
           style={[
             styles.filterTab,
             filter === "learned" && { backgroundColor: colors.primary },

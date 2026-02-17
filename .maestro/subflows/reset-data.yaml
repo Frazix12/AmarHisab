@@ -1,0 +1,9 @@
+appId: com.frazix.amarisab
+
+---
+- runFlow: go-settings-tab.yaml
+- scrollUntilVisible:
+    element: "(Clear All Data|সব ডেটা মুছুন)"
+    direction: DOWN
+- tapOn: "(Clear All Data|সব ডেটা মুছুন)"
+- tapOn: "(Delete All|সব মুছুন)"

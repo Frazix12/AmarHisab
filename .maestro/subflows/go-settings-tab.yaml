@@ -1,0 +1,5 @@
+appId: com.frazix.amarisab
+
+---
+- assertVisible: "(Settings|সেটিং)"
+- tapOn: "(Settings|সেটিং)"

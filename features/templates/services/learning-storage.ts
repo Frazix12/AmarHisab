@@ -1,7 +1,39 @@
+import { db, ensureDatabaseInitialized } from "@/services/db/client";
+import { learningTelemetryTable } from "@/services/db/schema";
 import { LearningTelemetry } from "@/types/template";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { eq } from "drizzle-orm";
 
-const LEARNING_KEY = "@amarhisab:learning";
+const parseJson = <T>(input: string, fallback: T): T => {
+  try {
+    return JSON.parse(input) as T;
+  } catch {
+    return fallback;
+  }
+};
+
+const toRow = (data: LearningTelemetry): typeof learningTelemetryTable.$inferInsert => ({
+  productNameNormalized: data.productNameNormalized,
+  userId: data.userId,
+  totalSeenCount: data.totalSeenCount,
+  lastSeenAtMs: data.lastSeenAt.getTime(),
+  lastSuggestedAtMs: data.lastSuggestedAt ? data.lastSuggestedAt.getTime() : null,
+  dismissedForever: data.dismissedForever,
+  categoryFrequencyJson: JSON.stringify(data.categoryFrequency || {}),
+  priceHistoryJson: JSON.stringify(data.priceHistory || []),
+  quantityHistoryJson: JSON.stringify(data.quantityHistory || []),
+});
+
+const toModel = (row: typeof learningTelemetryTable.$inferSelect): LearningTelemetry => ({
+  userId: row.userId,
+  productNameNormalized: row.productNameNormalized,
+  totalSeenCount: row.totalSeenCount,
+  lastSeenAt: new Date(row.lastSeenAtMs),
+  lastSuggestedAt: row.lastSuggestedAtMs ? new Date(row.lastSuggestedAtMs) : null,
+  dismissedForever: !!row.dismissedForever,
+  categoryFrequency: parseJson(row.categoryFrequencyJson, {} as any),
+  priceHistory: parseJson(row.priceHistoryJson, []),
+  quantityHistory: parseJson(row.quantityHistoryJson, []),
+});
 
 /**
  * Storage operations for learning telemetry
@@ -13,26 +45,20 @@ export const LearningStorage = {
    */
   async getAll(): Promise<Record<string, LearningTelemetry>> {
     try {
-      const data = await AsyncStorage.getItem(LEARNING_KEY);
-      if (!data) return {};
+      await ensureDatabaseInitialized();
+      const rows = await db.select().from(learningTelemetryTable);
 
-      const telemetry = JSON.parse(data);
-
-      // Convert date strings back to Date objects
-      Object.keys(telemetry).forEach((key) => {
-        if (telemetry[key].totalSeenCount === undefined) {
-          telemetry[key].totalSeenCount = telemetry[key].seenCount30d ?? 0;
-          delete telemetry[key].seenCount30d;
-        }
-        telemetry[key].lastSeenAt = new Date(telemetry[key].lastSeenAt);
-        if (telemetry[key].lastSuggestedAt) {
-          telemetry[key].lastSuggestedAt = new Date(
-            telemetry[key].lastSuggestedAt,
-          );
-        }
-      });
-
-      return telemetry;
+      return rows.reduce<Record<string, LearningTelemetry>>(
+        (
+          acc: Record<string, LearningTelemetry>,
+          row: typeof learningTelemetryTable.$inferSelect,
+        ) => {
+        const telemetry = toModel(row);
+        acc[telemetry.productNameNormalized] = telemetry;
+        return acc;
+        },
+        {},
+      );
     } catch (error) {
       console.error("Error loading learning telemetry:", error);
       return {};
@@ -45,17 +71,23 @@ export const LearningStorage = {
   async getTelemetry(
     normalizedName: string,
   ): Promise<LearningTelemetry | null> {
-    const all = await this.getAll();
-    return all[normalizedName] || null;
+    await ensureDatabaseInitialized();
+    const rows = await db
+      .select()
+      .from(learningTelemetryTable)
+      .where(eq(learningTelemetryTable.productNameNormalized, normalizedName));
+    return rows.length > 0 ? toModel(rows[0]) : null;
   },
 
   /**
    * Update or create telemetry record
    */
   async updateTelemetry(data: LearningTelemetry): Promise<void> {
-    const all = await this.getAll();
-    all[data.productNameNormalized] = data;
-    await AsyncStorage.setItem(LEARNING_KEY, JSON.stringify(all));
+    await ensureDatabaseInitialized();
+    await db
+      .delete(learningTelemetryTable)
+      .where(eq(learningTelemetryTable.productNameNormalized, data.productNameNormalized));
+    await db.insert(learningTelemetryTable).values(toRow(data));
   },
 
   /**
@@ -68,9 +100,8 @@ export const LearningStorage = {
       telemetry.dismissedForever = true;
       await this.updateTelemetry(telemetry);
     } else {
-      // Create new entry marked as dismissed
       await this.updateTelemetry({
-        userId: "default", // Will be updated when multi-user support added
+        userId: "default",
         productNameNormalized: normalizedName,
         totalSeenCount: 0,
         lastSeenAt: new Date(),
@@ -103,27 +134,22 @@ export const LearningStorage = {
     const now = Date.now();
     const ninetyDaysAgo = now - 90 * 24 * 60 * 60 * 1000;
 
-    const cleaned = Object.entries(all).reduce(
-      (acc, [key, value]) => {
-        // Keep if seen recently or dismissed forever
-        if (
-          value.lastSeenAt.getTime() > ninetyDaysAgo ||
-          value.dismissedForever
-        ) {
-          acc[key] = value;
+    await Promise.all(
+      Object.entries(all).map(async ([key, value]) => {
+        if (value.lastSeenAt.getTime() <= ninetyDaysAgo && !value.dismissedForever) {
+          await db
+            .delete(learningTelemetryTable)
+            .where(eq(learningTelemetryTable.productNameNormalized, key));
         }
-        return acc;
-      },
-      {} as Record<string, LearningTelemetry>,
+      }),
     );
-
-    await AsyncStorage.setItem(LEARNING_KEY, JSON.stringify(cleaned));
   },
 
   /**
    * Clear all learning data (for testing or reset)
    */
   async clear(): Promise<void> {
-    await AsyncStorage.removeItem(LEARNING_KEY);
+    await ensureDatabaseInitialized();
+    await db.delete(learningTelemetryTable);
   },
 };

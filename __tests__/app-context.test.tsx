@@ -17,6 +17,14 @@ jest.mock("@/services/storage", () => ({
   loadExpenses: jest.fn(),
   loadGroceryItems: jest.fn(),
   loadSettings: jest.fn(),
+  upsertExpense: jest.fn(),
+  updateExpenseById: jest.fn(),
+  deleteExpenseById: jest.fn(),
+  upsertGroceryItem: jest.fn(),
+  updateGroceryItemById: jest.fn(),
+  deleteGroceryItemById: jest.fn(),
+  deleteGroceryItemsByIds: jest.fn(),
+  clearAllData: jest.fn(),
   saveExpenses: jest.fn(),
   saveGroceryItems: jest.fn(),
   saveSettings: jest.fn(),
@@ -39,6 +47,12 @@ jest.mock("@/features/templates/services/template-learner", () => ({
     detectLearningCandidates: jest.fn(),
     recordSuggestion: jest.fn(),
     dismissForever: jest.fn(),
+  },
+}));
+
+jest.mock("@/features/templates/services/learning-storage", () => ({
+  LearningStorage: {
+    clear: jest.fn(),
   },
 }));
 
@@ -167,5 +181,33 @@ describe("AppProvider", () => {
     expect(result.current.expenses[0].amount).toBe(groceryItems[0].price);
     expect(result.current.groceryItems[0].expenseId).toBeTruthy();
     expect(TemplateLearner.trackGroceryItem).not.toHaveBeenCalled();
+  });
+
+  it("requires completion modal for zero-priced grocery items", async () => {
+    const groceryItems: GroceryItem[] = [
+      {
+        id: "g1",
+        name: "Voice Item",
+        nameNormalized: "voice item",
+        quantity: "1",
+        price: 0,
+        checked: false,
+        category: "other",
+        createdAt: new Date(2025, 0, 15, 9),
+      },
+    ];
+
+    (loadGroceryItems as jest.Mock).mockResolvedValue(groceryItems);
+
+    const { result } = renderHook(() => useApp(), { wrapper });
+    await waitFor(() => expect(result.current.groceryItems).toHaveLength(1));
+
+    act(() => {
+      result.current.toggleGroceryItem("g1");
+    });
+
+    expect(result.current.itemPendingCompletion?.id).toBe("g1");
+    expect(result.current.expenses).toHaveLength(0);
+    expect(result.current.groceryItems[0].checked).toBe(false);
   });
 });

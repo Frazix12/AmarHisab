@@ -14,7 +14,7 @@ export interface GroceryItem {
   name: string;
   nameNormalized: string; // For template matching
   quantity: string;
-  price: number | null; // null = "no price set", 0 = free item
+  price: number | null; // null = "no price set"; valid values are > 0
   checked: boolean;
   category: GroceryCategory;
   templateId?: string; // Track which template was used
@@ -24,6 +24,7 @@ export interface GroceryItem {
   aiDetected?: boolean; // Track if category was detected by AI
   checkedAt?: Date; // Track when item was completed
   imageUri?: string; // Optional product/receipt photo
+  sortOrder?: number; // Persisted ordering index for stable list rendering
 }
 
 export interface UserSettings {

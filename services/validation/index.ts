@@ -325,7 +325,7 @@ export function validateApiKey(key: string): ValidationResult {
  * Rate limiter for form submissions to prevent spam
  */
 const submissionTimestamps = new Map<string, number[]>();
-const MAX_SUBMISSIONS_PER_MINUTE = 10;
+const MAX_SUBMISSIONS_PER_MINUTE = 20;
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 
 // NOTE: This limiter is process-local. It does not work across multiple

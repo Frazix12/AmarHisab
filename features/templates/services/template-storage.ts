@@ -1,8 +1,9 @@
+import { db, ensureDatabaseInitialized } from "@/services/db/client";
+import { templatesTable } from "@/services/db/schema";
 import { GroceryTemplate, TemplateMatch } from "@/types/template";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { asc, eq } from "drizzle-orm";
 import { calculateMatchConfidence } from "./template-utils";
 
-const TEMPLATES_KEY = "@amarhisab:templates";
 let operationLock: Promise<void> = Promise.resolve();
 
 const withLock = async <T>(operation: () => Promise<T>): Promise<T> => {
@@ -22,6 +23,20 @@ const withLock = async <T>(operation: () => Promise<T>): Promise<T> => {
   }
 };
 
+const toModel = (row: typeof templatesTable.$inferSelect): GroceryTemplate => ({
+  id: row.id,
+  userId: row.userId,
+  productNameDisplay: row.productNameDisplay,
+  productNameNormalized: row.productNameNormalized,
+  defaultQuantity: row.defaultQuantity,
+  defaultPrice: Number(row.defaultPrice),
+  category: row.category as GroceryTemplate["category"],
+  source: row.source as GroceryTemplate["source"],
+  usageCount: row.usageCount,
+  lastUsedAt: new Date(row.lastUsedAtMs),
+  createdAt: new Date(row.createdAtMs),
+});
+
 /**
  * Storage operations for grocery templates
  */
@@ -31,16 +46,9 @@ export const TemplateStorage = {
    */
   async getAll(): Promise<GroceryTemplate[]> {
     try {
-      const data = await AsyncStorage.getItem(TEMPLATES_KEY);
-      if (!data) return [];
-
-      const templates = JSON.parse(data);
-      // Convert date strings back to Date objects
-      return templates.map((t: any) => ({
-        ...t,
-        lastUsedAt: new Date(t.lastUsedAt),
-        createdAt: new Date(t.createdAt),
-      }));
+      await ensureDatabaseInitialized();
+      const rows = await db.select().from(templatesTable).orderBy(asc(templatesTable.sortOrder));
+      return rows.map(toModel);
     } catch (error) {
       console.error("Error loading templates:", error);
       return [];
@@ -51,8 +59,9 @@ export const TemplateStorage = {
    * Get template by ID
    */
   async getById(id: string): Promise<GroceryTemplate | null> {
-    const templates = await this.getAll();
-    return templates.find((t) => t.id === id) || null;
+    await ensureDatabaseInitialized();
+    const rows = await db.select().from(templatesTable).where(eq(templatesTable.id, id));
+    return rows.length > 0 ? toModel(rows[0]) : null;
   },
 
   /**
@@ -65,6 +74,7 @@ export const TemplateStorage = {
     >,
   ): Promise<GroceryTemplate> {
     return withLock(async () => {
+      await ensureDatabaseInitialized();
       const templates = await this.getAll();
 
       const newTemplate: GroceryTemplate = {
@@ -75,8 +85,20 @@ export const TemplateStorage = {
         createdAt: new Date(),
       };
 
-      templates.push(newTemplate);
-      await AsyncStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
+      await db.insert(templatesTable).values({
+        id: newTemplate.id,
+        userId: newTemplate.userId,
+        productNameDisplay: newTemplate.productNameDisplay,
+        productNameNormalized: newTemplate.productNameNormalized,
+        defaultQuantity: newTemplate.defaultQuantity,
+        defaultPrice: newTemplate.defaultPrice,
+        category: newTemplate.category,
+        source: newTemplate.source,
+        usageCount: 0,
+        lastUsedAtMs: newTemplate.lastUsedAt.getTime(),
+        createdAtMs: newTemplate.createdAt.getTime(),
+        sortOrder: templates.length,
+      });
 
       return newTemplate;
     });
@@ -87,10 +109,10 @@ export const TemplateStorage = {
    */
   async update(id: string, updates: Partial<GroceryTemplate>): Promise<void> {
     return withLock(async () => {
-      const templates = await this.getAll();
-      const index = templates.findIndex((t) => t.id === id);
+      await ensureDatabaseInitialized();
 
-      if (index === -1) {
+      const existing = await this.getById(id);
+      if (!existing) {
         throw new Error(`Template not found: ${id}`);
       }
 
@@ -102,8 +124,35 @@ export const TemplateStorage = {
         ...sanitizedUpdates
       } = updates;
 
-      templates[index] = { ...templates[index], ...sanitizedUpdates };
-      await AsyncStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
+      const setPayload: Partial<typeof templatesTable.$inferInsert> = {};
+
+      if (sanitizedUpdates.productNameDisplay !== undefined) {
+        setPayload.productNameDisplay = sanitizedUpdates.productNameDisplay;
+      }
+      if (sanitizedUpdates.productNameNormalized !== undefined) {
+        setPayload.productNameNormalized = sanitizedUpdates.productNameNormalized;
+      }
+      if (sanitizedUpdates.defaultQuantity !== undefined) {
+        setPayload.defaultQuantity = sanitizedUpdates.defaultQuantity;
+      }
+      if (sanitizedUpdates.defaultPrice !== undefined) {
+        setPayload.defaultPrice = sanitizedUpdates.defaultPrice;
+      }
+      if (sanitizedUpdates.category !== undefined) {
+        setPayload.category = sanitizedUpdates.category;
+      }
+      if (sanitizedUpdates.source !== undefined) {
+        setPayload.source = sanitizedUpdates.source;
+      }
+      if (sanitizedUpdates.lastUsedAt !== undefined) {
+        setPayload.lastUsedAtMs = sanitizedUpdates.lastUsedAt.getTime();
+      }
+
+      if (Object.keys(setPayload).length === 0) {
+        return;
+      }
+
+      await db.update(templatesTable).set(setPayload).where(eq(templatesTable.id, id));
     });
   },
 
@@ -112,14 +161,14 @@ export const TemplateStorage = {
    */
   async delete(id: string): Promise<void> {
     return withLock(async () => {
-      const templates = await this.getAll();
-      const filtered = templates.filter((t) => t.id !== id);
+      await ensureDatabaseInitialized();
 
-      if (filtered.length === templates.length) {
+      const existing = await this.getById(id);
+      if (!existing) {
         throw new Error(`Template not found: ${id}`);
       }
 
-      await AsyncStorage.setItem(TEMPLATES_KEY, JSON.stringify(filtered));
+      await db.delete(templatesTable).where(eq(templatesTable.id, id));
     });
   },
 
@@ -128,16 +177,20 @@ export const TemplateStorage = {
    */
   async incrementUsage(id: string): Promise<void> {
     return withLock(async () => {
-      const templates = await this.getAll();
-      const index = templates.findIndex((t) => t.id === id);
+      await ensureDatabaseInitialized();
 
-      if (index === -1) {
+      const existing = await this.getById(id);
+      if (!existing) {
         throw new Error(`Template not found: ${id}`);
       }
 
-      templates[index].usageCount += 1;
-      templates[index].lastUsedAt = new Date();
-      await AsyncStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
+      await db
+        .update(templatesTable)
+        .set({
+          usageCount: existing.usageCount + 1,
+          lastUsedAtMs: Date.now(),
+        })
+        .where(eq(templatesTable.id, id));
     });
   },
 
@@ -163,12 +216,11 @@ export const TemplateStorage = {
         matches.push({
           template,
           confidence,
-          rank: 0, // Will be set by ranking function
+          rank: 0,
         });
       }
     }
 
-    // Rank by confidence, usage, and recency
     return this.rankTemplates(matches);
   },
 
@@ -179,17 +231,14 @@ export const TemplateStorage = {
   rankTemplates(matches: TemplateMatch[]): TemplateMatch[] {
     return matches
       .sort((a, b) => {
-        // 1. Confidence score (most important)
         if (a.confidence !== b.confidence) {
           return b.confidence - a.confidence;
         }
 
-        // 2. Usage frequency
         if (a.template.usageCount !== b.template.usageCount) {
           return b.template.usageCount - a.template.usageCount;
         }
 
-        // 3. Recency
         return (
           b.template.lastUsedAt.getTime() - a.template.lastUsedAt.getTime()
         );
@@ -201,6 +250,7 @@ export const TemplateStorage = {
    * Clear all templates (for testing or reset)
    */
   async clear(): Promise<void> {
-    await AsyncStorage.removeItem(TEMPLATES_KEY);
+    await ensureDatabaseInitialized();
+    await db.delete(templatesTable);
   },
 };

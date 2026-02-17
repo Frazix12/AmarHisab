@@ -1,0 +1,51 @@
+appId: com.frazix.amarisab
+name: Grocery CRUD And Completion
+tags:
+  - core
+  - grocery
+
+---
+- killApp
+- launchApp:
+    clearState: true
+- runFlow: ../subflows/ensure-english.yaml
+- runFlow: ../subflows/reset-data.yaml
+- runFlow: ../subflows/go-grocery-tab.yaml
+- tapOn: "Add Item"
+- tapOn: "e.g., Milk, Bread, Eggs..."
+- inputText: "E2E Bread"
+- tapOn: "e.g., 2L, 500g"
+- inputText: "1 loaf"
+- tapOn: "0.00"
+- inputText: "55"
+- tapOn: "Snacks"
+- tapOn: "Save"
+- assertVisible: "E2E Bread"
+- tapOn: "E2E Bread"
+- assertVisible: "Clear Completed"
+- tapOn: "Clear Completed"
+- tapOn: "Delete"
+- assertNotVisible: "E2E Bread"
+- tapOn: "Add Item"
+- tapOn: "e.g., Milk, Bread, Eggs..."
+- inputText: "E2E Milk"
+- tapOn: "Dairy"
+- tapOn: "Save"
+- tapOn: "E2E Milk"
+- assertVisible: "Complete Item"
+- tapOn: "0.00 $"
+- inputText: "70"
+- tapOn: "Complete"
+- assertVisible: "E2E Milk"
+- longPressOn: "E2E Milk"
+- tapOn: "Edit"
+- tapOn: "E2E Milk"
+- eraseText
+- inputText: "E2E Milk Updated"
+- tapOn: "Save"
+- assertVisible: "E2E Milk Updated"
+- longPressOn: "E2E Milk Updated"
+- tapOn: "Delete"
+- tapOn: "Delete"
+- assertNotVisible: "E2E Milk Updated"
+- assertVisible: "No items in your list"

@@ -2,7 +2,7 @@ import { AnimatedTabButton } from "@/components/navigation/animated-tab-button";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { VoiceAssistantModal } from "@/features/ai/components/voice-assistant-modal";
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import { useI18n, useTheme } from "@/contexts/app-selectors";
 import {
   Analytics01Icon,
   AiMicIcon,
@@ -27,7 +27,8 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
   state,
   navigation,
 }) => {
-  const { colorScheme, t } = useApp();
+  const colorScheme = useTheme();
+  const { t } = useI18n();
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
   const [voiceModalVisible, setVoiceModalVisible] = useState(false);

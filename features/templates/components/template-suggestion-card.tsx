@@ -1,5 +1,5 @@
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import { useI18n, useSettingsDomain, useTheme } from "@/contexts/app-selectors";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { LearningCandidate } from "@/types/template";
 import { useReducedMotionPreference } from "@/utils/animations";
@@ -36,7 +36,9 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
   onDismiss,
   visible,
 }) => {
-  const { colorScheme, settings, t, formatNumber } = useApp();
+  const colorScheme = useTheme();
+  const { t, formatNumber } = useI18n();
+  const { settings } = useSettingsDomain();
   const colors = Colors[colorScheme];
 
   const reduceMotion = useReducedMotionPreference();

@@ -1,0 +1,19 @@
+platform:
+  android:
+    disableAnimations: true
+  ios:
+    disableAnimations: true
+
+executionOrder:
+  continueOnFailure: false
+  flowsOrder:
+    - 00_smoke_navigation
+    - 01_expenses_crud
+    - 02_grocery_crud_complete
+    - 03_statistics_filters
+    - 04_settings_customization
+    - 05_ai_settings_and_templates
+    - 06_voice_assistant_ui
+    - 07_camera_attachment_entrypoints
+
+testOutputDir: ./maestro-output

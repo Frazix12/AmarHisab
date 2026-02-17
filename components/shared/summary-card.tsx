@@ -1,5 +1,5 @@
 import { Colors } from "@/constants/theme";
-import { useApp } from "@/contexts/app-context";
+import { useI18n, useSettingsDomain, useTheme } from "@/contexts/app-selectors";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -21,7 +21,9 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
   description,
   size = "default",
 }) => {
-  const { settings, colorScheme, formatNumber } = useApp();
+  const colorScheme = useTheme();
+  const { formatNumber } = useI18n();
+  const { settings } = useSettingsDomain();
   const colors = Colors[colorScheme];
 
   const getVariantColors = () => {

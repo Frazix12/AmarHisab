@@ -1,5 +1,6 @@
 import { Colors } from "@/constants/theme";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
+import { AppImage } from "@/components/ui/app-image";
 import { TranslationKey } from "@/services/i18n";
 import { Expense, UserSettings } from "@/types";
 import { withAlpha } from "@/utils/color";
@@ -11,7 +12,6 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import React, { useCallback, useRef, useState } from "react";
 import {
-  Image,
   Modal,
   StyleSheet,
   Text,
@@ -26,6 +26,7 @@ interface ExpenseCardProps {
   settings: UserSettings;
   t: TranslationKey;
   showCategory?: boolean;
+  variant?: "default" | "statistics";
   onPress?: (expense: Expense) => void;
   onLongPress?: (expense: Expense) => void;
 }
@@ -51,6 +52,7 @@ export const ExpenseCard = React.memo(
     settings,
     t,
     showCategory = true,
+    variant = "default",
     onPress,
     onLongPress,
   }: ExpenseCardProps) => {
@@ -63,6 +65,7 @@ export const ExpenseCard = React.memo(
     )
       ? t.categories[expense.category as keyof typeof t.categories]
       : expense.category || t.categories.other || "Unknown";
+    const isStatisticsVariant = variant === "statistics";
     const nameLabel = expense.description?.trim() || t.form.item;
     const handlePress = useCallback(() => {
       if (thumbnailPressedRef.current || !onPress) return;
@@ -94,10 +97,11 @@ export const ExpenseCard = React.memo(
           onLongPress={handleLongPress}
           style={({ pressed }) => [
             styles.container,
+            isStatisticsVariant && styles.statisticsContainer,
             {
               backgroundColor: colors.surface,
-              borderColor: colors.outline,
-              opacity: pressed ? 0.7 : 1,
+              borderColor: isStatisticsVariant ? colors.outlineVariant : colors.outline,
+              opacity: pressed ? 0.88 : 1,
             },
           ]}
         >
@@ -119,10 +123,10 @@ export const ExpenseCard = React.memo(
                 accessibilityRole="button"
                 accessibilityLabel={t.form.attachment || "View attached image"}
               >
-                <Image
-                  source={{ uri: expense.imageUri }}
+                <AppImage
+                  uri={expense.imageUri}
                   style={styles.thumbnailImage}
-                  resizeMode="cover"
+                  contentFit="cover"
                 />
               </Pressable>
             ) : (
@@ -151,18 +155,24 @@ export const ExpenseCard = React.memo(
           </View>
 
           <View style={styles.amountContainer}>
-            <View
-              style={[
-                styles.amountPill,
-                {
-                  backgroundColor: withAlpha(colors.error, 0.1),
-                },
-              ]}
-            >
-              <Text style={[styles.amount, { color: colors.error }]}>
+            {isStatisticsVariant ? (
+              <Text style={[styles.statisticsAmount, { color: colors.error }]}>
                 {formatCurrency(expense.amount, settings.currency, settings.language)}
               </Text>
-            </View>
+            ) : (
+              <View
+                style={[
+                  styles.amountPill,
+                  {
+                    backgroundColor: withAlpha(colors.error, 0.1),
+                  },
+                ]}
+              >
+                <Text style={[styles.amount, { color: colors.error }]}>
+                  {formatCurrency(expense.amount, settings.currency, settings.language)}
+                </Text>
+              </View>
+            )}
           </View>
         </Pressable>
 
@@ -179,10 +189,10 @@ export const ExpenseCard = React.memo(
                 onPress={(event) => event.stopPropagation()}
                 style={styles.viewerImageContainer}
               >
-                <Image
-                  source={{ uri: expense.imageUri }}
+                <AppImage
+                  uri={expense.imageUri}
                   style={styles.viewerImage}
-                  resizeMode="contain"
+                  contentFit="contain"
                 />
               </Pressable>
 
@@ -218,6 +228,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 8,
     borderWidth: 1,
+  },
+  statisticsContainer: {
+    borderRadius: 14,
+    marginBottom: 12,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   iconContainer: {
     width: 48,
@@ -262,6 +281,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "500",
     lineHeight: 22,
+  },
+  statisticsAmount: {
+    fontSize: 19,
+    fontWeight: "700",
+    lineHeight: 24,
   },
   thumbnailImage: {
     width: 48,

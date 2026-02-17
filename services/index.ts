@@ -47,3 +47,18 @@ export {
 // AI (re-exported for convenience)
 export { detectItemCategory, detectExpenseCategory, parseVoiceInput, setGeminiApiKey } from "./ai/gemini";
 export { setElevenLabsApiKey } from "./ai/elevenlabs";
+
+// Camera
+export {
+  CAMERA_FLASH_MODES,
+  getNextFlashMode,
+  useCameraPermissions,
+  useCameraDevice,
+  useCamera,
+} from "./camera";
+export type {
+  CameraPermissionState,
+  CameraDeviceState,
+  CameraFlashMode,
+  UseCameraState,
+} from "./camera";
