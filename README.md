@@ -16,6 +16,15 @@ _A beautiful, minimalistic expense tracker with integrated grocery list manageme
 
 ---
 
+## 📸 Screenshots
+
+<p align="center">
+  <img src="screenshots/Expence.png" width="22%" alt="Expense Screen" />
+  <img src="screenshots/grocery.png" width="22%" alt="Grocery Screen" />
+  <img src="screenshots/stats.png" width="22%" alt="Stats Screen" />
+  <img src="screenshots/aivoice.png" width="22%" alt="AI Voice Screen" />
+</p>
+
 ## 📱 About the App
 
 Amar Hisab is a privacy-first, offline expense tracker. It combines daily expense tracking with a smart grocery list, allowing users to effortlessly monitor their spending. By leveraging on-device storage, the app ensures your financial data never leaves your phone.
@@ -41,6 +50,7 @@ Amar Hisab is built using modern cross-platform mobile development technologies,
 ## 🚀 Development & Setup
 
 ### Prerequisites
+
 - Node.js 18+ or Bun
 - Expo CLI
 - Android Emulator or physical device
@@ -62,13 +72,17 @@ npm start
 Press `a` in the terminal to launch the app on an Android emulator, or scan the QR code with the Expo Go app on your physical device.
 
 ### Building for Production
+
 To build the APK locally using EAS:
+
 ```bash
 eas build -p android --profile preview
 ```
 
 ## 🤝 Contributing
+
 Contributions are always welcome. Feel free to open a Pull Request or create an Issue if you have feature requests or bug reports.
 
 ## 📝 License
+
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
