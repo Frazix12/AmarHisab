@@ -27,6 +27,10 @@ jest.mock("@/features/templates/services/learning-storage", () => ({
   },
 }));
 
+jest.mock("@/services/storage", () => ({
+  resetOnboardingCompleted: jest.fn(async () => {}),
+}));
+
 jest.mock("@/contexts/app-context", () => {
   const useApp = jest.fn();
 

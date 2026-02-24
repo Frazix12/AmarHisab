@@ -1,4 +1,5 @@
 import { showNotification } from "@/services/notifications";
+import { resetOnboardingCompleted } from "@/services/storage";
 import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { Colors } from "@/constants/theme";
 import {
@@ -262,6 +263,34 @@ export default function Settings() {
                 </Text>
               </View>
             </Pressable>
+
+            {__DEV__ && (
+              <Pressable
+                onPress={async () => {
+                  await resetOnboardingCompleted();
+                  showNotification("Onboarding reset — restart app", {
+                    type: "success",
+                    title: "Dev",
+                  });
+                }}
+                style={({ pressed }) => [
+                  styles.devButton,
+                  {
+                    backgroundColor: colors.secondaryContainer,
+                    opacity: pressed ? 0.8 : 1,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.devButtonText,
+                    { color: colors.onSecondaryContainer },
+                  ]}
+                >
+                  Reset Onboarding
+                </Text>
+              </Pressable>
+            )}
           </View>
 
           <View style={styles.footerContainer}>
