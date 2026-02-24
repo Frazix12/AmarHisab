@@ -30,36 +30,49 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      # ==========================================
-      # PATH A: NATIVE CHANGED => BUILD & RELEASE
-      # ==========================================
-      - name: 📱 Generate Native Fingerprint
+      - name: � Compute EAS Fingerprint
         id: fingerprint
-        uses: expo/expo-github-action/fingerprint@v8
+        run: |
+          FINGERPRINT=$(npx @expo/fingerprint . --format json | jq -r '.hash')
+          echo "Native fingerprint hash: $FINGERPRINT"
+          echo "hash=$FINGERPRINT" >> $GITHUB_OUTPUT
 
-      - name: 🔎 Check for existing Android build
-        id: get-build
-        uses: expo/expo-github-action/get-build@v8
-        with:
-          platform: android
-          profile: production
-          fingerprint-hash: ${{ steps.fingerprint.outputs.fingerprint-hash }}
+      - name: 🔎 Check for existing build on EAS
+        id: check-build
+        run: |
+          BUILD_JSON=$(eas build:list --platform android --status finished --limit 10 --json)
+          echo "Looking for build with hash: ${{ steps.fingerprint.outputs.hash }}"
+          HAS_BUILD=$(echo $BUILD_JSON | jq -r --arg HASH "${{ steps.fingerprint.outputs.hash }}" '.[] | select(.gitCommitHash != null) | length > 0')
+          if [ "$HAS_BUILD" == "true" ]; then
+            echo "Fingerprint matched. Native code has not changed."
+            echo "needs_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "No matching build found for fingerprint. Native code has changed."
+            echo "needs_build=true" >> $GITHUB_OUTPUT
+          fi
 
+      # ==========================================
+      # PATH A: NATIVE CODE CHANGED (Build & Release)
+      # ==========================================
       - name: 🚀 Build APK (Native Changes Detected)
-        if: steps.get-build.outputs.build-id == ''
+        if: steps.check-build.outputs.needs_build == 'true'
         id: build-apk
-        uses: expo/expo-github-action/build@v8
-        with:
-          platform: android
-          profile: production
-          wait: true # Wait for build to finish to get the download URL
+        run: |
+          echo "Starting full Android build..."
+          BUILD_RES=$(eas build --platform android --profile production --non-interactive --json)
+          ARTIFACT_URL=$(echo $BUILD_RES | jq -r '.[0].artifacts.buildUrl')
+          if [ "$ARTIFACT_URL" == "null" ] || [ -z "$ARTIFACT_URL" ]; then
+            echo "Failed to extract build URL"
+            exit 1
+          fi
+          echo "artifact_url=$ARTIFACT_URL" >> $GITHUB_OUTPUT
 
       - name: 📥 Download APK
-        if: steps.get-build.outputs.build-id == ''
-        run: curl -L -o app-release.apk "${{ steps.build-apk.outputs.build-artifact-url }}"
+        if: steps.check-build.outputs.needs_build == 'true'
+        run: curl -L -o app-release.apk "${{ steps.build-apk.outputs.artifact_url }}"
 
       - name: 📦 Create GitHub Release
-        if: steps.get-build.outputs.build-id == ''
+        if: steps.check-build.outputs.needs_build == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "v${{ github.run_number }}"
@@ -69,10 +82,10 @@ jobs:
           fail_on_unmatched_files: true
 
       # ==========================================
-      # PATH B: NO NATIVE CHANGES => OTA UPDATE
+      # PATH B: NO NATIVE CHANGES (OTA Update)
       # ==========================================
       - name: ⚡ Publish OTA Update (No Native Changes)
-        if: steps.get-build.outputs.build-id != ''
+        if: steps.check-build.outputs.needs_build == 'false'
         run: |
-          echo "No native changes detected. Publishing OTA Update..."
+          echo "Publishing OTA Update..."
           eas update --auto --branch production --non-interactive
