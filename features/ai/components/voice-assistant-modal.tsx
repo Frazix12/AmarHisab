@@ -24,6 +24,7 @@ import {
   VoiceParsedGrocery,
   VoiceParsedResult,
 } from "@/services/ai/gemini";
+import { AnalyticsEvents, trackEvent } from "@/services/analytics";
 import {
   ExpenseCategory,
   GroceryCategory,
@@ -122,6 +123,8 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
   } | null>(null);
 
   const isListeningRef = useRef(false);
+  const voiceInputModeRef = useRef<"mic" | "typed" | null>(null);
+  const voiceInputStartedAtMsRef = useRef<number | null>(null);
   const readyPulse = useSharedValue(1);
   const readyOpacity = useSharedValue(0.55);
   const recordingDotScale = useSharedValue(1);
@@ -317,7 +320,30 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
     setParsedResult(null);
     setErrorMessage(null);
     setDetectedLanguage(null);
+    voiceInputModeRef.current = null;
+    voiceInputStartedAtMsRef.current = null;
   }, [resetTranscriptForm]);
+
+  const getVoiceInputDurationMs = (): number | undefined => {
+    const startedAt = voiceInputStartedAtMsRef.current;
+    if (!startedAt) return undefined;
+    const duration = Date.now() - startedAt;
+    return Number.isFinite(duration) && duration >= 0 ? duration : undefined;
+  };
+
+  const trackVoiceInputFailed = (stage: string, error?: unknown): void => {
+    const durationMs = getVoiceInputDurationMs();
+
+    trackEvent(AnalyticsEvents.VOICE_INPUT_FAILED, {
+      mode: voiceInputModeRef.current ?? "unknown",
+      stage,
+      language_mode: languageMode,
+      settings_language: settings.language,
+      detected_language: resolveLanguageCode(detectedLanguage),
+      ...(durationMs !== undefined ? { duration_ms: durationMs } : {}),
+      error_type: error instanceof Error ? error.name : error ? typeof error : "unknown",
+    });
+  };
 
   const cleanupSession = useCallback(async () => {
     if (isListeningRef.current) {
@@ -386,17 +412,32 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
   const startListening = async () => {
     if (Platform.OS === "web") {
       setErrorMessage(t.voice.webNotSupported);
+      voiceInputModeRef.current = "mic";
+      voiceInputStartedAtMsRef.current = Date.now();
+      trackVoiceInputFailed("web_not_supported");
+      voiceInputModeRef.current = null;
+      voiceInputStartedAtMsRef.current = null;
       return;
     }
 
     if (!isAudioRecordAvailable()) {
       setErrorMessage(t.voice.missingRecorder);
+      voiceInputModeRef.current = "mic";
+      voiceInputStartedAtMsRef.current = Date.now();
+      trackVoiceInputFailed("recorder_unavailable");
+      voiceInputModeRef.current = null;
+      voiceInputStartedAtMsRef.current = null;
       return;
     }
 
     const hasPermission = await requestAudioPermission();
     if (!hasPermission) {
       setErrorMessage(t.voice.micPermission);
+      voiceInputModeRef.current = "mic";
+      voiceInputStartedAtMsRef.current = Date.now();
+      trackVoiceInputFailed("permission_denied");
+      voiceInputModeRef.current = null;
+      voiceInputStartedAtMsRef.current = null;
       return;
     }
 
@@ -404,6 +445,16 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
     setParsedResult(null);
     resetTranscriptForm({ transcript: "" });
     setDetectedLanguage(null);
+
+    voiceInputModeRef.current = "mic";
+    voiceInputStartedAtMsRef.current = Date.now();
+    trackEvent(AnalyticsEvents.VOICE_INPUT_STARTED, {
+      mode: "mic",
+      language_mode: languageMode,
+      settings_language: settings.language,
+      audio_sample_rate: AUDIO_SAMPLE_RATE,
+    });
+
     setStatus("listening");
 
     try {
@@ -424,6 +475,10 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
         error instanceof Error ? error.message : t.voice.missingRecorder,
       );
       setStatus("idle");
+
+      trackVoiceInputFailed("record_start", error);
+      voiceInputModeRef.current = null;
+      voiceInputStartedAtMsRef.current = null;
     }
   };
 
@@ -431,6 +486,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
     if (!transcript) {
       setErrorMessage(t.voice.noSpeechDetected);
       setStatus("idle");
+      trackVoiceInputFailed("empty_transcript");
       return;
     }
 
@@ -448,12 +504,31 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
     if (!parsed) {
       setErrorMessage(t.voice.parseFailed);
       setStatus("idle");
+      trackVoiceInputFailed("parse_no_result");
       return;
     }
 
     const enriched = await autoAssignCategories(parsed);
     setParsedResult(enriched);
     setStatus("review");
+
+    const durationMs = getVoiceInputDurationMs();
+    const wordCount = transcript
+      .split(/\s+/)
+      .map((part) => part.trim())
+      .filter((part) => part.length > 0).length;
+
+    trackEvent(AnalyticsEvents.VOICE_INPUT_COMPLETED, {
+      mode: voiceInputModeRef.current ?? "unknown",
+      expense_count: enriched.expenses.length,
+      grocery_count: enriched.groceries.length,
+      transcript_char_count: transcript.length,
+      transcript_word_count: wordCount,
+      language_mode: languageMode,
+      settings_language: settings.language,
+      detected_language: resolveLanguageCode(detectedLanguage),
+      ...(durationMs !== undefined ? { duration_ms: durationMs } : {}),
+    });
   };
 
   const stopListening = async () => {
@@ -466,6 +541,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
       if (!audioFileUri) {
         setErrorMessage(t.voice.noSpeechDetected);
         setStatus("idle");
+        trackVoiceInputFailed("record_stop_no_file");
         return;
       }
 
@@ -485,6 +561,8 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
         error instanceof Error ? error.message : "Failed to transcribe audio";
       setErrorMessage(message);
       setStatus("idle");
+
+      trackVoiceInputFailed("mic_transcribe_or_parse", error);
     }
   };
 
@@ -492,12 +570,31 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
     const normalized = normalizeSpeechText(transcript);
     if (!normalized) {
       setErrorMessage(t.voice.noSpeechDetected);
+      voiceInputModeRef.current = "typed";
+      voiceInputStartedAtMsRef.current = Date.now();
+      trackVoiceInputFailed("typed_empty_transcript");
+      voiceInputModeRef.current = null;
+      voiceInputStartedAtMsRef.current = null;
       return;
     }
 
     setErrorMessage(null);
     setParsedResult(null);
     setStatus("processing");
+
+    voiceInputModeRef.current = "typed";
+    voiceInputStartedAtMsRef.current = Date.now();
+    const typedWordCount = normalized
+      .split(/\s+/)
+      .map((part) => part.trim())
+      .filter((part) => part.length > 0).length;
+    trackEvent(AnalyticsEvents.VOICE_INPUT_STARTED, {
+      mode: "typed",
+      transcript_char_count: normalized.length,
+      transcript_word_count: typedWordCount,
+      language_mode: languageMode,
+      settings_language: settings.language,
+    });
 
     try {
       await processTranscript(normalized);
@@ -509,6 +606,8 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
       setErrorMessage(message);
       setParsedResult(null);
       setStatus("idle");
+
+      trackVoiceInputFailed("typed_parse", error);
     }
   });
 

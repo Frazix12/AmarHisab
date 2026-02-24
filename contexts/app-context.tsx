@@ -4,7 +4,14 @@ import { TemplateStorage } from "@/features/templates/services/template-storage"
 import { normalizeProductName } from "@/features/templates/services/template-utils";
 import { setElevenLabsApiKey } from "@/services/ai/elevenlabs";
 import { detectExpenseCategory, setGeminiApiKey } from "@/services/ai/gemini";
-import { trackEvent, captureError, AnalyticsEvents } from "@/services/analytics";
+import {
+  trackEvent,
+  captureError,
+  identifyUser,
+  resetAnalytics,
+  setSuperProperties,
+  AnalyticsEvents,
+} from "@/services/analytics";
 import { getTranslation, TranslationKey } from "@/services/i18n";
 import {
   loadExpenses,
@@ -18,6 +25,7 @@ import {
   deleteGroceryItemById,
   deleteGroceryItemsByIds,
   clearAllData as clearStorageData,
+  ensureAnalyticsId,
   saveSettings,
 } from "@/services/storage";
 import {
@@ -299,6 +307,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       .then((detectedCategory) => {
         if (!detectedCategory || !isMountedRef.current) return;
 
+        trackEvent(AnalyticsEvents.AI_CATEGORY_DETECTED, {
+          source: "grocery_item",
+          detected_category: detectedCategory,
+          fallback_category: fallbackCategory,
+        });
+
         let categoryApplied = false;
         setGroceryItems((prev) => {
           const nextItems = prev.map((entry) => {
@@ -375,6 +389,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         if (loadedSettings?.elevenLabsApiKey) {
           setElevenLabsApiKey(loadedSettings.elevenLabsApiKey);
         }
+
+        const effectiveSettings = loadedSettings || DEFAULT_SETTINGS;
+        const analyticsId = await ensureAnalyticsId();
+        const hasGeminiKey = !!loadedSettings?.geminiApiKey;
+        const hasElevenLabsKey = !!loadedSettings?.elevenLabsApiKey;
+
+        identifyUser(analyticsId, {
+          language: effectiveSettings.language,
+          currency_code: effectiveSettings.currency.code,
+          theme: effectiveSettings.theme,
+        });
+
+        setSuperProperties({
+          language: effectiveSettings.language,
+          currency_code: effectiveSettings.currency.code,
+          theme: effectiveSettings.theme,
+          smart_suggestions_enabled: smartSuggestionsEnabled,
+        });
+
+        trackEvent(AnalyticsEvents.APP_DATA_LOADED, {
+          expense_count: loadedExpenses.length,
+          grocery_count: loadedGrocery.length,
+          template_count: loadedTemplates.length,
+          smart_suggestions_enabled: smartSuggestionsEnabled,
+          language: effectiveSettings.language,
+          currency_code: effectiveSettings.currency.code,
+          theme: effectiveSettings.theme,
+          has_gemini_key: hasGeminiKey,
+          has_elevenlabs_key: hasElevenLabsKey,
+        });
       } catch (error) {
         console.error("Failed to load app data:", error);
         captureError(error, { context: "load_app_data" });
@@ -404,10 +448,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   const recordExpenseAdded = useCallback((expense: Expense): void => {
     trackEvent(AnalyticsEvents.EXPENSE_ADDED, {
       expense_id: expense.id,
-      amount: expense.amount,
       category: expense.category,
       currency: expense.currency,
       has_image: !!expense.imageUri,
+      has_description: !!expense.description,
       ai_detected: !!expense.aiDetected,
     });
   }, []);
@@ -432,6 +476,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   }, [addExpenseRecord, createEntityId]);
 
   const updateExpense = useCallback((id: string, updates: Partial<Expense>) => {
+    const updatedFields = Object.keys(updates);
+    if (updatedFields.length === 0) {
+      return;
+    }
+
     setExpenses((prev) =>
       prev.map((expense) =>
         expense.id === id ? { ...expense, ...updates } : expense,
@@ -440,6 +489,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
 
     void Promise.resolve(updateExpenseById(id, updates)).catch((error) => {
       handlePersistenceFailure(error, "update_expense");
+    });
+
+    trackEvent(AnalyticsEvents.EXPENSE_UPDATED, {
+      expense_id: id,
+      updated_fields: updatedFields,
     });
   }, [handlePersistenceFailure]);
 
@@ -541,6 +595,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       handlePersistenceFailure(error, "update_grocery_item");
     });
 
+    trackEvent(AnalyticsEvents.GROCERY_ITEM_UPDATED, {
+      item_id: id,
+      updated_fields: Object.keys(sanitizedUpdates),
+    });
+
     if (currentItem.expenseId) {
       const expenseUpdates: Partial<Expense> = {};
 
@@ -595,6 +654,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     const nextCheckedState = !currentItem.checked;
 
     if (nextCheckedState && !hasValidGroceryPrice(currentItem.price)) {
+      trackEvent(AnalyticsEvents.GROCERY_ITEM_TOGGLED, {
+        item_id: id,
+        to_checked: true,
+        result: "requires_price",
+        has_price: false,
+        has_template: !!currentItem.templateId,
+        category: currentItem.category,
+        ai_detected: !!currentItem.aiDetected,
+      });
       setItemPendingCompletion(currentItem);
       return;
     }
@@ -635,6 +703,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       handlePersistenceFailure(error, "toggle_grocery_item");
     });
 
+    trackEvent(AnalyticsEvents.GROCERY_ITEM_TOGGLED, {
+      item_id: id,
+      to_checked: nextCheckedState,
+      has_price: hasValidGroceryPrice(currentItem.price),
+      created_expense: !!expenseToCreate,
+      removed_expense: !!expenseIdToDelete,
+      has_template: !!currentItem.templateId,
+      category: currentItem.category,
+      ai_detected: !!currentItem.aiDetected,
+    });
+
     if (expenseIdToDelete) {
       deleteExpense(expenseIdToDelete);
     }
@@ -659,6 +738,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
 
     void Promise.resolve(deleteGroceryItemsByIds(completedIds)).catch((error) => {
       handlePersistenceFailure(error, "clear_completed_grocery_items");
+    });
+
+    trackEvent(AnalyticsEvents.GROCERY_LIST_CLEARED, {
+      cleared_count: completedIds.length,
     });
   }, [handlePersistenceFailure]);
 
@@ -698,7 +781,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
 
     trackEvent(AnalyticsEvents.GROCERY_ITEM_COMPLETED, {
       item_id: id,
-      price,
       has_image: !!imageUri,
     });
 
@@ -719,6 +801,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       old_value: previousSettings.currency.code,
       new_value: currency.code,
     });
+
+    setSuperProperties({
+      currency_code: currency.code,
+    });
   }, [persistSettings]);
 
   const updateTheme = useCallback((theme: "light" | "dark" | "system") => {
@@ -733,6 +819,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       setting_name: "theme",
       old_value: previousSettings.theme,
       new_value: theme,
+    });
+
+    setSuperProperties({
+      theme,
     });
   }, [persistSettings]);
 
@@ -749,9 +839,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       old_value: previousSettings.language,
       new_value: language,
     });
+
+    setSuperProperties({
+      language,
+    });
   }, [persistSettings]);
 
   const updateApiKey = useCallback((apiKey: string) => {
+    const action = apiKey.trim().length > 0 ? "set" : "remove";
+
     const nextSettings: UserSettings = {
       ...settingsRef.current,
       geminiApiKey: apiKey,
@@ -761,9 +857,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
 
     persistSettings(nextSettings);
     setGeminiApiKey(apiKey);
+
+    trackEvent(AnalyticsEvents.API_KEY_UPDATED, {
+      key_type: "gemini",
+      action,
+    });
+
+    setSuperProperties({
+      has_gemini_key: action === "set",
+    });
   }, [persistSettings]);
 
   const updateElevenLabsApiKey = useCallback((apiKey: string) => {
+    const action = apiKey.trim().length > 0 ? "set" : "remove";
+
     const nextSettings: UserSettings = {
       ...settingsRef.current,
       elevenLabsApiKey: apiKey,
@@ -773,6 +880,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
 
     persistSettings(nextSettings);
     setElevenLabsApiKey(apiKey);
+
+    trackEvent(AnalyticsEvents.API_KEY_UPDATED, {
+      key_type: "elevenlabs",
+      action,
+    });
+
+    setSuperProperties({
+      has_elevenlabs_key: action === "set",
+    });
   }, [persistSettings]);
 
   // Template functions
@@ -784,6 +900,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   ): Promise<GroceryTemplate> => {
     const newTemplate = await TemplateStorage.create(template);
     setTemplates((prev) => [...prev, newTemplate]);
+
+    trackEvent(AnalyticsEvents.TEMPLATE_CREATED, {
+      template_id: newTemplate.id,
+      category: newTemplate.category,
+      source: newTemplate.source,
+      has_default_price: Number(newTemplate.defaultPrice) > 0,
+      has_default_quantity: !!newTemplate.defaultQuantity,
+    });
+
     return newTemplate;
   }, []);
 
@@ -795,11 +920,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     setTemplates((prev) =>
       prev.map((t) => (t.id === id ? { ...t, ...updates } : t)),
     );
+
+    trackEvent(AnalyticsEvents.TEMPLATE_UPDATED, {
+      template_id: id,
+      updated_fields: Object.keys(updates),
+    });
   }, []);
 
   const deleteTemplate = useCallback(async (id: string): Promise<void> => {
     await TemplateStorage.delete(id);
     setTemplates((prev) => prev.filter((t) => t.id !== id));
+
+    trackEvent(AnalyticsEvents.TEMPLATE_DELETED, {
+      template_id: id,
+    });
   }, []);
 
   const findMatchingTemplates = useCallback(async (
@@ -824,6 +958,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
           : t,
       ),
     );
+
+    trackEvent(AnalyticsEvents.TEMPLATE_APPLIED, {
+      template_id: templateId,
+      category: template.category,
+      source: template.source,
+    });
 
     return {
       name: template.productNameDisplay,
@@ -873,7 +1013,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   }, []);
 
   const toggleSmartSuggestions = useCallback(() => {
-    setSmartSuggestionsEnabled((prev) => !prev);
+    setSmartSuggestionsEnabled((prev) => {
+      const next = !prev;
+      trackEvent(AnalyticsEvents.SETTING_CHANGED, {
+        setting_name: "smart_suggestions",
+        new_value: next,
+      });
+      setSuperProperties({
+        smart_suggestions_enabled: next,
+      });
+      return next;
+    });
   }, []);
 
   const clearAllData = useCallback(async (): Promise<void> => {
@@ -889,6 +1039,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       setGroceryItems([]);
       setSettings(DEFAULT_SETTINGS);
       setTemplates([]);
+      setSmartSuggestionsEnabled(true);
       groceryItemsRef.current = [];
       settingsRef.current = DEFAULT_SETTINGS;
       setGeminiApiKey("");
@@ -897,6 +1048,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       // Track data cleared after successful operation
       trackEvent(AnalyticsEvents.DATA_CLEARED, {
         action: "clear_all_data",
+      });
+
+      await resetAnalytics();
+
+      const analyticsId = await ensureAnalyticsId();
+      identifyUser(analyticsId, {
+        language: DEFAULT_SETTINGS.language,
+        currency_code: DEFAULT_SETTINGS.currency.code,
+        theme: DEFAULT_SETTINGS.theme,
+      });
+      setSuperProperties({
+        language: DEFAULT_SETTINGS.language,
+        currency_code: DEFAULT_SETTINGS.currency.code,
+        theme: DEFAULT_SETTINGS.theme,
+        smart_suggestions_enabled: true,
       });
     } catch (error) {
       // Don't mutate state on failure - log and capture error

@@ -4,12 +4,12 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import * as Application from "expo-application";
-import { Stack } from "expo-router";
+import { Stack, useGlobalSearchParams, usePathname } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as NavigationBar from "expo-navigation-bar";
 import * as Updates from "expo-updates";
 import "react-native-reanimated";
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { AppState, AppStateStatus, Platform } from "react-native";
 import { PostHogProvider, usePostHog } from "posthog-react-native";
 
@@ -39,6 +39,16 @@ const RootLayoutContent = () => {
   const { settings } = useSettingsDomain();
   const { t } = useI18n();
   const posthog = usePostHog();
+  const pathname = usePathname();
+  const searchParams = useGlobalSearchParams();
+
+  const screenParams = useMemo(() => {
+    const keys = Object.keys(searchParams ?? {}).sort();
+    return {
+      params_keys: keys,
+      params_count: keys.length,
+    };
+  }, [searchParams]);
 
   useEffect(() => {
     resetTextMetrics();
@@ -76,6 +86,23 @@ const RootLayoutContent = () => {
       setPostHogClient(null);
     };
   }, [posthog]);
+
+  // Manual screen tracking for Expo Router (pathname-based)
+  useEffect(() => {
+    if (!posthog || typeof posthog.screen !== "function") {
+      return;
+    }
+
+    if (!pathname) {
+      return;
+    }
+
+    try {
+      posthog.screen(pathname, screenParams);
+    } catch (error) {
+      console.warn("[PostHog] screen tracking failed", error);
+    }
+  }, [pathname, posthog, screenParams]);
 
   // Flush analytics when app goes to background
   useEffect(() => {
@@ -205,7 +232,7 @@ export default function RootLayout() {
           enableSessionReplay: true,
           sessionReplayConfig: {
             maskAllTextInputs: true,
-            maskAllImages: false,
+            maskAllImages: true,
           },
           // Error tracking - auto-capture all errors
           errorTracking: {
@@ -219,7 +246,7 @@ export default function RootLayout() {
         // Autocapture touches and screens
         autocapture={{
           captureTouches: true,
-          captureScreens: true,
+          captureScreens: false,
         }}
       >
         <AppProvider>

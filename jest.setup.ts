@@ -1,6 +1,9 @@
 import "@testing-library/jest-native/extend-expect";
 import "react-native-gesture-handler/jestSetup";
 
+process.env.EXPO_PUBLIC_POSTHOG_API_KEY = process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? "test";
+process.env.EXPO_PUBLIC_POSTHOG_HOST = process.env.EXPO_PUBLIC_POSTHOG_HOST ?? "https://app.posthog.com";
+
 jest.mock("react-native-reanimated", () =>
   require("react-native-reanimated/mock"),
 );

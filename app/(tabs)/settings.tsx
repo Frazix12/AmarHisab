@@ -11,6 +11,7 @@ import { SettingItem } from "@/features/settings/components/setting-item";
 import { usePageTransition } from "@/utils/animations";
 import { triggerHeavyHaptic } from "@/utils/haptics";
 import { useSampleData } from "@/utils/sample-data";
+import { AnalyticsEvents, trackEvent } from "@/services/analytics";
 import {
   ArtificialIntelligence04Icon,
   ComputerIcon,
@@ -107,14 +108,24 @@ export default function Settings() {
               icon={ComputerIcon}
               title={t.settings.customization}
               value={customizationValue}
-              onPress={() => router.push("/settings/customization")}
+              onPress={() => {
+                trackEvent(AnalyticsEvents.SETTINGS_NAVIGATE, {
+                  destination: "/settings/customization",
+                });
+                router.push("/settings/customization");
+              }}
             />
 
             <SettingItem
               icon={ArtificialIntelligence04Icon}
               title={t.settings.aiMenu}
               value={smartSuggestionsEnabled ? t.settings.on : t.settings.off}
-              onPress={() => router.push("/settings/ai")}
+              onPress={() => {
+                trackEvent(AnalyticsEvents.SETTINGS_NAVIGATE, {
+                  destination: "/settings/ai",
+                });
+                router.push("/settings/ai");
+              }}
             />
           </View>
 
@@ -149,15 +160,22 @@ export default function Settings() {
 
             <Pressable
               onPress={async () => {
+                trackEvent(AnalyticsEvents.SAMPLE_DATA_ADD_CLICKED);
                 try {
                   await addSampleExpenses();
                   await addSampleGroceryItems();
+
+                  trackEvent(AnalyticsEvents.SAMPLE_DATA_ADDED);
                   showNotification(t.alerts.sampleDataAdded, {
                     type: "success",
                     title: t.alerts.successTitle,
                   });
                 } catch (error) {
                   console.error("Failed to add sample data:", error);
+
+                  trackEvent(AnalyticsEvents.SAMPLE_DATA_ADD_FAILED, {
+                    error_type: error instanceof Error ? error.name : typeof error,
+                  });
                   showNotification(
                     t.alerts.sampleDataAddFailed ||
                       "Failed to add sample data. Please try again.",

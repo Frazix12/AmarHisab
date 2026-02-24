@@ -3,6 +3,9 @@ export {
   trackEvent,
   captureError,
   flushEvents,
+  identifyUser,
+  setSuperProperties,
+  resetAnalytics,
 } from "./posthog";
 
 export { AnalyticsEvents } from "./events";

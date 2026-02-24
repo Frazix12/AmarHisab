@@ -7,6 +7,12 @@ import {
   useColorScheme,
 } from "react-native";
 import { Colors } from "@/constants/theme";
+import { captureError } from "@/services/analytics";
+
+const sanitizeStack = (value: string | null | undefined): string => {
+  if (!value) return "";
+  return value.replace(/\s+$/g, "").slice(0, 2000);
+};
 
 const getErrorBoundaryTheme = (scheme: "light" | "dark") => {
   const fallback = Colors.light;
@@ -56,6 +62,18 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // Log error to analytics/error tracking service
     console.error("ErrorBoundary caught an error:", error, errorInfo);
+
+    const sanitized = new Error(error.name || "Error");
+    const stackWithoutMessageLine = (error.stack ?? "")
+      .split("\n")
+      .slice(1)
+      .join("\n");
+    sanitized.stack = sanitizeStack(stackWithoutMessageLine);
+
+    captureError(sanitized, {
+      context: "error_boundary",
+      component_stack: sanitizeStack(errorInfo.componentStack),
+    });
     
     // Call optional error handler
     this.props.onError?.(error, errorInfo);

@@ -57,6 +57,9 @@ const MAX_IDENTITY_QUEUE = 10;
 let screenQueue: QueuedScreen[] = [];
 const MAX_SCREEN_QUEUE = 50;
 
+// Pending super properties to register once client is ready
+let pendingSuperProperties: PostHogEventProperties | null = null;
+
 /**
  * Set the PostHog client from PostHogProvider
  * This should be called once when the provider mounts
@@ -77,6 +80,12 @@ export const setPostHogClient = (client: PostHog | null): void => {
         });
       });
       identityQueue = [];
+    }
+
+    // Register any pending super properties before flushing queued events
+    if (pendingSuperProperties) {
+      client.register(pendingSuperProperties);
+      pendingSuperProperties = null;
     }
 
     // Flush event queue with original timestamps
@@ -128,7 +137,7 @@ export const initializeAnalytics = async (): Promise<PostHog | null> => {
     enableSessionReplay: true,
     sessionReplayConfig: {
       maskAllTextInputs: true,
-      maskAllImages: false,
+      maskAllImages: true,
     },
   });
 
@@ -237,22 +246,27 @@ export const captureError = (
     return;
   }
 
-  // Normalize unknown to Error instance for safe handling
-  const normalizedError =
-    error instanceof Error ? error : new Error(String(error));
-
-  const errorData: PostHogEventProperties = {
-    error_message: normalizedError.message,
-    error_stack: normalizedError.stack ?? "",
+  const sanitizeStack = (value: string): string => {
+    if (!value) return "";
+    const withoutMessageLine = value.split("\n").slice(1).join("\n");
+    return withoutMessageLine.replace(/\s+$/g, "").slice(0, 2000);
   };
 
-  // If original error was not an Error, include its string representation
+  // Normalize unknown to Error instance for safe handling
+  const normalizedError = error instanceof Error ? error : new Error("Unknown");
+  const safeError = new Error(normalizedError.name || "Error");
+  safeError.stack = sanitizeStack(normalizedError.stack ?? "");
+
+  const errorData: PostHogEventProperties = {
+    error_name: normalizedError.name || "Error",
+    error_stack: safeError.stack,
+  };
+
   if (!(error instanceof Error)) {
     errorData.original_error_type = typeof error;
-    errorData.original_error_value = String(error);
   }
 
-  posthogClient.captureException(normalizedError, {
+  posthogClient.captureException(safeError, {
     ...errorData,
     ...context,
     captured_at: new Date().toISOString(),
@@ -282,7 +296,11 @@ export const setSuperProperties = (
   properties: PostHogEventProperties
 ): void => {
   if (!posthogClient) {
-    // Silently skip - client not yet connected from provider
+    // Buffer until client is ready so startup registration isn't lost
+    pendingSuperProperties = {
+      ...(pendingSuperProperties ?? {}),
+      ...properties,
+    };
     return;
   }
 
@@ -310,6 +328,7 @@ export const resetAnalytics = async (): Promise<void> => {
   eventQueue = [];
   screenQueue = [];
   identityQueue = [];
+  pendingSuperProperties = null;
 
   if (!posthogClient) {
     return;

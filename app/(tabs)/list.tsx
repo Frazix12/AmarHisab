@@ -13,6 +13,8 @@ import {
   useSettingsDomain,
   useTheme,
 } from "@/contexts/app-selectors";
+import { TemplateLearner } from "@/features/templates/services/template-learner";
+import { AnalyticsEvents, trackEvent } from "@/services/analytics";
 import { AddGroceryModal } from "@/features/grocery/components/add-grocery-modal";
 import { CompleteGroceryModal } from "@/features/grocery/components/complete-grocery-modal";
 import { EditGroceryModal } from "@/features/grocery/components/edit-grocery-modal";
@@ -111,6 +113,20 @@ export default function GroceryScreen() {
       if (!isActive) return;
 
       if (suggestion) {
+        trackEvent(AnalyticsEvents.TEMPLATE_SUGGESTION_SHOWN, {
+          category: suggestion.category,
+          occurrences: suggestion.occurrences,
+          confidence: suggestion.confidence,
+          has_default_price: Number(suggestion.defaultPrice) > 0,
+          has_default_quantity: !!suggestion.defaultQuantity,
+        });
+
+        void TemplateLearner.recordSuggestion(suggestion.productNameNormalized).catch(
+          (error) => {
+            console.warn("Failed to record suggestion telemetry", error);
+          },
+        );
+
         setCurrentSuggestion(suggestion);
         setShowSuggestion(true);
       }
@@ -178,7 +194,13 @@ export default function GroceryScreen() {
   );
 
   const handleAddItem = useCallback(() => {
-    setModalVisible((prev) => !prev);
+    setModalVisible((prev) => {
+      const next = !prev;
+      trackEvent(next ? AnalyticsEvents.MODAL_OPENED : AnalyticsEvents.MODAL_CLOSED, {
+        modal: "add_grocery",
+      });
+      return next;
+    });
   }, []);
 
   const fabStartCenterY = screenHeight - insets.bottom - FAB_BOTTOM - FAB_SIZE / 2;
@@ -268,6 +290,15 @@ export default function GroceryScreen() {
 
   const handleSaveSuggestion = useCallback(async () => {
     if (!currentSuggestion) return;
+
+    trackEvent(AnalyticsEvents.TEMPLATE_SUGGESTION_ACCEPTED, {
+      category: currentSuggestion.category,
+      occurrences: currentSuggestion.occurrences,
+      confidence: currentSuggestion.confidence,
+      has_default_price: Number(currentSuggestion.defaultPrice) > 0,
+      has_default_quantity: !!currentSuggestion.defaultQuantity,
+    });
+
     await acceptSuggestion(currentSuggestion);
     setShowSuggestion(false);
   }, [acceptSuggestion, currentSuggestion]);
@@ -275,6 +306,14 @@ export default function GroceryScreen() {
   const handleDismissSuggestion = useCallback(
     async (forever: boolean) => {
       if (!currentSuggestion) return;
+
+      trackEvent(AnalyticsEvents.TEMPLATE_SUGGESTION_DISMISSED, {
+        category: currentSuggestion.category,
+        occurrences: currentSuggestion.occurrences,
+        confidence: currentSuggestion.confidence,
+        forever,
+      });
+
       await dismissSuggestion(currentSuggestion.productNameNormalized, forever);
       setShowSuggestion(false);
       setCurrentSuggestion(null);
@@ -410,7 +449,16 @@ export default function GroceryScreen() {
       {/* Add Grocery Modal */}
       <AddGroceryModal
         visible={modalVisible}
-        onClose={() => setModalVisible(false)}
+        onClose={() => {
+          setModalVisible((prev) => {
+            if (prev) {
+              trackEvent(AnalyticsEvents.MODAL_CLOSED, {
+                modal: "add_grocery",
+              });
+            }
+            return false;
+          });
+        }}
         fabConfig={{
           fabSize: FAB_SIZE,
           fabRight: FAB_RIGHT,

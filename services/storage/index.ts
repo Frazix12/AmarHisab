@@ -16,6 +16,7 @@ import * as SecureStore from "expo-secure-store";
 const GEMINI_API_KEY_STORAGE_KEY = "amar_hisab_gemini_api_key";
 const ELEVENLABS_API_KEY_STORAGE_KEY = "amar_hisab_elevenlabs_api_key";
 const APP_UPDATE_FINGERPRINT_KEY = "app_update_fingerprint";
+const ANALYTICS_ID_STORAGE_KEY = "amar_hisab_analytics_id";
 
 // Maximum storage sizes to prevent abuse
 const MAX_EXPENSES = 10000;
@@ -124,6 +125,33 @@ const deleteSecureItem = async (key: string) => {
   } catch (error) {
     console.error("Error deleting from SecureStore:", error);
   }
+};
+
+const generateAnalyticsId = (): string => {
+  return [
+    "anon",
+    Date.now().toString(36),
+    Math.random().toString(36).slice(2, 11),
+  ].join("_");
+};
+
+export const loadAnalyticsId = async (): Promise<string | null> => {
+  return await getSecureItem(ANALYTICS_ID_STORAGE_KEY);
+};
+
+export const ensureAnalyticsId = async (): Promise<string> => {
+  const existing = await loadAnalyticsId();
+  if (existing) {
+    return existing;
+  }
+
+  const nextId = generateAnalyticsId();
+  await setSecureItem(ANALYTICS_ID_STORAGE_KEY, nextId);
+  return nextId;
+};
+
+export const clearAnalyticsId = async (): Promise<void> => {
+  await deleteSecureItem(ANALYTICS_ID_STORAGE_KEY);
 };
 
 const toExpenseRow = (expense: Expense, sortOrder: number) => ({
@@ -611,6 +639,7 @@ export const clearAllData = async (): Promise<void> => {
     await Promise.all([
       deleteSecureItem(GEMINI_API_KEY_STORAGE_KEY),
       deleteSecureItem(ELEVENLABS_API_KEY_STORAGE_KEY),
+      deleteSecureItem(ANALYTICS_ID_STORAGE_KEY),
     ]);
   } catch (error) {
     console.error("Error clearing data:", error);

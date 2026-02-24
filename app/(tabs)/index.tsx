@@ -16,6 +16,7 @@ import {
 import { AddExpenseModal } from "@/features/expenses/components/add-expense-modal";
 import { EditExpenseModal } from "@/features/expenses/components/edit-expense-modal";
 import { ExpenseCard } from "@/features/expenses/components/expense-card";
+import { AnalyticsEvents, trackEvent } from "@/services/analytics";
 import { Expense } from "@/types";
 import { useMorphingFabAnimation, usePageTransition } from "@/utils/animations";
 import {
@@ -75,7 +76,13 @@ export default function ExpensesScreen() {
   );
 
   const handleAddExpense = useCallback(() => {
-    setModalVisible((prev) => !prev);
+    setModalVisible((prev) => {
+      const next = !prev;
+      trackEvent(next ? AnalyticsEvents.MODAL_OPENED : AnalyticsEvents.MODAL_CLOSED, {
+        modal: "add_expense",
+      });
+      return next;
+    });
   }, []);
 
   const fabStartCenterY = screenHeight - insets.bottom - FAB_BOTTOM - FAB_SIZE / 2;
@@ -242,7 +249,16 @@ export default function ExpensesScreen() {
       {/* Add Expense Modal */}
       <AddExpenseModal
         visible={modalVisible}
-        onClose={() => setModalVisible(false)}
+        onClose={() => {
+          setModalVisible((prev) => {
+            if (prev) {
+              trackEvent(AnalyticsEvents.MODAL_CLOSED, {
+                modal: "add_expense",
+              });
+            }
+            return false;
+          });
+        }}
         fabConfig={{
           fabSize: FAB_SIZE,
           fabRight: FAB_RIGHT,

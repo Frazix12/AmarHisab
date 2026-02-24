@@ -42,6 +42,12 @@ export const AnalyticsEvents = {
   LANGUAGE_CHANGED: "language_changed",
   API_KEY_UPDATED: "api_key_updated",
   DATA_CLEARED: "data_cleared",
+  SETTINGS_NAVIGATE: "settings_navigate",
+
+  // Sample data
+  SAMPLE_DATA_ADD_CLICKED: "sample_data_add_clicked",
+  SAMPLE_DATA_ADDED: "sample_data_added",
+  SAMPLE_DATA_ADD_FAILED: "sample_data_add_failed",
 
   // ═══════════════════════════════════════════════════════════
   // AI FEATURES

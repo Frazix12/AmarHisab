@@ -9,6 +9,7 @@ import {
   loadExpenses,
   loadGroceryItems,
   loadSettings,
+  ensureAnalyticsId,
 } from "@/services/storage";
 import { setElevenLabsApiKey } from "@/services/ai/elevenlabs";
 import { setGeminiApiKey } from "@/services/ai/gemini";
@@ -17,6 +18,7 @@ jest.mock("@/services/storage", () => ({
   loadExpenses: jest.fn(),
   loadGroceryItems: jest.fn(),
   loadSettings: jest.fn(),
+  ensureAnalyticsId: jest.fn(),
   upsertExpense: jest.fn(),
   updateExpenseById: jest.fn(),
   deleteExpenseById: jest.fn(),
@@ -81,6 +83,7 @@ describe("AppProvider", () => {
     (loadExpenses as jest.Mock).mockResolvedValue([]);
     (loadGroceryItems as jest.Mock).mockResolvedValue([]);
     (loadSettings as jest.Mock).mockResolvedValue(defaultSettings);
+    (ensureAnalyticsId as jest.Mock).mockResolvedValue("anon_test");
   });
 
   afterEach(() => {

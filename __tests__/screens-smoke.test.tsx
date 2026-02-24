@@ -12,6 +12,21 @@ import TemplatesScreen from "@/app/templates/index";
 import AddTemplateScreen from "@/app/templates/add";
 import EditTemplateScreen from "@/app/templates/edit";
 
+jest.mock("@/features/templates/services/template-learner", () => ({
+  TemplateLearner: {
+    trackGroceryItem: jest.fn(),
+    detectLearningCandidates: jest.fn(async () => null),
+    recordSuggestion: jest.fn(),
+    dismissForever: jest.fn(),
+  },
+}));
+
+jest.mock("@/features/templates/services/learning-storage", () => ({
+  LearningStorage: {
+    clear: jest.fn(),
+  },
+}));
+
 jest.mock("@/contexts/app-context", () => {
   const useApp = jest.fn();
 

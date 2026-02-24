@@ -3,6 +3,7 @@ import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { VoiceAssistantModal } from "@/features/ai/components/voice-assistant-modal";
 import { Colors } from "@/constants/theme";
 import { useI18n, useTheme } from "@/contexts/app-selectors";
+import { AnalyticsEvents, trackEvent } from "@/services/analytics";
 import {
   Analytics01Icon,
   AiMicIcon,
@@ -41,6 +42,28 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
     settings: t.tabs.settings,
   };
 
+  const openVoiceModal = () => {
+    setVoiceModalVisible((prev) => {
+      if (!prev) {
+        trackEvent(AnalyticsEvents.MODAL_OPENED, {
+          modal: "voice_assistant",
+        });
+      }
+      return true;
+    });
+  };
+
+  const closeVoiceModal = () => {
+    setVoiceModalVisible((prev) => {
+      if (prev) {
+        trackEvent(AnalyticsEvents.MODAL_CLOSED, {
+          modal: "voice_assistant",
+        });
+      }
+      return false;
+    });
+  };
+
   return (
     <View
       style={[
@@ -70,6 +93,10 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
           });
 
           if (!isFocused && !event.defaultPrevented) {
+            trackEvent(AnalyticsEvents.TAB_CHANGED, {
+              from_tab: state.routes[state.index]?.name,
+              to_tab: route.name,
+            });
             navigation.navigate(route.name, route.params);
           }
         };
@@ -80,7 +107,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
               <View style={styles.voiceButtonWrapper}>
                 <Pressable
                   haptic="none"
-                  onPress={() => setVoiceModalVisible(true)}
+                  onPress={openVoiceModal}
                   style={({ pressed }) => [
                     styles.voiceButton,
                     {
@@ -113,7 +140,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
       })}
       <VoiceAssistantModal
         visible={voiceModalVisible}
-        onClose={() => setVoiceModalVisible(false)}
+        onClose={closeVoiceModal}
       />
     </View>
   );
