@@ -16,7 +16,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
         headerShown: false,
         animation: "shift",
-        lazy: false,
+        lazy: true,
       }}
     >
       <Tabs.Screen

@@ -4,12 +4,13 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import * as Application from "expo-application";
+import * as SplashScreen from "expo-splash-screen";
 import { Stack, useGlobalSearchParams, usePathname } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as NavigationBar from "expo-navigation-bar";
 import * as Updates from "expo-updates";
 import "react-native-reanimated";
-import React, { useEffect, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import { AppState, AppStateStatus, Platform } from "react-native";
 import { PostHogProvider, usePostHog } from "posthog-react-native";
 
@@ -33,6 +34,9 @@ import {
 export const unstable_settings = {
   anchor: "(tabs)",
 };
+
+// Prevent splash screen from auto-hiding before data is loaded
+SplashScreen.preventAutoHideAsync();
 
 const RootLayoutContent = () => {
   const colorScheme = useTheme();
@@ -198,6 +202,9 @@ const RootLayoutContent = () => {
 };
 
 export default function RootLayout() {
+  const onAppReady = useCallback(() => {
+    SplashScreen.hideAsync();
+  }, []);
   // Validate PostHog environment variables before rendering provider
   const apiKey = process.env.EXPO_PUBLIC_POSTHOG_API_KEY;
   const host = process.env.EXPO_PUBLIC_POSTHOG_HOST;
@@ -211,7 +218,7 @@ export default function RootLayout() {
     }
     return (
       <ErrorBoundary>
-        <AppProvider>
+        <AppProvider onReady={onAppReady}>
           <RootLayoutContent />
         </AppProvider>
       </ErrorBoundary>
@@ -249,7 +256,7 @@ export default function RootLayout() {
           captureScreens: false,
         }}
       >
-        <AppProvider>
+        <AppProvider onReady={onAppReady}>
           <RootLayoutContent />
         </AppProvider>
       </PostHogProvider>

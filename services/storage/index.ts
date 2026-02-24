@@ -94,10 +94,15 @@ const getGrocerySortOrder = (item: GroceryItem): number => {
 };
 
 /**
- * Validate JSON data size before saving
+ * Estimate data size without full JSON serialization.
+ * Uses item count × average row size as a fast heuristic.
  */
-const validateStorageSize = (data: string): boolean => {
-  return data.length <= MAX_STORAGE_SIZE;
+const estimateCollectionSize = (count: number, avgBytesPerItem: number): number => {
+  return count * avgBytesPerItem;
+};
+
+const isWithinStorageLimit = (count: number, avgBytesPerItem: number): boolean => {
+  return estimateCollectionSize(count, avgBytesPerItem) <= MAX_STORAGE_SIZE;
 };
 
 const setSecureItem = async (key: string, value: string) => {
@@ -226,9 +231,9 @@ export const saveExpenses = async (expenses: Expense[]): Promise<SaveExpensesRes
     );
   }
 
-  const jsonValue = JSON.stringify(expenses);
-  if (!validateStorageSize(jsonValue)) {
-    throw new Error("Cannot save expenses: payload exceeds storage size limit.");
+  // ~200 bytes per expense row on average (id, amount, category, date, description, currency)
+  if (!isWithinStorageLimit(expenses.length, 200)) {
+    throw new Error("Cannot save expenses: estimated payload exceeds storage size limit.");
   }
 
   await runQueuedWrite(async () => {
@@ -364,9 +369,8 @@ export const loadExpenses = async (): Promise<Expense[]> => {
 export const saveGroceryItems = async (items: GroceryItem[]): Promise<void> => {
   try {
     const limitedItems = items.slice(-MAX_GROCERY_ITEMS);
-    const jsonValue = JSON.stringify(limitedItems);
-
-    if (!validateStorageSize(jsonValue)) {
+    // ~250 bytes per grocery item on average (name, quantity, price, category, etc.)
+    if (!isWithinStorageLimit(limitedItems.length, 250)) {
       console.error("Grocery items data too large to save");
       return;
     }

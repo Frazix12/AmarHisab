@@ -29,7 +29,7 @@ import {
     Alert,
     BackHandler,
     Platform,
-    ScrollView,
+    FlatList,
     StyleSheet,
     Text,
     TextInput,
@@ -544,11 +544,13 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
               <Text style={[styles.pickerTitle, { color: colors.text }]}>
                 {t.templates.selectTemplate} ({formatNumber(matchingTemplates.length)} {t.templates.matches})
               </Text>
-              <ScrollView style={styles.pickerList}>
-                {matchingTemplates.map((match) => (
+              <FlatList
+                data={matchingTemplates}
+                keyExtractor={(match) => match.template.id}
+                style={styles.pickerList}
+                renderItem={({ item: match }) => (
                   <Pressable
                     haptic="medium"
-                    key={match.template.id}
                     onPress={() => handleAutofill(match.template.id)}
                     style={[
                       styles.templateOption,
@@ -608,8 +610,8 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                       </Text>
                     </View>
                   </Pressable>
-                ))}
-              </ScrollView>
+                )}
+              />
             </View>
           </Pressable>
         )}

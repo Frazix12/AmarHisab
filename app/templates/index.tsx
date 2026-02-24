@@ -325,6 +325,10 @@ export default function TemplatesScreen() {
         style={styles.list}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={renderEmptyState}
+        removeClippedSubviews
+        maxToRenderPerBatch={10}
+        initialNumToRender={8}
+        windowSize={5}
       />
 
       {/* Delete Confirmation Modal */}

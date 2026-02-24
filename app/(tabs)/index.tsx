@@ -95,9 +95,8 @@ export default function ExpensesScreen() {
     activeScale: 0.8,
   });
 
-  const handleExpensePress = useCallback((expense: Expense) => {
+  const handleExpensePress = useCallback((_expense: Expense) => {
     // TODO: Open edit expense modal
-    console.log("Edit expense", expense);
   }, []);
 
   const handleExpenseLongPress = useCallback((expense: Expense) => {

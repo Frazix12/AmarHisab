@@ -244,8 +244,9 @@ const FALLBACK_GROCERY_TO_EXPENSE_CATEGORY: Record<GroceryItem["category"], Expe
   other: "other",
 };
 
-export const AppProvider: React.FC<{ children: ReactNode }> = ({
+export const AppProvider: React.FC<{ children: ReactNode; onReady?: () => void }> = ({
   children,
+  onReady,
 }) => {
   const nativeColorScheme = useNativeColorScheme();
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -390,34 +391,45 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
           setElevenLabsApiKey(loadedSettings.elevenLabsApiKey);
         }
 
+        // Signal UI is ready before running analytics (deferred work)
+        onReady?.();
+
+        // Defer analytics identification to avoid blocking render
         const effectiveSettings = loadedSettings || DEFAULT_SETTINGS;
-        const analyticsId = await ensureAnalyticsId();
-        const hasGeminiKey = !!loadedSettings?.geminiApiKey;
-        const hasElevenLabsKey = !!loadedSettings?.elevenLabsApiKey;
+        queueMicrotask(() => {
+          if (!isMountedRef.current) return;
 
-        identifyUser(analyticsId, {
-          language: effectiveSettings.language,
-          currency_code: effectiveSettings.currency.code,
-          theme: effectiveSettings.theme,
-        });
+          const hasGeminiKey = !!loadedSettings?.geminiApiKey;
+          const hasElevenLabsKey = !!loadedSettings?.elevenLabsApiKey;
 
-        setSuperProperties({
-          language: effectiveSettings.language,
-          currency_code: effectiveSettings.currency.code,
-          theme: effectiveSettings.theme,
-          smart_suggestions_enabled: smartSuggestionsEnabled,
-        });
+          void ensureAnalyticsId().then((analyticsId) => {
+            if (!isMountedRef.current) return;
 
-        trackEvent(AnalyticsEvents.APP_DATA_LOADED, {
-          expense_count: loadedExpenses.length,
-          grocery_count: loadedGrocery.length,
-          template_count: loadedTemplates.length,
-          smart_suggestions_enabled: smartSuggestionsEnabled,
-          language: effectiveSettings.language,
-          currency_code: effectiveSettings.currency.code,
-          theme: effectiveSettings.theme,
-          has_gemini_key: hasGeminiKey,
-          has_elevenlabs_key: hasElevenLabsKey,
+            identifyUser(analyticsId, {
+              language: effectiveSettings.language,
+              currency_code: effectiveSettings.currency.code,
+              theme: effectiveSettings.theme,
+            });
+
+            setSuperProperties({
+              language: effectiveSettings.language,
+              currency_code: effectiveSettings.currency.code,
+              theme: effectiveSettings.theme,
+              smart_suggestions_enabled: smartSuggestionsEnabled,
+            });
+
+            trackEvent(AnalyticsEvents.APP_DATA_LOADED, {
+              expense_count: loadedExpenses.length,
+              grocery_count: loadedGrocery.length,
+              template_count: loadedTemplates.length,
+              smart_suggestions_enabled: smartSuggestionsEnabled,
+              language: effectiveSettings.language,
+              currency_code: effectiveSettings.currency.code,
+              theme: effectiveSettings.theme,
+              has_gemini_key: hasGeminiKey,
+              has_elevenlabs_key: hasElevenLabsKey,
+            });
+          });
         });
       } catch (error) {
         console.error("Failed to load app data:", error);
@@ -433,6 +445,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         setTemplates([]);
         groceryItemsRef.current = [];
         settingsRef.current = DEFAULT_SETTINGS;
+      } finally {
+        // Always hide splash screen, even on error
+        onReady?.();
       }
     };
 
