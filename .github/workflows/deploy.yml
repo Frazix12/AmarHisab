@@ -15,14 +15,13 @@ jobs:
       - name: 🏗 Setup repo
         uses: actions/checkout@v4
 
-      - name: 🏗 Setup Node
-        uses: actions/setup-node@v4
+      - name: 🏗 Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 20
-          cache: npm
+          bun-version: latest
 
       - name: 📦 Install dependencies
-        run: npm ci
+        run: bun install
 
       - name: 🏗 Setup Expo and EAS
         uses: expo/expo-github-action@v8
@@ -33,7 +32,7 @@ jobs:
       - name: � Compute EAS Fingerprint
         id: fingerprint
         run: |
-          FINGERPRINT=$(npx @expo/fingerprint . --format json | jq -r '.hash')
+          FINGERPRINT=$(bunx @expo/fingerprint . --format json | jq -r '.hash')
           echo "Native fingerprint hash: $FINGERPRINT"
           echo "hash=$FINGERPRINT" >> $GITHUB_OUTPUT
 
