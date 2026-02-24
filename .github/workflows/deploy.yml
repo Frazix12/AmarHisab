@@ -29,20 +29,31 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: � Compute EAS Fingerprint
+      - name: 🧬 Compute EAS Fingerprint
         id: fingerprint
         run: |
-          FINGERPRINT=$(bunx @expo/fingerprint . --format json | jq -r '.hash')
+          set -euo pipefail
+          FINGERPRINT=$(eas fingerprint:generate --platform android --json --non-interactive | jq -r '.hash')
+          if [ -z "$FINGERPRINT" ] || [ "$FINGERPRINT" = "null" ]; then
+            echo "Failed to compute fingerprint hash"
+            exit 1
+          fi
           echo "Native fingerprint hash: $FINGERPRINT"
           echo "hash=$FINGERPRINT" >> $GITHUB_OUTPUT
 
       - name: 🔎 Check for existing build on EAS
         id: check-build
         run: |
-          BUILD_JSON=$(eas build:list --platform android --status finished --limit 10 --json)
+          set -euo pipefail
+          FINGERPRINT_HASH="${{ steps.fingerprint.outputs.hash }}"
+          if ! BUILD_JSON=$(eas build:list --platform android --status finished --fingerprint-hash "$FINGERPRINT_HASH" --limit 1 --json --non-interactive); then
+            echo "Could not query previous builds. Falling back to full native build."
+            echo "needs_build=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
           echo "Looking for build with hash: ${{ steps.fingerprint.outputs.hash }}"
-          HAS_BUILD=$(echo $BUILD_JSON | jq -r --arg HASH "${{ steps.fingerprint.outputs.hash }}" '.[] | select(.gitCommitHash != null) | length > 0')
-          if [ "$HAS_BUILD" == "true" ]; then
+          HAS_BUILD=$(echo "$BUILD_JSON" | jq -r 'length > 0')
+          if [ "$HAS_BUILD" = "true" ]; then
             echo "Fingerprint matched. Native code has not changed."
             echo "needs_build=false" >> $GITHUB_OUTPUT
           else
@@ -57,9 +68,10 @@ jobs:
         if: steps.check-build.outputs.needs_build == 'true'
         id: build-apk
         run: |
+          set -euo pipefail
           echo "Starting full Android build..."
           BUILD_RES=$(eas build --platform android --profile production --non-interactive --json)
-          ARTIFACT_URL=$(echo $BUILD_RES | jq -r '.[0].artifacts.buildUrl')
+          ARTIFACT_URL=$(echo "$BUILD_RES" | jq -r 'if type == "array" then (.[0].artifacts.buildUrl // "") else (.artifacts.buildUrl // "") end')
           if [ "$ARTIFACT_URL" == "null" ] || [ -z "$ARTIFACT_URL" ]; then
             echo "Failed to extract build URL"
             exit 1
