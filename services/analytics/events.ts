@@ -77,6 +77,16 @@ export const AnalyticsEvents = {
   APP_OPENED: "app_opened",
   APP_BACKGROUNDED: "app_backgrounded",
   APP_DATA_LOADED: "app_data_loaded",
+
+  // ═══════════════════════════════════════════════════════════
+  // ONBOARDING
+  // ═══════════════════════════════════════════════════════════
+  ONBOARDING_STARTED: "onboarding_started",
+  ONBOARDING_STEP_VIEWED: "onboarding_step_viewed",
+  ONBOARDING_LANGUAGE_SELECTED: "onboarding_language_selected",
+  ONBOARDING_CURRENCY_SELECTED: "onboarding_currency_selected",
+  ONBOARDING_COMPLETED: "onboarding_completed",
+  ONBOARDING_SKIPPED: "onboarding_skipped",
 } as const;
 
 /**

@@ -717,3 +717,49 @@ export const saveOnboardingTipDismissed = async (
     console.error("Error saving onboarding tip dismissal:", error);
   }
 };
+
+const ONBOARDING_COMPLETED_KEY = "has_completed_onboarding";
+
+export async function loadOnboardingCompleted(): Promise<boolean> {
+  try {
+    await ensureDatabaseInitialized();
+    const rows = await db
+      .select({ value: appMetaTable.value })
+      .from(appMetaTable)
+      .where(eq(appMetaTable.key, ONBOARDING_COMPLETED_KEY));
+    return rows[0]?.value === "true";
+  } catch (error) {
+    console.error("Error loading onboarding completed:", error);
+    return false;
+  }
+}
+
+export async function saveOnboardingCompleted(): Promise<void> {
+  try {
+    await runQueuedWrite(async () => {
+      await ensureDatabaseInitialized();
+      await db
+        .insert(appMetaTable)
+        .values({ key: ONBOARDING_COMPLETED_KEY, value: "true" })
+        .onConflictDoUpdate({
+          target: appMetaTable.key,
+          set: { value: "true" },
+        });
+    }, "save_onboarding_completed");
+  } catch (error) {
+    console.error("Error saving onboarding completed:", error);
+  }
+}
+
+export async function resetOnboardingCompleted(): Promise<void> {
+  try {
+    await runQueuedWrite(async () => {
+      await ensureDatabaseInitialized();
+      await db
+        .delete(appMetaTable)
+        .where(eq(appMetaTable.key, ONBOARDING_COMPLETED_KEY));
+    }, "reset_onboarding_completed");
+  } catch (error) {
+    console.error("Error resetting onboarding completed:", error);
+  }
+}

@@ -4,12 +4,13 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import * as Application from "expo-application";
-import { Stack, useGlobalSearchParams, usePathname } from "expo-router";
+import { Stack, Redirect, useGlobalSearchParams, usePathname } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as NavigationBar from "expo-navigation-bar";
+import * as SplashScreen from "expo-splash-screen";
 import * as Updates from "expo-updates";
 import "react-native-reanimated";
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { AppState, AppStateStatus, Platform } from "react-native";
 import { PostHogProvider, usePostHog } from "posthog-react-native";
 
@@ -28,11 +29,17 @@ import { showNotification } from "@/services/notifications";
 import {
   loadAppUpdateFingerprint,
   saveAppUpdateFingerprint,
+  loadOnboardingCompleted,
 } from "@/services/storage";
 
 export const unstable_settings = {
   anchor: "(tabs)",
 };
+
+// Keep native splash screen visible until onboarding flag is loaded
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // Already hidden or not supported — ignore
+});
 
 const RootLayoutContent = () => {
   const colorScheme = useTheme();
@@ -175,6 +182,14 @@ const RootLayoutContent = () => {
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
+          name="onboarding"
+          options={{
+            headerShown: false,
+            animation: "none",
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen
           name="templates"
           options={{
             headerShown: false,
@@ -198,6 +213,36 @@ const RootLayoutContent = () => {
 };
 
 export default function RootLayout() {
+  const [isReady, setIsReady] = useState(false);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
+
+  // Load onboarding flag OUTSIDE AppProvider — independent check before any context loads
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const completed = await loadOnboardingCompleted();
+        if (isMounted) {
+          setNeedsOnboarding(!completed);
+        }
+      } catch {
+        // If we can't read the flag, default to showing onboarding
+        if (isMounted) setNeedsOnboarding(true);
+      } finally {
+        if (isMounted) {
+          setIsReady(true);
+          await SplashScreen.hideAsync().catch(() => {});
+        }
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Keep splash visible until onboarding check is done
+  if (!isReady) return null;
+
   // Validate PostHog environment variables before rendering provider
   const apiKey = process.env.EXPO_PUBLIC_POSTHOG_API_KEY;
   const host = process.env.EXPO_PUBLIC_POSTHOG_HOST;
@@ -212,6 +257,7 @@ export default function RootLayout() {
     return (
       <ErrorBoundary>
         <AppProvider>
+          {needsOnboarding && <Redirect href="/onboarding" />}
           <RootLayoutContent />
         </AppProvider>
       </ErrorBoundary>
@@ -250,6 +296,7 @@ export default function RootLayout() {
         }}
       >
         <AppProvider>
+          {needsOnboarding && <Redirect href="/onboarding" />}
           <RootLayoutContent />
         </AppProvider>
       </PostHogProvider>

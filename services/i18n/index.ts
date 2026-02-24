@@ -224,6 +224,28 @@ export const translations = {
       longPressTip: "Long-press any item to edit or delete it quickly.",
     },
 
+    onboarding: {
+      welcome: "Welcome to Amar Hisab",
+      welcomeSubtitle: "Your personal, private expense tracker",
+      privacyNote: "All your data stays on your device — always.",
+      getStarted: "Get Started",
+      next: "Next",
+      skip: "Skip",
+      chooseLanguage: "Choose Your Language",
+      chooseLanguageSubtitle: "You can change this anytime in Settings",
+      chooseCurrency: "Choose Your Currency",
+      chooseCurrencySubtitle: "This will be used for all your expenses",
+      featureExpensesTitle: "Track Every Expense",
+      featureExpensesBody: "Add expenses with categories, photos, and descriptions. See daily, weekly, and monthly statistics at a glance.",
+      featureGroceryTitle: "Smart Grocery Lists",
+      featureGroceryBody: "Build shopping lists and automatically convert purchased items into expenses when you check them off.",
+      featureAiTitle: "AI-Powered Features",
+      featureAiBody: "Use voice commands to add items and get smart template suggestions based on your shopping patterns. Set up in Settings.",
+      allSet: "You're All Set!",
+      allSetSubtitle: "Start tracking your expenses and groceries",
+      letsGo: "Let's Go",
+    },
+
     // Settings
     settings: {
       title: "Settings",
@@ -834,6 +856,28 @@ export const translations = {
     // Tips
     tips: {
       longPressTip: "চেপে ধরে রাখলে দ্রুত এডিট বা ডিলিট করা যাবে।",
+    },
+
+    onboarding: {
+      welcome: "আমার হিসাবে স্বাগতম",
+      welcomeSubtitle: "আপনার ব্যক্তিগত, গোপনীয় খরচ ট্র্যাকার",
+      privacyNote: "আপনার সব তথ্য সবসময় আপনার ডিভাইসেই থাকে।",
+      getStarted: "শুরু করুন",
+      next: "পরবর্তী",
+      skip: "এড়িয়ে যান",
+      chooseLanguage: "আপনার ভাষা বাছুন",
+      chooseLanguageSubtitle: "সেটিংস থেকে যেকোনো সময় পরিবর্তন করতে পারবেন",
+      chooseCurrency: "আপনার মুদ্রা বাছুন",
+      chooseCurrencySubtitle: "এটি আপনার সব খরচের জন্য ব্যবহার হবে",
+      featureExpensesTitle: "প্রতিটি খরচ ট্র্যাক করুন",
+      featureExpensesBody: "ক্যাটাগরি, ছবি এবং বিবরণ সহ খরচ যোগ করুন। দৈনিক, সাপ্তাহিক এবং মাসিক পরিসংখ্যান দেখুন।",
+      featureGroceryTitle: "স্মার্ট বাজারের তালিকা",
+      featureGroceryBody: "বাজারের তালিকা তৈরি করুন এবং কেনাকাটা সম্পন্ন হলে স্বয়ংক্রিয়ভাবে খরচে রূপান্তর করুন।",
+      featureAiTitle: "AI-চালিত ফিচার",
+      featureAiBody: "ভয়েস কমান্ডে আইটেম যোগ করুন এবং স্মার্ট টেমপ্লেট সাজেশন পান। সেটিংসে সেটআপ করুন।",
+      allSet: "সব প্রস্তুত!",
+      allSetSubtitle: "আপনার খরচ এবং বাজার ট্র্যাক করা শুরু করুন",
+      letsGo: "চলুন শুরু করি",
     },
 
     // Settings
