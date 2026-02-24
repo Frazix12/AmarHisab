@@ -58,29 +58,51 @@ lines.forEach((line) => {
         return;
     }
 
-    console.log(`Setting secret: ${key}`);
+    console.log(`Setting sensitive env: ${key}`);
 
-    // Using spawnSync to avoid shell escaping issues
-    const result = spawnSync('eas', [
-        'secret:create',
-        '--scope', 'project',
+    const environments = ['development', 'preview', 'production'];
+    let keySuccess = false;
+
+    const easCreate = (env) => spawnSync('eas', [
+        'env:create',
+        '--environment', env,
         '--name', key,
-        '--type', 'string',
+        '--value', value,
+        '--visibility', 'sensitive',
         '--force',
         '--non-interactive'
-    ], {
-        encoding: 'utf-8',
-        input: `${value}\n`,
-        stdio: ['pipe', 'pipe', 'pipe'],
-    });
+    ], { encoding: 'utf-8', shell: true, stdio: ['pipe', 'pipe', 'pipe'] });
 
-    if (result.status === 0) {
-        console.log(`Successfully set ${key}`);
-        successCount++;
-    } else {
-        console.error(`Failed to set ${key}`);
-        failCount++;
+    for (const env of environments) {
+        let result = easCreate(env);
+
+        // EAS blocks downgrading secret → sensitive; delete then recreate
+        const combined = [result.stderr, result.stdout].map(s => (s || '')).join(' ');
+        if (result.status !== 0 && combined.includes('cannot change a secret variable')) {
+            console.log(`  ↻ [${env}] ${key}: was secret, deleting to recreate as sensitive...`);
+            spawnSync('eas', [
+                'env:delete',
+                '--variable-environment', env,
+                '--variable-name', key,
+                '--non-interactive'
+            ], { encoding: 'utf-8', shell: true, stdio: ['pipe', 'pipe', 'pipe'] });
+            result = easCreate(env);
+        }
+
+        if (result.status === 0) {
+            console.log(`  ✓ [${env}] ${key}`);
+            keySuccess = true;
+        } else {
+            const errMsg = [result.stderr, result.stdout]
+                .map(s => (s || '').trim())
+                .filter(Boolean)
+                .join(' | ');
+            console.error(`  ✗ [${env}] ${key}: ${errMsg}`);
+        }
     }
+
+    if (keySuccess) successCount++; else failCount++;
 });
 
 console.log(`\nSync complete. Success: ${successCount}, Failed: ${failCount}`);
+

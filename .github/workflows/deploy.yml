@@ -1,0 +1,78 @@
+name: Expo CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  check-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed for creating GitHub Releases
+
+    steps:
+      - name: 🏗 Setup repo
+        uses: actions/checkout@v4
+
+      - name: 🏗 Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🏗 Setup Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      # ==========================================
+      # PATH A: NATIVE CHANGED => BUILD & RELEASE
+      # ==========================================
+      - name: 📱 Generate Native Fingerprint
+        id: fingerprint
+        uses: expo/expo-github-action/fingerprint@v8
+
+      - name: 🔎 Check for existing Android build
+        id: get-build
+        uses: expo/expo-github-action/get-build@v8
+        with:
+          platform: android
+          profile: production
+          fingerprint-hash: ${{ steps.fingerprint.outputs.fingerprint-hash }}
+
+      - name: 🚀 Build APK (Native Changes Detected)
+        if: steps.get-build.outputs.build-id == ''
+        id: build-apk
+        uses: expo/expo-github-action/build@v8
+        with:
+          platform: android
+          profile: production
+          wait: true # Wait for build to finish to get the download URL
+
+      - name: 📥 Download APK
+        if: steps.get-build.outputs.build-id == ''
+        run: curl -L -o app-release.apk "${{ steps.build-apk.outputs.build-artifact-url }}"
+
+      - name: 📦 Create GitHub Release
+        if: steps.get-build.outputs.build-id == ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ github.run_number }}"
+          name: "Release v${{ github.run_number }}"
+          files: app-release.apk
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+
+      # ==========================================
+      # PATH B: NO NATIVE CHANGES => OTA UPDATE
+      # ==========================================
+      - name: ⚡ Publish OTA Update (No Native Changes)
+        if: steps.get-build.outputs.build-id != ''
+        run: |
+          echo "No native changes detected. Publishing OTA Update..."
+          eas update --auto --branch production --non-interactive
