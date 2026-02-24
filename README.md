@@ -19,10 +19,10 @@ _A beautiful, minimalistic expense tracker with integrated grocery list manageme
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="screenshots/Expence.png" width="22%" alt="Expense Screen" />
-  <img src="screenshots/grocery.png" width="22%" alt="Grocery Screen" />
-  <img src="screenshots/stats.png" width="22%" alt="Stats Screen" />
-  <img src="screenshots/aivoice.png" width="22%" alt="AI Voice Screen" />
+  <img src="docs/screenshots/Expence.png" width="22%" alt="Expense Screen" />
+  <img src="docs/screenshots/grocery.png" width="22%" alt="Grocery Screen" />
+  <img src="docs/screenshots/stats.png" width="22%" alt="Stats Screen" />
+  <img src="docs/screenshots/aivoice.png" width="22%" alt="AI Voice Screen" />
 </p>
 
 ## 📱 About the App
