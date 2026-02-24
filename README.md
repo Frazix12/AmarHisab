@@ -10,7 +10,7 @@ _A beautiful, minimalistic expense tracker with integrated grocery list manageme
 
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-[📥 Download APK from Releases](https://github.com/Frazix12/AmarHisab/releases) • [🐛 Report Bug](https://github.com/Frazix12/AmarHisab/issues)
+[📥 Download APK from Releases](https://github.com/Frazix12/AmarHisab/releases) • [🌐 Product Page](https://frazix.is-a.dev/AmarHisab/) • [🐛 Report Bug](https://github.com/Frazix12/AmarHisab/issues)
 
 </div>
 
