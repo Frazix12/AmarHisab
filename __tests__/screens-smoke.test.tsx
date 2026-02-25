@@ -125,14 +125,6 @@ jest.mock("@/components/ui/toast", () => ({
   showToast: jest.fn(),
 }));
 
-jest.mock("@/features/expenses/components/add-expense-modal", () => ({
-  AddExpenseModal: () => null,
-}));
-
-jest.mock("@/features/expenses/components/edit-expense-modal", () => ({
-  EditExpenseModal: () => null,
-}));
-
 jest.mock("@/features/expenses/components/expense-card", () => ({
   ExpenseCard: () => null,
 }));
