@@ -15,9 +15,10 @@ export const ensureDatabaseInitialized = async (): Promise<void> => {
   }
 
   initializationPromise = (async () => {
-    await expoDb.execAsync("PRAGMA journal_mode = WAL;");
+    try {
+      await expoDb.execAsync("PRAGMA journal_mode = WAL;");
 
-    await expoDb.execAsync(`
+      await expoDb.execAsync(`
       CREATE TABLE IF NOT EXISTS expenses (
         id TEXT PRIMARY KEY NOT NULL,
         amount REAL NOT NULL,
@@ -104,10 +105,14 @@ export const ensureDatabaseInitialized = async (): Promise<void> => {
       );
     `);
 
-    await expoDb.runAsync(
-      "INSERT OR REPLACE INTO app_meta (key, value) VALUES (?, ?)",
-      ["schema_version", SCHEMA_VERSION],
-    );
+      await expoDb.runAsync(
+        "INSERT OR IGNORE INTO app_meta (key, value) VALUES (?, ?)",
+        ["schema_version", SCHEMA_VERSION],
+      );
+    } catch (error) {
+      initializationPromise = null;
+      throw error;
+    }
   })();
 
   return initializationPromise;

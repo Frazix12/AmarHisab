@@ -1,5 +1,3 @@
-import WebSocket, { RawData } from "ws";
-
 export interface ElevenLabsRealtimeConfig {
   apiKey: string;
   modelId?: string;
@@ -31,6 +29,12 @@ const KNOWN_ERROR_TYPES = new Set([
   "internal_error",
 ]);
 
+type WebSocketWithHeadersConstructor = new (
+  url: string,
+  protocols?: string | string[] | null,
+  options?: { headers?: Record<string, string> },
+) => WebSocket;
+
 const resolveSampleRate = (audioFormat: string) => {
   const match = audioFormat.match(/pcm_(\d+)/);
   const parsed = match ? Number.parseInt(match[1], 10) : NaN;
@@ -60,22 +64,43 @@ const parseRealtimeMessage = (raw: string) => {
   }
 };
 
+const getSocketErrorMessage = (errorEvent: unknown): string => {
+  if (typeof errorEvent !== "object" || errorEvent === null) {
+    return "Unknown websocket error";
+  }
+
+  if (
+    "message" in errorEvent &&
+    typeof (errorEvent as Record<string, unknown>).message === "string"
+  ) {
+    return (errorEvent as Record<string, string>).message;
+  }
+
+  return "Unknown websocket error";
+};
+
 export const createElevenLabsRealtimeConnection = (
   config: ElevenLabsRealtimeConfig,
 ): ElevenLabsRealtimeConnection => {
   const audioFormat = config.audioFormat ?? DEFAULT_AUDIO_FORMAT;
   const url = buildRealtimeUrl({ ...config, audioFormat });
   const sampleRate = resolveSampleRate(audioFormat);
-  const ws = new WebSocket(url, {
+  const WebSocketWithHeaders = WebSocket as unknown as WebSocketWithHeadersConstructor;
+  const ws = new WebSocketWithHeaders(url, undefined, {
     headers: {
       "xi-api-key": config.apiKey,
     },
   });
 
-  ws.on("open", () => {});
+  ws.onopen = () => {};
 
-  ws.on("message", (data: RawData) => {
-    const raw = typeof data === "string" ? data : data.toString();
+  ws.onmessage = (event) => {
+    const raw =
+      typeof event.data === "string"
+        ? event.data
+        : event.data != null
+          ? String(event.data)
+          : "";
     const message = parseRealtimeMessage(raw);
     if (!message) return;
 
@@ -109,12 +134,12 @@ export const createElevenLabsRealtimeConnection = (
         message.error?.message || message.message || "Realtime transcription error";
       config.onError?.(errorMessage);
     }
-  });
+  };
 
-  ws.on("error", (ev: Error) => {
-    const details = ev instanceof Error ? ev.message : JSON.stringify(ev);
+  ws.onerror = (event) => {
+    const details = getSocketErrorMessage(event);
     config.onError?.(`Realtime transcription connection error: ${details}`);
-  });
+  };
 
   const sendAudioChunk = (base64Audio: string) => {
     if (ws.readyState !== WebSocket.OPEN) return;

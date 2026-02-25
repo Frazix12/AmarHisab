@@ -3,8 +3,6 @@
 // Mock the DB layer so we don't need a real SQLite instance in tests.
 // We replicate the in-memory behaviour of the three onboarding functions.
 
-let _stored: string | undefined;
-
 jest.mock("@/services/storage", () => {
   const ONBOARDING_KEY = "has_completed_onboarding";
 

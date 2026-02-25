@@ -89,9 +89,7 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
             accessibilityLabel={t.camera.usePhoto}
           >
             <HugeiconsIcon icon={Tick02Icon} size={18} color={colors.onPrimary} strokeWidth={2.2} />
-            <Text style={[styles.actionButtonText, { color: colors.onPrimary }]}> 
-              {t.camera.usePhoto}
-            </Text>
+            <Text style={[styles.actionButtonText, { color: colors.onPrimary }]}>{t.camera.usePhoto}</Text>
           </Pressable>
         </View>
       ) : (

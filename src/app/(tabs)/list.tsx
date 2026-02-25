@@ -11,6 +11,7 @@ import {
   useI18n,
   useLearningDomain,
   useSettingsDomain,
+  useTemplateDomain,
   useTheme,
 } from "@/contexts/app-selectors";
 import { TemplateLearner } from "@/features/templates/services/template-learner";
@@ -86,6 +87,7 @@ export default function GroceryScreen() {
     dismissSuggestion,
     smartSuggestionsEnabled,
   } = useLearningDomain();
+  const { deleteTemplate } = useTemplateDomain();
   const { settings } = useSettingsDomain();
   const { t, formatNumber } = useI18n();
   const colorScheme = useTheme();
@@ -98,6 +100,8 @@ export default function GroceryScreen() {
   const [selectedItem, setSelectedItem] = useState<GroceryItem | null>(null);
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [savedSuggestionTemplateId, setSavedSuggestionTemplateId] =
+    useState<string | null>(null);
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
 
@@ -194,14 +198,12 @@ export default function GroceryScreen() {
   );
 
   const handleAddItem = useCallback(() => {
-    setModalVisible((prev) => {
-      const next = !prev;
-      trackEvent(next ? AnalyticsEvents.MODAL_OPENED : AnalyticsEvents.MODAL_CLOSED, {
-        modal: "add_grocery",
-      });
-      return next;
+    const next = !modalVisible;
+    setModalVisible(next);
+    trackEvent(next ? AnalyticsEvents.MODAL_OPENED : AnalyticsEvents.MODAL_CLOSED, {
+      modal: "add_grocery",
     });
-  }, []);
+  }, [modalVisible]);
 
   const fabStartCenterY = screenHeight - insets.bottom - FAB_BOTTOM - FAB_SIZE / 2;
   const fabTargetCenterY =
@@ -299,9 +301,24 @@ export default function GroceryScreen() {
       has_default_quantity: !!currentSuggestion.defaultQuantity,
     });
 
-    await acceptSuggestion(currentSuggestion);
+    const savedTemplate = await acceptSuggestion(currentSuggestion);
+    setSavedSuggestionTemplateId(savedTemplate.id);
     setShowSuggestion(false);
+    setCurrentSuggestion(null);
   }, [acceptSuggestion, currentSuggestion]);
+
+  const handleUndoSuggestion = useCallback(async () => {
+    if (savedSuggestionTemplateId) {
+      try {
+        await deleteTemplate(savedSuggestionTemplateId);
+      } catch (error) {
+        console.warn("Failed to undo saved suggestion template", error);
+      }
+    }
+    setSavedSuggestionTemplateId(null);
+    setShowSuggestion(false);
+    setCurrentSuggestion(null);
+  }, [deleteTemplate, savedSuggestionTemplateId]);
 
   const handleDismissSuggestion = useCallback(
     async (forever: boolean) => {
@@ -317,6 +334,7 @@ export default function GroceryScreen() {
       await dismissSuggestion(currentSuggestion.productNameNormalized, forever);
       setShowSuggestion(false);
       setCurrentSuggestion(null);
+      setSavedSuggestionTemplateId(null);
     },
     [currentSuggestion, dismissSuggestion],
   );
@@ -429,13 +447,12 @@ export default function GroceryScreen() {
           suggestion={currentSuggestion}
           onSave={handleSaveSuggestion}
           onDismiss={handleDismissSuggestion}
+          onUndo={handleUndoSuggestion}
           visible={showSuggestion}
         />
       )}
 
       <FlashList
-        // @ts-expect-error FlashList v2 typings omit estimatedItemSize in this setup.
-        estimatedItemSize={72}
         data={groceryListItems}
         keyExtractor={(item) => item.id}
         renderItem={renderListItem}
@@ -450,14 +467,12 @@ export default function GroceryScreen() {
       <AddGroceryModal
         visible={modalVisible}
         onClose={() => {
-          setModalVisible((prev) => {
-            if (prev) {
-              trackEvent(AnalyticsEvents.MODAL_CLOSED, {
-                modal: "add_grocery",
-              });
-            }
-            return false;
-          });
+          if (modalVisible) {
+            trackEvent(AnalyticsEvents.MODAL_CLOSED, {
+              modal: "add_grocery",
+            });
+          }
+          setModalVisible(false);
         }}
         fabConfig={{
           fabSize: FAB_SIZE,

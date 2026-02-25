@@ -93,9 +93,12 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
     const normalizedPrice = parseBanglaNumber(values.price).trim();
     const hasPrice = normalizedPrice.length > 0;
     const numPrice = hasPrice ? Number.parseFloat(normalizedPrice) : null;
-    if (hasPrice && (numPrice === null || isNaN(numPrice) || numPrice < 0)) {
-      Alert.alert(t.alerts.errorTitle, t.alerts.invalidPrice);
-      return;
+    if (hasPrice) {
+      const parsedPrice = numPrice ?? Number.NaN;
+      if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
+        Alert.alert(t.alerts.errorTitle, t.alerts.invalidPrice);
+        return;
+      }
     }
 
     // Update the grocery item
@@ -311,8 +314,8 @@ export const EditGroceryModal: React.FC<EditGroceryModalProps> = ({
                     borderWidth: 2,
                     borderRadius: 6,
                   }}
-                  onPress={(checked: boolean) =>
-                    setValue("updateTemplateChecked", checked)
+                  onPress={() =>
+                    setValue("updateTemplateChecked", !updateTemplateChecked)
                   }
                 />
               </View>

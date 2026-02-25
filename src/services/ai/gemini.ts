@@ -217,6 +217,19 @@ export async function detectItemCategory(
 
     const normalizedName = itemName.trim().toLowerCase();
 
+    const existingInFlight = groceryCategoryInFlight.get(normalizedName);
+    if (existingInFlight) {
+      return existingInFlight;
+    }
+
+    let resolveInFlight!: (value: GroceryCategory | null) => void;
+    let rejectInFlight!: (reason?: unknown) => void;
+    const placeholderPromise = new Promise<GroceryCategory | null>((resolve, reject) => {
+      resolveInFlight = resolve;
+      rejectInFlight = reject;
+    });
+    groceryCategoryInFlight.set(normalizedName, placeholderPromise);
+
     // Check cache first
     const cached = groceryCategoryCache.get(normalizedName);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
@@ -247,11 +260,6 @@ export async function detectItemCategory(
       });
 
       return sqliteCachedCategory;
-    }
-
-    const inFlight = groceryCategoryInFlight.get(normalizedName);
-    if (inFlight) {
-      return inFlight;
     }
 
     const requestPromise = (async (): Promise<GroceryCategory | null> => {
@@ -359,8 +367,8 @@ Category:`;
       groceryCategoryInFlight.delete(normalizedName);
     });
 
-    groceryCategoryInFlight.set(normalizedName, requestPromise);
-    return requestPromise;
+    requestPromise.then(resolveInFlight, rejectInFlight);
+    return placeholderPromise;
   } catch (error) {
     trackGeminiGeneration({
       spanName,
@@ -408,6 +416,19 @@ export async function detectExpenseCategory(
 
     const normalizedDesc = description.trim().toLowerCase();
 
+    const existingInFlight = expenseCategoryInFlight.get(normalizedDesc);
+    if (existingInFlight) {
+      return existingInFlight;
+    }
+
+    let resolveInFlight!: (value: ExpenseCategory | null) => void;
+    let rejectInFlight!: (reason?: unknown) => void;
+    const placeholderPromise = new Promise<ExpenseCategory | null>((resolve, reject) => {
+      resolveInFlight = resolve;
+      rejectInFlight = reject;
+    });
+    expenseCategoryInFlight.set(normalizedDesc, placeholderPromise);
+
     // Check cache first
     const cached = expenseCategoryCache.get(normalizedDesc);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
@@ -438,11 +459,6 @@ export async function detectExpenseCategory(
       });
 
       return sqliteCachedCategory;
-    }
-
-    const inFlight = expenseCategoryInFlight.get(normalizedDesc);
-    if (inFlight) {
-      return inFlight;
     }
 
     const requestPromise = (async (): Promise<ExpenseCategory | null> => {
@@ -561,8 +577,8 @@ Category:`;
       expenseCategoryInFlight.delete(normalizedDesc);
     });
 
-    expenseCategoryInFlight.set(normalizedDesc, requestPromise);
-    return requestPromise;
+    requestPromise.then(resolveInFlight, rejectInFlight);
+    return placeholderPromise;
   } catch (error) {
     trackGeminiGeneration({
       spanName,
@@ -752,7 +768,7 @@ ${sanitizedTranscript}
         .map((item) => {
           const amount = normalizeNumber((item as any)?.amount);
           const description = normalizeString((item as any)?.description);
-          if (!amount || !description) return null;
+          if (amount === null || !description) return null;
           return {
             amount,
             description,

@@ -60,7 +60,7 @@ describe("template learner", () => {
       "@/features/templates/services/learning-storage",
     );
 
-    await TemplateLearner.trackGroceryItem(buildItem({ id: "4" }));
+    await TemplateLearner.trackGroceryItem(buildItem({ id: "4" }), "test-user");
     expect(LearningStorage.updateTelemetry).toHaveBeenCalled();
   });
 });

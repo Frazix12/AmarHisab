@@ -1,4 +1,5 @@
 import { Colors } from "@/constants/theme";
+import { showToast } from "@/components/ui/toast";
 import {
   useI18n,
   useSettingsDomain,
@@ -55,10 +56,15 @@ export default function TemplatesScreen() {
 
   const handleDelete = useCallback(
     async (id: string) => {
-      await deleteTemplate(id);
-      setDeleteConfirm(null);
+      try {
+        await deleteTemplate(id);
+        setDeleteConfirm(null);
+      } catch (error) {
+        console.error("Failed to delete template:", error);
+        showToast(t.alerts.errorTitle || "Error");
+      }
     },
-    [deleteTemplate],
+    [deleteTemplate, t.alerts.errorTitle],
   );
 
   const getCategoryLabel = useCallback(
@@ -68,8 +74,14 @@ export default function TemplatesScreen() {
   );
 
   const formatDate = useCallback(
-    (date: Date) => {
+    (date: Date | string | undefined | null) => {
+      if (!date) {
+        return "-";
+      }
       const d = new Date(date);
+      if (Number.isNaN(d.getTime())) {
+        return "-";
+      }
       return formatNumber(
         d.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
       );

@@ -14,6 +14,8 @@ export const useCamera = (): UseCameraState => {
   const [flashMode, setFlashMode] = useState<CameraFlashMode>("off");
   const [capturedPhotoUri, setCapturedPhotoUri] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const isCapturingRef = useRef(false);
+  const captureSessionRef = useRef(0);
 
   useEffect(() => {
     if (deviceState.isFrontCamera) {
@@ -26,34 +28,49 @@ export const useCamera = (): UseCameraState => {
   }, []);
 
   const capturePhoto = useCallback(async () => {
-    if (isCapturing) {
+    if (isCapturingRef.current) {
       return null;
     }
 
+    isCapturingRef.current = true;
+    setIsCapturing(true);
+    const captureSession = ++captureSessionRef.current;
+
     const allowed = await permissions.ensurePermission();
     if (!allowed) {
+      if (captureSession === captureSessionRef.current) {
+        isCapturingRef.current = false;
+        setIsCapturing(false);
+      }
       return null;
     }
 
     try {
-      setIsCapturing(true);
       const effectiveFlashMode = deviceState.isFrontCamera ? "off" : flashMode;
       const photoUri = await takePhotoWithCamera(cameraRef, effectiveFlashMode);
+      if (captureSession !== captureSessionRef.current) {
+        return null;
+      }
       setCapturedPhotoUri(photoUri);
       return photoUri;
     } catch (error) {
       console.error("Failed to capture photo:", error);
       return null;
     } finally {
-      setIsCapturing(false);
+      if (captureSession === captureSessionRef.current) {
+        isCapturingRef.current = false;
+        setIsCapturing(false);
+      }
     }
-  }, [deviceState.isFrontCamera, flashMode, isCapturing, permissions]);
+  }, [deviceState.isFrontCamera, flashMode, permissions]);
 
   const retakePhoto = useCallback(() => {
     setCapturedPhotoUri(null);
   }, []);
 
   const resetCamera = useCallback(() => {
+    captureSessionRef.current += 1;
+    isCapturingRef.current = false;
     setCapturedPhotoUri(null);
     setFlashMode("off");
     setIsCapturing(false);

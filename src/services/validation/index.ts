@@ -1,3 +1,5 @@
+import { parseBanglaNumber } from "@/utils/format";
+
 /**
  * Input Validation & Sanitization Service
  * Protects against malicious inputs including XSS, SQL injection, and code injection
@@ -139,8 +141,14 @@ export function validateAmount(amount: unknown): ValidationResult {
   
   if (typeof amount === 'string') {
     // Remove currency symbols and whitespace
-    const cleaned = amount.replace(/[^\d.-]/g, '');
-    numAmount = parseFloat(cleaned);
+    const normalizedInput = parseBanglaNumber(amount);
+    const cleaned = normalizedInput.replace(/[^\d.-]/g, '');
+
+    if (!/^-?\d+(\.\d+)?$/.test(cleaned)) {
+      return { isValid: false, error: 'Amount must be a valid number' };
+    }
+
+    numAmount = Number.parseFloat(cleaned);
   } else if (typeof amount === 'number') {
     numAmount = amount;
   } else {

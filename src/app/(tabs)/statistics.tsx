@@ -32,7 +32,6 @@ import React, { useCallback, useMemo, useState } from "react";
 import {
   Alert,
   Modal,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -139,7 +138,6 @@ export default function StatisticsScreen() {
   const maxContentWidth = Math.min(screenWidth, 768);
   const isBangla = settings.language === "bn";
 
-  const [refreshing, setRefreshing] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [periodOffset, setPeriodOffset] = useState(0);
@@ -150,11 +148,6 @@ export default function StatisticsScreen() {
   const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(
     null,
   );
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 500);
-  }, []);
 
   const sortedExpenses = useMemo(
     () => [...expenses].sort((a, b) => b.date.getTime() - a.date.getTime()),
@@ -313,7 +306,7 @@ export default function StatisticsScreen() {
   );
 
   const handleExpensePress = useCallback((expense: Expense) => {
-    console.log("Edit expense", expense);
+    router.push(`/expenses/edit?id=${expense.id}` as any);
   }, []);
 
   const handleExpenseLongPress = useCallback((expense: Expense) => {
@@ -722,13 +715,6 @@ export default function StatisticsScreen() {
             ListHeaderComponent={listHeader}
             ListEmptyComponent={renderEmptyState}
             ListFooterComponent={<View style={styles.bottomSpacer} />}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                colors={[colors.primary]}
-              />
-            }
           />
         </View>
 

@@ -12,5 +12,4 @@
 <!-- - [ ] use <https://docs.swmansion.com/react-native-gesture-handler/> for gesture handling and tab switching. -->
 - [ ] add a way to add income.
 - [ ] add receipt scanner AI to AI MODE.
-- [ ] add a way for users to add bank or bikash statements and AI will read the statement and add the expence or income to the app. 
-
+- [ ] add a way for users to add bank or bikash statements and AI will read the statement and add the expense or income to the app. 

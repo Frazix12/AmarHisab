@@ -24,7 +24,7 @@ import { HugeiconsIcon } from "@hugeicons/react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
   Alert,
@@ -71,6 +71,7 @@ export function ExpenseForm({
   const [aiDetectedCategory, setAiDetectedCategory] = useState(false);
   const [cameraVisible, setCameraVisible] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const initialDetectRef = useRef(false);
 
   const defaultValues = useMemo<ExpenseFormValues>(
     () => ({
@@ -94,21 +95,31 @@ export function ExpenseForm({
 
   useEffect(() => {
     const detectCategory = async () => {
+      if (mode === "edit" && !initialDetectRef.current) {
+        initialDetectRef.current = true;
+        return;
+      }
+
       if (description.trim().length >= 3) {
         setAiDetecting(true);
-        const detectedCategory = await detectExpenseCategory(description);
-        setAiDetecting(false);
+        try {
+          const detectedCategory = await detectExpenseCategory(description);
 
-        if (detectedCategory) {
-          setValue("category", detectedCategory);
-          setAiDetectedCategory(true);
+          if (detectedCategory) {
+            setValue("category", detectedCategory);
+            setAiDetectedCategory(true);
+          }
+        } catch (error) {
+          console.warn("Failed to detect expense category", error);
+        } finally {
+          setAiDetecting(false);
         }
       }
     };
 
     const timeout = setTimeout(detectCategory, 500);
     return () => clearTimeout(timeout);
-  }, [description, setValue]);
+  }, [description, mode, setValue]);
 
   const pickImageFromGallery = async () => {
     try {

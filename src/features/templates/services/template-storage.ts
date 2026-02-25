@@ -79,7 +79,7 @@ export const TemplateStorage = {
 
       const newTemplate: GroceryTemplate = {
         ...template,
-        id: `template_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: `template_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
         usageCount: 0,
         lastUsedAt: new Date(),
         createdAt: new Date(),

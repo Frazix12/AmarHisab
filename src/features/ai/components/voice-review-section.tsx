@@ -35,6 +35,14 @@ export const VoiceReviewSection: React.FC<VoiceReviewSectionProps> = ({
   onTryAgain,
   onConfirm,
 }) => {
+  const getCategoryLabel = (rawCategory: string | undefined): string => {
+    const categoryKey = rawCategory || "other";
+    if (Object.prototype.hasOwnProperty.call(t.categories, categoryKey)) {
+      return t.categories[categoryKey as keyof typeof t.categories];
+    }
+    return t.categories.other || "Unknown";
+  };
+
   return (
     <View>
       <View style={styles.reviewHeader}>
@@ -67,7 +75,7 @@ export const VoiceReviewSection: React.FC<VoiceReviewSectionProps> = ({
         ) : (
           parsedResult.expenses.map((expense, index) => (
             <Pressable
-              key={`${(expense as { id?: string }).id ?? `${expense.description}-${expense.amount}-${expense.category || "other"}`}-${index}`}
+              key={`${expense.description}-${expense.amount}-${expense.category || "other"}-${index}`}
               onPress={() => onEditExpense(index, expense)}
               style={[
                 styles.reviewCard,
@@ -100,9 +108,7 @@ export const VoiceReviewSection: React.FC<VoiceReviewSectionProps> = ({
                   { color: colors.textSecondary },
                 ]}
               >
-                {t.categories[
-                  (expense.category || "other") as keyof typeof t.categories
-                ]}
+                {getCategoryLabel(expense.category)}
               </Text>
             </Pressable>
           ))
@@ -160,9 +166,7 @@ export const VoiceReviewSection: React.FC<VoiceReviewSectionProps> = ({
                 ]}
               >
                 {(item.quantity ? `${item.quantity} • ` : "") +
-                  t.categories[
-                    (item.category || "other") as keyof typeof t.categories
-                  ]}
+                  getCategoryLabel(item.category)}
               </Text>
             </Pressable>
           ))

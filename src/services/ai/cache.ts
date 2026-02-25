@@ -80,16 +80,17 @@ export const setAiCacheValue = async <T>(
 
   try {
     await ensureDatabaseInitialized();
+    await db.transaction(async (tx) => {
+      await tx.delete(aiCacheTable).where(eq(aiCacheTable.cacheKey, cacheKey));
 
-    await db.delete(aiCacheTable).where(eq(aiCacheTable.cacheKey, cacheKey));
-
-    await db.insert(aiCacheTable).values({
-      cacheKey,
-      cacheType,
-      valueJson: JSON.stringify(value),
-      expiresAtMs: now + clampedTtlMs,
-      createdAtMs: now,
-      hitCount: 0,
+      await tx.insert(aiCacheTable).values({
+        cacheKey,
+        cacheType,
+        valueJson: JSON.stringify(value),
+        expiresAtMs: now + clampedTtlMs,
+        createdAtMs: now,
+        hitCount: 0,
+      });
     });
   } catch (error) {
     console.error("Error saving AI cache value:", error);

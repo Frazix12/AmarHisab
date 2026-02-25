@@ -74,23 +74,38 @@ const normalizeError = (error: Error | unknown): string => {
 export const extractHttpStatusCode = (
   error: Error | unknown,
 ): number | undefined => {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "status" in error &&
-    typeof (error as { status?: unknown }).status === "number"
-  ) {
-    const status = (error as { status: number }).status;
-    if (status >= 100 && status <= 599) {
-      return status;
+  if (typeof error === "object" && error !== null) {
+    if (
+      "status" in error &&
+      typeof (error as { status?: unknown }).status === "number"
+    ) {
+      const status = (error as { status: number }).status;
+      if (status >= 100 && status <= 599) {
+        return status;
+      }
+    }
+
+    if (
+      "statusCode" in error &&
+      typeof (error as { statusCode?: unknown }).statusCode === "number"
+    ) {
+      const statusCode = (error as { statusCode: number }).statusCode;
+      if (statusCode >= 100 && statusCode <= 599) {
+        return statusCode;
+      }
     }
   }
 
   const message = normalizeError(error);
-  const match = message.match(/\b([1-5]\d{2})\b/);
+  const match = message.match(
+    /(?:status\s*(?:code)?\s*[:=]\s*(\d{3})|status\s+code\s*[:=]?\s*(\d{3})|HTTP\s*(\d{3}))/i,
+  );
   if (!match) return undefined;
 
-  const parsed = Number.parseInt(match[1], 10);
+  const code = match[1] ?? match[2] ?? match[3];
+  if (!code) return undefined;
+
+  const parsed = Number.parseInt(code, 10);
   return parsed >= 100 && parsed <= 599 ? parsed : undefined;
 };
 
@@ -129,12 +144,12 @@ export const trackLlmGeneration = ({
     typeof httpStatus === "number" ? httpStatus : extractHttpStatusCode(error);
 
   const payload: PostHogEventProperties = {
+    ...properties,
     $ai_trace_id: resolvedTraceId,
     $ai_span_name: spanName,
     $ai_model: model,
     $ai_provider: provider,
     $ai_is_error: isError ?? Boolean(error),
-    ...properties,
   };
 
   if (resolvedInputTokens !== undefined) {

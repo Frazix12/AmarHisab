@@ -10,7 +10,8 @@ export function normalizeProductName(name: string): string {
     .toLowerCase()
     .trim()
     .replace(/\s+/g, " ")
-    .replace(/\b(pcs?|kg|gm?|lbs?|ml|ltr?|litre?s?)\b/gi, "")
+    .replace(/(^|\s)(pcs?|kg|gm?|lbs?|ml|ltr?|litre?s?)(?=\s|$)/gi, " ")
+    .replace(/\s+/g, " ")
     .trim();
 }
 

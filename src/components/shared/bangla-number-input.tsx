@@ -113,6 +113,7 @@ export const BanglaNumberInput = forwardRef<TextInput, BanglaNumberInputProps>(
     };
 
     // Long-press backspace functionality
+    const backspaceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const backspaceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const valueRef = useRef(value);
 
@@ -130,8 +131,18 @@ export const BanglaNumberInput = forwardRef<TextInput, BanglaNumberInputProps>(
       // Delete immediately on press
       deleteOneChar();
 
+      if (backspaceTimeoutRef.current) {
+        clearTimeout(backspaceTimeoutRef.current);
+        backspaceTimeoutRef.current = null;
+      }
+      if (backspaceIntervalRef.current) {
+        clearInterval(backspaceIntervalRef.current);
+        backspaceIntervalRef.current = null;
+      }
+
       // Start repeating after a short delay
       const initialDelay = setTimeout(() => {
+        backspaceTimeoutRef.current = null;
         backspaceIntervalRef.current = setInterval(() => {
           if (valueRef.current.length > 0) {
             deleteOneChar();
@@ -146,13 +157,16 @@ export const BanglaNumberInput = forwardRef<TextInput, BanglaNumberInputProps>(
       }, 400); // Wait 400ms before starting to repeat
 
       // Store timeout ref to clear it if released early
-      backspaceIntervalRef.current = initialDelay as unknown as ReturnType<typeof setInterval>;
+      backspaceTimeoutRef.current = initialDelay;
     }, [deleteOneChar]);
 
     const stopBackspaceRepeat = useCallback(() => {
+      if (backspaceTimeoutRef.current) {
+        clearTimeout(backspaceTimeoutRef.current);
+        backspaceTimeoutRef.current = null;
+      }
       if (backspaceIntervalRef.current) {
         clearInterval(backspaceIntervalRef.current);
-        clearTimeout(backspaceIntervalRef.current as unknown as ReturnType<typeof setTimeout>);
         backspaceIntervalRef.current = null;
       }
     }, []);
@@ -160,8 +174,13 @@ export const BanglaNumberInput = forwardRef<TextInput, BanglaNumberInputProps>(
     // Cleanup on unmount
     useEffect(() => {
       return () => {
+        if (backspaceTimeoutRef.current) {
+          clearTimeout(backspaceTimeoutRef.current);
+          backspaceTimeoutRef.current = null;
+        }
         if (backspaceIntervalRef.current) {
           clearInterval(backspaceIntervalRef.current);
+          backspaceIntervalRef.current = null;
         }
       };
     }, []);
@@ -207,7 +226,9 @@ export const BanglaNumberInput = forwardRef<TextInput, BanglaNumberInputProps>(
           ref={setRef}
           value={displayValue}
           onChangeText={(text) => onChangeText(sanitizeNumericValue(text))}
-          onKeyPress={triggerLightHaptic}
+          onKeyPress={() => {
+            triggerLightHaptic();
+          }}
           onFocus={(event) => {
             setIsFocused(true);
             onFocus?.(event);

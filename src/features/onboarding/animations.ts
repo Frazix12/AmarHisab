@@ -118,11 +118,7 @@ export function useOnboardingStepAnimation(isActive: boolean) {
   return { containerStyle, titleStyle, bodyStyle, iconStyle };
 }
 
-/**
- * Celebration animation for the Done step.
- * Plays automatically when mounted (caller should mount when step becomes active).
- */
-export function useCelebrationAnimation() {
+export function useCelebrationAnimation(isActive: boolean) {
   const reducedMotion = useReducedMotionPreference();
 
   const checkScale = useSharedValue(0);
@@ -130,6 +126,13 @@ export function useCelebrationAnimation() {
   const textTranslateY = useSharedValue(16);
 
   useEffect(() => {
+    if (!isActive) {
+      checkScale.value = 0;
+      textOpacity.value = 0;
+      textTranslateY.value = 16;
+      return;
+    }
+
     if (reducedMotion) {
       checkScale.value = 1;
       textOpacity.value = 1;
@@ -151,7 +154,7 @@ export function useCelebrationAnimation() {
       ONBOARDING_ANIMATION.celebration.scaleDuration / 2,
       withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) })
     );
-  }, [reducedMotion]);
+  }, [checkScale, isActive, reducedMotion, textOpacity, textTranslateY]);
 
   const checkStyle = useAnimatedStyle(() => ({
     transform: [{ scale: checkScale.value }],

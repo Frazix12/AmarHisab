@@ -1,5 +1,5 @@
 import { Currency } from "@/types";
-import { formatNumber } from "./format";
+import { formatNumber, parseBanglaNumber } from "./format";
 
 /**
  * Format amount with currency symbol
@@ -37,7 +37,7 @@ export const formatCurrency = (
  * Parse currency string to number
  */
 export const parseCurrencyInput = (input: string): number => {
-  const trimmed = input.trim();
+  const trimmed = parseBanglaNumber(input).trim();
   if (!trimmed) return NaN;
 
   const isNegative = trimmed.startsWith("-");

@@ -220,6 +220,8 @@ export const ExpenseCard = React.memo(
   },
 );
 
+ExpenseCard.displayName = "ExpenseCard";
+
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",

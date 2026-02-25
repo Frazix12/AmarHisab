@@ -23,7 +23,7 @@ import {
     Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
     Alert,
@@ -89,6 +89,9 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
   );
   const [aiDetecting, setAiDetecting] = useState(false);
   const [aiDetectedCategory, setAiDetectedCategory] = useState(false);
+  const [userSelectedCategory, setUserSelectedCategory] = useState(false);
+  const aiDetectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const aiDetectionRequestIdRef = useRef(0);
 
   const { control, handleSubmit, reset, setValue, watch } =
     useForm<AddGroceryFormValues>({
@@ -105,41 +108,68 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
 
   // Find matching templates as user types
   useEffect(() => {
+    let isCancelled = false;
+
     const searchTemplates = async () => {
       if (name.trim().length >= 2) {
         const matches = await findMatchingTemplates(name);
-        setMatchingTemplates(matches);
+        if (!isCancelled) {
+          setMatchingTemplates(matches);
+        }
       } else {
-        setMatchingTemplates([]);
+        if (!isCancelled) {
+          setMatchingTemplates([]);
+        }
       }
     };
 
     const timeout = setTimeout(searchTemplates, 300);
-    return () => clearTimeout(timeout);
+    return () => {
+      isCancelled = true;
+      clearTimeout(timeout);
+    };
   }, [name, findMatchingTemplates]);
 
   // AI Category Detection
   useEffect(() => {
+    if (aiDetectionTimeoutRef.current) {
+      clearTimeout(aiDetectionTimeoutRef.current);
+      aiDetectionTimeoutRef.current = null;
+    }
+
     const detectCategory = async () => {
-      if (name.trim().length >= 2 && !appliedTemplateId) {
+      if (name.trim().length >= 2 && !appliedTemplateId && !userSelectedCategory) {
+        const requestId = ++aiDetectionRequestIdRef.current;
         setAiDetecting(true);
         try {
           const detectedCategory = await detectItemCategory(name);
-          if (detectedCategory) {
+          if (
+            detectedCategory &&
+            requestId === aiDetectionRequestIdRef.current &&
+            !appliedTemplateId &&
+            !userSelectedCategory
+          ) {
             setValue("category", detectedCategory);
             setAiDetectedCategory(true);
           }
         } catch (error) {
           console.error("Error detecting grocery category:", error);
         } finally {
-          setAiDetecting(false);
+          if (requestId === aiDetectionRequestIdRef.current) {
+            setAiDetecting(false);
+          }
         }
       }
     };
 
-    const timeout = setTimeout(detectCategory, 500);
-    return () => clearTimeout(timeout);
-  }, [name, appliedTemplateId, setValue]);
+    aiDetectionTimeoutRef.current = setTimeout(detectCategory, 500);
+    return () => {
+      if (aiDetectionTimeoutRef.current) {
+        clearTimeout(aiDetectionTimeoutRef.current);
+        aiDetectionTimeoutRef.current = null;
+      }
+    };
+  }, [name, appliedTemplateId, setValue, userSelectedCategory]);
 
   // Reset form when modal closes
   useEffect(() => {
@@ -155,6 +185,12 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
       setShowTemplatePicker(false);
       setAiDetecting(false);
       setAiDetectedCategory(false);
+      setUserSelectedCategory(false);
+      if (aiDetectionTimeoutRef.current) {
+        clearTimeout(aiDetectionTimeoutRef.current);
+        aiDetectionTimeoutRef.current = null;
+      }
+      aiDetectionRequestIdRef.current += 1;
     }
   }, [reset, visible]);
 
@@ -180,6 +216,14 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
 
     const data = await applyTemplate(idToUse);
     if (data) {
+      if (aiDetectionTimeoutRef.current) {
+        clearTimeout(aiDetectionTimeoutRef.current);
+        aiDetectionTimeoutRef.current = null;
+      }
+      aiDetectionRequestIdRef.current += 1;
+      setAiDetecting(false);
+      setAiDetectedCategory(false);
+
       if (data.name) setValue("name", data.name);
       if (data.quantity) setValue("quantity", data.quantity);
       if (data.price !== undefined && data.price !== null) {
@@ -187,6 +231,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
       }
       if (data.category) setValue("category", data.category);
       setAppliedTemplateId(idToUse);
+      setUserSelectedCategory(false);
     }
     setShowTemplatePicker(false);
   };
@@ -351,9 +396,9 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                 >
                   {t.helpers.aiSuggested}: {matchingTemplates[0].template.productNameDisplay} •{" "}
                   {settings.currency.symbol}
-                  {formatNumber(
-                    matchingTemplates[0].template.defaultPrice.toFixed(2),
-                  )}
+                  {typeof matchingTemplates[0]?.template.defaultPrice === "number"
+                    ? formatNumber(matchingTemplates[0].template.defaultPrice.toFixed(2))
+                    : "-"}
                 </Text>
               )}
               {appliedTemplateId && (
@@ -471,6 +516,7 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                     key={cat.value}
                     onPress={() => {
                       setValue("category", cat.value);
+                      setUserSelectedCategory(true);
                       setAiDetectedCategory(false);
                     }}
                     style={[
@@ -585,7 +631,9 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
                           style={[styles.templatePrice, { color: colors.text }]}
                         >
                           {settings.currency.symbol}
-                          {formatNumber(match.template.defaultPrice.toFixed(2))}
+                          {typeof match.template.defaultPrice === "number"
+                            ? formatNumber(match.template.defaultPrice.toFixed(2))
+                            : "-"}
                         </Text>
                       </View>
                     </View>

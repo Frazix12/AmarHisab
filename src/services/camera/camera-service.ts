@@ -3,7 +3,7 @@ import type { Camera, PhotoFile, TakePhotoOptions } from "react-native-vision-ca
 
 import { CameraFlashMode } from "./types";
 
-export const CAMERA_FLASH_MODES: CameraFlashMode[] = ["off", "on", "auto"];
+export const CAMERA_FLASH_MODES = ["off", "on", "auto"] as const;
 
 const normalizePhotoUri = (photoPath: string): string => {
   if (photoPath.startsWith("file://")) {

@@ -78,7 +78,7 @@ export const Colors = {
     onTertiaryContainer: "#D1FAE5",
     background: "#1C1B1F",
     onBackground: "#F8FAFC",
-    surface: "#1C1B1F",
+    surface: "#252329",
     onSurface: "#F8FAFC",
     surfaceVariant: "#1E293B",
     onSurfaceVariant: "#94A3B8",

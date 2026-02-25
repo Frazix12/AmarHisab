@@ -71,46 +71,61 @@ export const LearningStorage = {
   async getTelemetry(
     normalizedName: string,
   ): Promise<LearningTelemetry | null> {
-    await ensureDatabaseInitialized();
-    const rows = await db
-      .select()
-      .from(learningTelemetryTable)
-      .where(eq(learningTelemetryTable.productNameNormalized, normalizedName));
-    return rows.length > 0 ? toModel(rows[0]) : null;
+    try {
+      await ensureDatabaseInitialized();
+      const rows = await db
+        .select()
+        .from(learningTelemetryTable)
+        .where(eq(learningTelemetryTable.productNameNormalized, normalizedName));
+      return rows.length > 0 ? toModel(rows[0]) : null;
+    } catch (error) {
+      console.error("Error loading learning telemetry by key:", error);
+      return null;
+    }
   },
 
   /**
    * Update or create telemetry record
    */
   async updateTelemetry(data: LearningTelemetry): Promise<void> {
-    await ensureDatabaseInitialized();
-    await db
-      .delete(learningTelemetryTable)
-      .where(eq(learningTelemetryTable.productNameNormalized, data.productNameNormalized));
-    await db.insert(learningTelemetryTable).values(toRow(data));
+    try {
+      await ensureDatabaseInitialized();
+      await db.transaction(async (tx) => {
+        await tx
+          .delete(learningTelemetryTable)
+          .where(eq(learningTelemetryTable.productNameNormalized, data.productNameNormalized));
+        await tx.insert(learningTelemetryTable).values(toRow(data));
+      });
+    } catch (error) {
+      console.error("Error updating learning telemetry:", error);
+    }
   },
 
   /**
    * Mark product as dismissed forever (user chose "Never for this item")
    */
   async markDismissedForever(normalizedName: string): Promise<void> {
-    const telemetry = await this.getTelemetry(normalizedName);
+    try {
+      const telemetry = await this.getTelemetry(normalizedName);
 
-    if (telemetry) {
-      telemetry.dismissedForever = true;
-      await this.updateTelemetry(telemetry);
-    } else {
-      await this.updateTelemetry({
-        userId: "default",
-        productNameNormalized: normalizedName,
-        totalSeenCount: 0,
-        lastSeenAt: new Date(),
-        lastSuggestedAt: null,
-        dismissedForever: true,
-        categoryFrequency: {} as any,
-        priceHistory: [],
-        quantityHistory: [],
-      });
+      if (telemetry) {
+        telemetry.dismissedForever = true;
+        await this.updateTelemetry(telemetry);
+      } else {
+        await this.updateTelemetry({
+          userId: "default",
+          productNameNormalized: normalizedName,
+          totalSeenCount: 0,
+          lastSeenAt: new Date(),
+          lastSuggestedAt: null,
+          dismissedForever: true,
+          categoryFrequency: {} as any,
+          priceHistory: [],
+          quantityHistory: [],
+        });
+      }
+    } catch (error) {
+      console.error("Error marking learning telemetry dismissed forever:", error);
     }
   },
 
@@ -118,11 +133,15 @@ export const LearningStorage = {
    * Record that suggestion was shown
    */
   async recordSuggestion(normalizedName: string): Promise<void> {
-    const telemetry = await this.getTelemetry(normalizedName);
+    try {
+      const telemetry = await this.getTelemetry(normalizedName);
 
-    if (telemetry) {
-      telemetry.lastSuggestedAt = new Date();
-      await this.updateTelemetry(telemetry);
+      if (telemetry) {
+        telemetry.lastSuggestedAt = new Date();
+        await this.updateTelemetry(telemetry);
+      }
+    } catch (error) {
+      console.error("Error recording learning suggestion:", error);
     }
   },
 

@@ -15,7 +15,7 @@ interface DoneStepProps {
 export function DoneStep({ isActive, onComplete }: DoneStepProps) {
   const { colorScheme, t } = useApp();
   const colors = Colors[colorScheme];
-  const { checkStyle, textStyle } = useCelebrationAnimation();
+  const { checkStyle, textStyle } = useCelebrationAnimation(isActive);
 
   if (!isActive) return null;
 

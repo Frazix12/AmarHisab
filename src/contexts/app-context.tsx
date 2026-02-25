@@ -59,7 +59,7 @@ interface AppContextType {
   expenses: Expense[];
   addExpense: (expense: Omit<Expense, "id">) => string;
   updateExpense: (id: string, expense: Partial<Expense>) => void;
-  deleteExpense: (id: string) => void;
+  deleteExpense: (id: string) => Promise<void>;
 
   // Grocery
   groceryItems: GroceryItem[];
@@ -145,7 +145,7 @@ interface ExpenseSliceContextType {
   expenses: Expense[];
   addExpense: (expense: Omit<Expense, "id">) => string;
   updateExpense: (id: string, expense: Partial<Expense>) => void;
-  deleteExpense: (id: string) => void;
+  deleteExpense: (id: string) => Promise<void>;
   totalExpenses: number;
   todayExpenses: number;
   monthExpenses: number;
@@ -391,9 +391,6 @@ export const AppProvider: React.FC<{ children: ReactNode; onReady?: () => void }
           setElevenLabsApiKey(loadedSettings.elevenLabsApiKey);
         }
 
-        // Signal UI is ready before running analytics (deferred work)
-        onReady?.();
-
         // Defer analytics identification to avoid blocking render
         const effectiveSettings = loadedSettings || DEFAULT_SETTINGS;
         queueMicrotask(() => {
@@ -512,14 +509,32 @@ export const AppProvider: React.FC<{ children: ReactNode; onReady?: () => void }
     });
   }, [handlePersistenceFailure]);
 
-  const deleteExpense = useCallback((id: string) => {
-    setExpenses((prev) => prev.filter((expense) => expense.id !== id));
+  const deleteExpense = useCallback(async (id: string) => {
+    let deletedExpense: Expense | undefined;
 
-    void Promise.resolve(deleteExpenseById(id)).catch((error) => {
-      handlePersistenceFailure(error, "delete_expense");
+    setExpenses((prev) => {
+      deletedExpense = prev.find((expense) => expense.id === id);
+      return prev.filter((expense) => expense.id !== id);
     });
 
-    trackEvent(AnalyticsEvents.EXPENSE_DELETED, { expense_id: id });
+    try {
+      await deleteExpenseById(id);
+      trackEvent(AnalyticsEvents.EXPENSE_DELETED, { expense_id: id });
+    } catch (error) {
+      const restoredExpense = deletedExpense;
+      if (restoredExpense) {
+        setExpenses((prev) => {
+          if (prev.some((expense) => expense.id === restoredExpense.id)) {
+            return prev;
+          }
+          return [restoredExpense, ...prev].sort(
+            (a, b) => b.date.getTime() - a.date.getTime(),
+          );
+        });
+      }
+      handlePersistenceFailure(error, "delete_expense");
+      throw error;
+    }
   }, [handlePersistenceFailure]);
 
   const buildExpenseFromGrocery = useCallback((
@@ -563,9 +578,11 @@ export const AppProvider: React.FC<{ children: ReactNode; onReady?: () => void }
 
     cacheExpenseCategoryForGroceryItem(newItem);
 
-    void Promise.resolve(TemplateLearner.trackGroceryItem(newItem)).catch((error) => {
-      captureError(error, { context: "track_grocery_item" });
-    });
+    void ensureAnalyticsId()
+      .then((analyticsId) => TemplateLearner.trackGroceryItem(newItem, analyticsId))
+      .catch((error) => {
+        captureError(error, { context: "track_grocery_item" });
+      });
 
     trackEvent(AnalyticsEvents.GROCERY_ITEM_ADDED, {
       item_id: newItem.id,
@@ -577,6 +594,7 @@ export const AppProvider: React.FC<{ children: ReactNode; onReady?: () => void }
   }, [
     cacheExpenseCategoryForGroceryItem,
     createEntityId,
+    ensureAnalyticsId,
     getFallbackExpenseCategory,
     handlePersistenceFailure,
   ]);

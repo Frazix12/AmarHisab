@@ -27,7 +27,10 @@ export const withAlpha = (color: string, alpha: number): string => {
   const rgbMatch = trimmedColor.match(RGB_COLOR_REGEX);
   if (rgbMatch) {
     const [, r, g, b, a] = rgbMatch;
-    const existingAlpha = a ? Number.parseFloat(a) : 1;
+    const rawAlpha = a ? Number.parseFloat(a) : 1;
+    const existingAlpha = Number.isFinite(rawAlpha)
+      ? Math.max(0, Math.min(1, rawAlpha))
+      : 1;
     return `rgba(${r}, ${g}, ${b}, ${existingAlpha * normalizedAlpha})`;
   }
 

@@ -67,7 +67,7 @@ export default function EditTemplateScreen() {
       reset({
         productName: template.productNameDisplay,
         quantity: template.defaultQuantity,
-        price: template.defaultPrice.toString(),
+        price: String(template.defaultPrice ?? ""),
         category: template.category,
       });
     }

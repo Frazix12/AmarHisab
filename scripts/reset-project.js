@@ -56,7 +56,20 @@ const moveDirectories = async (userInput) => {
             await fs.promises.rm(newDirPath, { recursive: true, force: true });
           }
           await fs.promises.mkdir(path.dirname(newDirPath), { recursive: true });
-          await fs.promises.rename(oldDirPath, newDirPath);
+          try {
+            await fs.promises.rename(oldDirPath, newDirPath);
+          } catch (err) {
+            if (err && err.code === "EXDEV") {
+              await fs.promises.cp(oldDirPath, newDirPath, { recursive: true });
+              const copied = await fs.promises.stat(newDirPath);
+              if (!copied.isDirectory()) {
+                throw new Error(`Failed to copy directory to ${newDirPath}`);
+              }
+              await fs.promises.rm(oldDirPath, { recursive: true, force: true });
+            } else {
+              throw err;
+            }
+          }
           console.log(`➡️ /src/${dir} moved to /${exampleDir}/src/${dir}.`);
         } else {
           await fs.promises.rm(oldDirPath, { recursive: true, force: true });
@@ -93,7 +106,7 @@ const moveDirectories = async (userInput) => {
 };
 
 rl.question(
-  "Do you want to move existing src files to /app-example instead of deleting them? (Y/n): ",
+  "Do you want to move existing src files to /app-example/src/<dir> instead of deleting them? (Y/n): ",
   (answer) => {
     const userInput = answer.trim().toLowerCase() || "y";
     if (userInput === "y" || userInput === "n") {

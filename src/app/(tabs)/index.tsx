@@ -26,7 +26,6 @@ import { HugeiconsIcon } from "@hugeicons/react-native";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   Alert,
-  RefreshControl,
   StyleSheet,
   Text,
   View,
@@ -46,15 +45,8 @@ export default function ExpensesScreen() {
   const { t, formatNumber } = useI18n();
   const { settings } = useSettingsDomain();
   const colors = Colors[colorScheme];
-  const [refreshing, setRefreshing] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [showActionMenu, setShowActionMenu] = useState(false);
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    // Simulate refresh
-    setTimeout(() => setRefreshing(false), 500);
-  }, []);
 
   // Today's expenses only (already filtered in context)
   const sortedExpenses = useMemo(
@@ -96,9 +88,13 @@ export default function ExpensesScreen() {
         {
           text: t.modal.delete,
           style: "destructive",
-          onPress: () => {
-            deleteExpense(selectedExpense.id);
-            showToast(t.expenses.expenseDeleted || "Expense deleted");
+          onPress: async () => {
+            try {
+              await deleteExpense(selectedExpense.id);
+              showToast(t.expenses.expenseDeleted || "Expense deleted");
+            } catch {
+              showToast(t.alerts.errorTitle || "Something went wrong");
+            }
           },
         },
       ],
@@ -209,13 +205,6 @@ export default function ExpensesScreen() {
         ListHeaderComponent={listHeader}
         ListEmptyComponent={renderEmptyState}
         ListFooterComponent={<View style={styles.bottomSpacer} />}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[colors.primary]}
-          />
-        }
       />
 
       {/* Floating Action Button */}

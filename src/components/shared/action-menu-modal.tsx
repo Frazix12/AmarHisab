@@ -7,12 +7,12 @@ import { HugeiconsIcon } from "@hugeicons/react-native";
 import React from "react";
 import {
     Modal,
-    Platform,
     StyleSheet,
     Text,
     View,
 } from "react-native";
 import Animated from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export interface ActionMenuItem {
   label: string;
@@ -36,6 +36,7 @@ export const ActionMenuModal: React.FC<ActionMenuModalProps> = ({
 }) => {
   const colorScheme = useTheme();
   const colors = Colors[colorScheme];
+  const { bottom } = useSafeAreaInsets();
   const { animatedStyle, backdropStyle, shouldRender } = useModalAnimation(visible);
 
   const handleActionPress = (action: ActionMenuItem) => {
@@ -119,7 +120,7 @@ export const ActionMenuModal: React.FC<ActionMenuModalProps> = ({
           </View>
 
           {/* Bottom Safe Area */}
-          <View style={styles.bottomSpacer} />
+          <View style={{ height: Math.max(bottom, 8) }} />
         </Animated.View>
       </Animated.View>
     </Modal>
@@ -175,8 +176,5 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     flexShrink: 1,
     lineHeight: 22,
-  },
-  bottomSpacer: {
-    height: Platform.OS === "ios" ? 30 : 20,
   },
 });

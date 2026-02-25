@@ -26,7 +26,13 @@ export const TemplateLearner = {
 
     // Filter recent items (last 30 days)
     const recentItems = groceryItems.filter(
-      (item) => item.createdAt && item.createdAt.getTime() > thirtyDaysAgo,
+      (item) => {
+        if (!item.createdAt) return false;
+        const createdAt =
+          item.createdAt instanceof Date ? item.createdAt : new Date(item.createdAt);
+        const createdAtMs = createdAt.getTime();
+        return Number.isFinite(createdAtMs) && createdAtMs > thirtyDaysAgo;
+      },
     );
 
     // Group by normalized name
@@ -123,7 +129,7 @@ export const TemplateLearner = {
   /**
    * Update telemetry when grocery item is added
    */
-  async trackGroceryItem(item: GroceryItem): Promise<void> {
+  async trackGroceryItem(item: GroceryItem, userId: string): Promise<void> {
     const telemetry = await LearningStorage.getTelemetry(item.nameNormalized);
 
     const now = new Date();
@@ -159,7 +165,7 @@ export const TemplateLearner = {
     } else {
       // Create new telemetry
       const newTelemetry: LearningTelemetry = {
-        userId: "default",
+        userId,
         productNameNormalized: item.nameNormalized,
         totalSeenCount: 1,
         lastSeenAt: now,

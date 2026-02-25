@@ -7,6 +7,7 @@ import { formatNumber } from "./format";
  */
 export const formatDate = (date: Date, language: string = "en"): string => {
   const t = getTranslation(language);
+  const locale = language === "bn" ? "bn-BD" : "en-US";
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
@@ -33,7 +34,7 @@ export const formatDate = (date: Date, language: string = "en"): string => {
   } else if (dateOnly.getTime() === yesterdayOnly.getTime()) {
     return t.common.yesterday;
   } else {
-    const formatted = date.toLocaleDateString(undefined, {
+    const formatted = date.toLocaleDateString(locale, {
       month: "short",
       day: "numeric",
       year: date.getFullYear() !== today.getFullYear() ? "numeric" : undefined,
@@ -45,8 +46,9 @@ export const formatDate = (date: Date, language: string = "en"): string => {
 /**
  * Format date and time
  */
-export const formatDateTime = (date: Date): string => {
-  return date.toLocaleDateString(undefined, {
+export const formatDateTime = (date: Date, language: string = "en"): string => {
+  const locale = language === "bn" ? "bn-BD" : "en-US";
+  return date.toLocaleDateString(locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -85,21 +87,24 @@ export const getDateGroup = (date: Date): DateGroup => {
     today.getMonth(),
     today.getDate(),
   );
+  const yesterdayOnly = new Date(
+    yesterday.getFullYear(),
+    yesterday.getMonth(),
+    yesterday.getDate(),
+  );
+  const weekAgoOnly = new Date(
+    weekAgo.getFullYear(),
+    weekAgo.getMonth(),
+    weekAgo.getDate(),
+  );
 
   if (dateOnly.getTime() === todayOnly.getTime()) {
     return "today";
-  } else if (
-    dateOnly.getTime() ===
-    new Date(
-      yesterday.getFullYear(),
-      yesterday.getMonth(),
-      yesterday.getDate(),
-    ).getTime()
-  ) {
+  } else if (dateOnly.getTime() === yesterdayOnly.getTime()) {
     return "yesterday";
-  } else if (date >= weekAgo) {
+  } else if (dateOnly >= weekAgoOnly) {
     return "thisWeek";
-  } else if (date >= monthStart) {
+  } else if (dateOnly >= monthStart) {
     return "thisMonth";
   } else {
     return "older";

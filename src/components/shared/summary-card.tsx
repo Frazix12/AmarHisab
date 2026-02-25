@@ -57,12 +57,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
 
   const variantColors = getVariantColors();
 
-  const formattedAmount = amount.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-
-  const displayAmount = formatNumber(formattedAmount);
+  const displayAmount = formatNumber(amount);
 
   return (
     <View

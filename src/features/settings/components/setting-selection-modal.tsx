@@ -4,7 +4,7 @@ import { HapticPressable as Pressable } from "@/components/ui/haptic-pressable";
 import { useReducedMotionPreference } from "@/utils/animations";
 import { Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   FlatList,
   Modal,
@@ -19,6 +19,7 @@ import Animated, {
     SlideInDown,
     SlideOutDown,
 } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface Option {
   label: string;
@@ -46,6 +47,23 @@ export const SettingSelectionModal = ({
   const colorScheme = useTheme();
   const colors = Colors[colorScheme];
   const reduceMotion = useReducedMotionPreference();
+  const insets = useSafeAreaInsets();
+  const [showModal, setShowModal] = useState(visible);
+
+  useEffect(() => {
+    if (visible) {
+      setShowModal(true);
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      setShowModal(false);
+    }, reduceMotion ? 0 : 200);
+
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [reduceMotion, visible]);
 
   const overlayEntering = reduceMotion
     ? FadeIn.duration(0)
@@ -129,53 +147,62 @@ export const SettingSelectionModal = ({
     [colors, currentValue, onClose, onSelect],
   );
 
+  if (!showModal) return null;
+
   return (
     <Modal
       transparent
-      visible={visible}
+      visible={showModal}
       animationType="none"
       onRequestClose={onClose}
     >
-      <TouchableWithoutFeedback onPress={onClose}>
-        <Animated.View
-          entering={overlayEntering}
-          exiting={overlayExiting}
-          style={styles.overlay}
-        >
-          <View style={styles.backdrop} />
-        </Animated.View>
-      </TouchableWithoutFeedback>
+      {visible ? (
+        <>
+          <TouchableWithoutFeedback onPress={onClose}>
+            <Animated.View
+              entering={overlayEntering}
+              exiting={overlayExiting}
+              style={styles.overlay}
+            >
+              <View style={styles.backdrop} />
+            </Animated.View>
+          </TouchableWithoutFeedback>
 
-      <View style={styles.modalContainer} pointerEvents="box-none">
-        <Animated.View
-          entering={contentEntering}
-          exiting={contentExiting}
-          style={[
-            styles.modalContent,
-            { backgroundColor: colors.surface, paddingBottom: 40 },
-          ]}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <View
+          <View style={styles.modalContainer} pointerEvents="box-none">
+            <Animated.View
+              entering={contentEntering}
+              exiting={contentExiting}
               style={[
-                styles.dragIndicator,
-                { backgroundColor: colors.outline },
+                styles.modalContent,
+                {
+                  backgroundColor: colors.surface,
+                  paddingBottom: Math.max(insets.bottom, 40),
+                },
               ]}
-            />
-            <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
-          </View>
+            >
+              {/* Header */}
+              <View style={styles.header}>
+                <View
+                  style={[
+                    styles.dragIndicator,
+                    { backgroundColor: colors.outline },
+                  ]}
+                />
+                <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+              </View>
 
-          {/* Options List */}
-          <FlatList
-            data={options}
-            keyExtractor={(option) => option.value}
-            renderItem={renderOption}
-            style={styles.optionsList}
-            showsVerticalScrollIndicator={false}
-          />
-        </Animated.View>
-      </View>
+              {/* Options List */}
+              <FlatList
+                data={options}
+                keyExtractor={(option) => option.value}
+                renderItem={renderOption}
+                style={styles.optionsList}
+                showsVerticalScrollIndicator={false}
+              />
+            </Animated.View>
+          </View>
+        </>
+      ) : null}
     </Modal>
   );
 };

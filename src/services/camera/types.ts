@@ -14,6 +14,11 @@ export interface CameraPermissionState {
   isPermissionDenied: boolean;
   requestPermission: () => Promise<boolean>;
   ensurePermission: () => Promise<boolean>;
+  /**
+   * Wrapper around Linking.openSettings().
+   * Returns true when the settings screen opens successfully, false when an error is caught.
+   * This does not indicate whether the user changed any settings.
+   */
   openSettings: () => Promise<boolean>;
 }
 

@@ -1,6 +1,5 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import Animated, { useAnimatedStyle, withSpring } from "react-native-reanimated";
 import { useApp } from "@/contexts/app-context";
 import { Colors } from "@/constants/theme";
 
@@ -9,21 +8,15 @@ interface DotIndicatorsProps {
   totalSteps: number;
 }
 
-// 5 dots: Welcome(0), Language(1), Currency(2), FeatureTour(3-5), Done(6)
-function stepToDot(step: number): number {
-  if (step <= 2) return step;
-  if (step >= 3 && step <= 5) return 3;
-  return 4;
-}
-
-export function DotIndicators({ currentStep }: DotIndicatorsProps) {
+export function DotIndicators({ currentStep, totalSteps }: DotIndicatorsProps) {
   const { colorScheme } = useApp();
   const colors = Colors[colorScheme];
-  const activeDot = stepToDot(currentStep);
+  const dotCount = Math.max(totalSteps, 0);
+  const activeDot = Math.min(Math.max(currentStep, 0), Math.max(dotCount - 1, 0));
 
   return (
     <View style={styles.container}>
-      {[0, 1, 2, 3, 4].map((dotIndex) => {
+      {Array.from({ length: dotCount }, (_, dotIndex) => {
         const isActive = dotIndex === activeDot;
         return (
           <View

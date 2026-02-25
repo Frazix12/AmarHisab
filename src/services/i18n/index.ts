@@ -121,6 +121,8 @@ export const translations = {
       webNotSupported: "Voice input isn't supported on web yet",
       itemsAdded: "Items added",
       detectedLanguage: "Detected",
+      languageSelectedSuffix: " selected",
+      languageAccessibilityHint: "Double tap to choose this language",
     },
 
     // Form fields
@@ -768,6 +770,8 @@ export const translations = {
       webNotSupported: "ওয়েবে কাজ করে না",
       itemsAdded: "যোগ হয়েছে",
       detectedLanguage: "ভাষা",
+      languageSelectedSuffix: " নির্বাচিত",
+      languageAccessibilityHint: "এই ভাষা বেছে নিতে ডাবল ট্যাপ করুন",
     },
 
     // Form fields

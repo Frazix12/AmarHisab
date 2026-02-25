@@ -76,7 +76,6 @@ export const GroceryItemComponent = React.memo(
             borderWidth: 2,
             borderRadius: 12,
           }}
-          onPress={() => onToggle?.(item.id)}
           accessibilityLabel={`${completeItemLabel}: ${item.name}`}
         />
 

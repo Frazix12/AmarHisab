@@ -22,13 +22,17 @@ export default function AddExpenseScreen() {
 
   const handleSubmit = (values: ExpenseFormValues & { aiDetected: boolean }) => {
     const numAmount = parseFloat(values.amount);
+    if (!Number.isFinite(numAmount)) {
+      showToast(t.alerts.invalidAmount || "Please enter a valid amount");
+      return;
+    }
     const selectedDate = values.date instanceof Date ? values.date : new Date(values.date);
     const isForToday = isSameDay(selectedDate, new Date());
 
     addExpense({
       amount: numAmount,
       category: values.category,
-      date: values.date,
+      date: selectedDate,
       description: values.description,
       currency: settings.currency.code,
       imageUri: values.imageUri,

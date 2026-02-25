@@ -50,13 +50,17 @@ export default function EditExpenseScreen() {
 
   const handleSubmit = (values: ExpenseFormValues & { aiDetected: boolean }) => {
     const numAmount = parseFloat(values.amount);
+    if (!Number.isFinite(numAmount)) {
+      showToast(t.alerts.invalidAmount || "Please enter a valid amount");
+      return;
+    }
     const selectedDate = values.date instanceof Date ? values.date : new Date(values.date);
     const isForToday = isSameDay(selectedDate, new Date());
 
     updateExpense(expense.id, {
       amount: numAmount,
       category: values.category,
-      date: values.date,
+      date: selectedDate,
       description: values.description,
       imageUri: values.imageUri,
     });
@@ -69,9 +73,8 @@ export default function EditExpenseScreen() {
 
     showToast(
       isForToday
-        ? t.expenses.expenseUpdated || "Expense updated ✓"
-        : expenseUpdatedOutsideTodayMessage ||
-            "Expense updated. It won't appear in Today's list. Check Statistics.",
+        ? t.expenses.expenseUpdated
+        : (expenseUpdatedOutsideTodayMessage ?? t.expenses.expenseUpdated),
     );
     router.back();
   };

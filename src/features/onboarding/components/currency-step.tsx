@@ -37,7 +37,6 @@ export function CurrencyStep({ isActive }: CurrencyStepProps) {
           data={CURRENCIES}
           numColumns={2}
           keyExtractor={(item) => item.code}
-          scrollEnabled={false}
           columnWrapperStyle={styles.columnWrapper}
           renderItem={({ item }) => {
             const isSelected = settings.currency.code === item.code;

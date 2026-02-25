@@ -14,6 +14,8 @@ interface VoiceLanguageSelectorProps {
   options: readonly VoiceLanguageOption[];
   value: VoiceLanguageMode;
   onChange: (value: VoiceLanguageMode) => void;
+  selectedSuffix: string;
+  accessibilityHint: string;
   colors: {
     text: string;
     primary: string;
@@ -28,6 +30,8 @@ export const VoiceLanguageSelector: React.FC<VoiceLanguageSelectorProps> = ({
   options,
   value,
   onChange,
+  selectedSuffix,
+  accessibilityHint,
   colors,
 }) => {
   return (
@@ -43,8 +47,8 @@ export const VoiceLanguageSelector: React.FC<VoiceLanguageSelectorProps> = ({
               onPress={() => onChange(option.value)}
               accessibilityRole="button"
               accessibilityState={{ selected: isActive }}
-              accessibilityLabel={`${option.label}${isActive ? " selected" : ""}`}
-              accessibilityHint="Double tap to choose this language"
+              accessibilityLabel={`${option.label}${isActive ? selectedSuffix : ""}`}
+              accessibilityHint={accessibilityHint}
               style={[
                 styles.selectorOption,
                 {

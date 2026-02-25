@@ -37,7 +37,10 @@ export function ThemeStep({ isActive }: ThemeStepProps) {
       >
         {t.onboarding.chooseThemeSubtitle}
       </Animated.Text>
-      <Animated.View style={[styles.optionsContainer, bodyStyle]}>
+      <Animated.View
+        style={[styles.optionsContainer, bodyStyle]}
+        accessibilityRole="radiogroup"
+      >
         {THEMES.map((theme) => {
           const isSelected = settings.theme === theme.value;
           return (
@@ -54,7 +57,7 @@ export function ThemeStep({ isActive }: ThemeStepProps) {
                 },
               ]}
               accessibilityLabel={t.settings[theme.labelKey]}
-              accessibilityRole="button"
+              accessibilityRole="radio"
               accessibilityState={{ selected: isSelected }}
             >
               <View style={styles.cardContent}>

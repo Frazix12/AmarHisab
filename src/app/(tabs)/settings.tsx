@@ -12,7 +12,7 @@ import { SettingItem } from "@/features/settings/components/setting-item";
 import { usePageTransition } from "@/utils/animations";
 import { triggerHeavyHaptic } from "@/utils/haptics";
 import { useSampleData } from "@/utils/sample-data";
-import { AnalyticsEvents, trackEvent } from "@/services/analytics";
+import { AnalyticsEvents, captureError, trackEvent } from "@/services/analytics";
 import {
   Add01Icon,
   ArtificialIntelligence04Icon,
@@ -149,7 +149,8 @@ export default function Settings() {
             />
           </View>
 
-          <View style={styles.settingsSection}>
+          {__DEV__ ? (
+            <View style={styles.settingsSection}>
             <Text
               style={[
                 styles.sectionTitle,
@@ -173,7 +174,10 @@ export default function Settings() {
                     title: t.alerts.successTitle,
                   });
                 } catch (error) {
-                  console.error("Failed to add sample data:", error);
+                  captureError(error, { context: "settings_add_sample_data" });
+                  if (__DEV__) {
+                    console.error("Failed to add sample data:", error);
+                  }
 
                   trackEvent(AnalyticsEvents.SAMPLE_DATA_ADD_FAILED, {
                     error_type: error instanceof Error ? error.name : typeof error,
@@ -220,7 +224,7 @@ export default function Settings() {
               onPress={() => {
                 Alert.alert(
                   t.settings.clearAllDataConfirmTitle,
-                  t.settings.clearAllDataConfirmMessage,
+                  `${t.settings.clearAllDataConfirmMessage}\n\nOnboarding progress will also be reset.`,
                   [
                     {
                       text: t.form.cancel,
@@ -237,7 +241,10 @@ export default function Settings() {
                             title: t.alerts.successTitle,
                           });
                         } catch (error) {
-                          console.error("Failed to clear all data:", error);
+                          captureError(error, { context: "settings_clear_all_data" });
+                          if (__DEV__) {
+                            console.error("Failed to clear all data:", error);
+                          }
                           showNotification(
                             t.alerts.dataClearFailed ||
                             "Failed to clear data. Please try again.",
@@ -315,7 +322,8 @@ export default function Settings() {
                 </View>
               </Pressable>
             )}
-          </View>
+            </View>
+          ) : null}
 
           <View style={styles.footerContainer}>
             <Text style={[styles.footer, { color: colors.textSecondary }]}>

@@ -1,5 +1,5 @@
 import { AudioModule, RecordingPresets, setAudioModeAsync } from "expo-audio";
-import type { AudioRecorder, RecordingOptions } from "expo-audio";
+import type { AudioRecorder as ExpoAudioRecorder, RecordingOptions } from "expo-audio";
 
 type AudioRecordEvent = "data";
 
@@ -7,13 +7,21 @@ export interface AudioRecordOptions {
   sampleRate?: number;
   channels?: number;
   bitsPerSample?: number;
-  audioSource?: number;
   wavFile?: string;
-  bufferSize?: number;
 }
 
-let recorder: AudioRecorder | null = null;
+type RecorderConstructor = new (options: RecordingOptions) => ExpoAudioRecorder;
+
+const getRecorderConstructor = (): RecorderConstructor | null => {
+  const moduleWithRecorder = AudioModule as unknown as {
+    AudioRecorder?: RecorderConstructor;
+  };
+  return moduleWithRecorder.AudioRecorder ?? null;
+};
+
+let recorder: ExpoAudioRecorder | null = null;
 let recordingOptions: RecordingOptions = RecordingPresets.HIGH_QUALITY;
+let startPromise: Promise<void> | null = null;
 
 const resolveRecordingOptions = (options?: AudioRecordOptions) => {
   const base = RecordingPresets.HIGH_QUALITY;
@@ -49,25 +57,62 @@ const resolveRecordingOptions = (options?: AudioRecordOptions) => {
 };
 
 export const AudioRecord = {
-  isAvailable: () => Boolean(AudioModule?.AudioRecorder),
-  init: (options: AudioRecordOptions) => {
-    recordingOptions = resolveRecordingOptions(options);
-    recorder = new AudioModule.AudioRecorder(recordingOptions);
+  isAvailable: async () => {
+    const recorderConstructor = getRecorderConstructor();
+    if (!recorderConstructor) return false;
+
+    const permissionResult = await AudioModule.requestRecordingPermissionsAsync();
+    return permissionResult?.granted === true;
   },
-  start: async () => {
-    if (!AudioModule?.AudioRecorder) {
+  init: (options: AudioRecordOptions) => {
+    const recorderConstructor = getRecorderConstructor();
+    if (!recorderConstructor) {
       throw new Error("Audio recorder unavailable");
     }
-    if (!recorder) {
-      recorder = new AudioModule.AudioRecorder(recordingOptions);
+
+    recordingOptions = resolveRecordingOptions(options);
+    recorder = new recorderConstructor(recordingOptions);
+  },
+  start: async () => {
+    const recorderConstructor = getRecorderConstructor();
+    if (!recorderConstructor) {
+      throw new Error("Audio recorder unavailable");
     }
-    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-    await recorder.prepareToRecordAsync(recordingOptions);
-    recorder.record();
+    if (recorder) {
+      return;
+    }
+    if (startPromise) {
+      await startPromise;
+      return;
+    }
+
+    startPromise = (async () => {
+      const permissionResult = await AudioModule.requestRecordingPermissionsAsync();
+      if (!permissionResult?.granted) {
+        throw new Error("Microphone permission denied");
+      }
+
+      if (!recorder) {
+        recorder = new recorderConstructor(recordingOptions);
+      }
+
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      await recorder.prepareToRecordAsync(recordingOptions);
+      recorder.record();
+    })();
+
+    try {
+      await startPromise;
+    } catch (error) {
+      recorder = null;
+      throw error;
+    } finally {
+      startPromise = null;
+    }
   },
   stop: async (): Promise<string | null> => {
     if (!recorder) {
-      throw new Error("Audio recorder unavailable");
+      throw new Error("No recording in progress");
     }
     await recorder.stop();
     const uri = recorder.uri;

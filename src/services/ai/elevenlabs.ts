@@ -47,7 +47,7 @@ const normalizeFileUri = (uri: string) => {
     return uri;
   }
   if (uri.includes("://")) {
-    throw new Error(`Unsupported file URI scheme: ${uri}`);
+    throw new Error("Unsupported file URI scheme");
   }
   return `file://${uri}`;
 };
@@ -145,11 +145,15 @@ export const transcribeAudioFile = async (
     try {
       data = rawText ? JSON.parse(rawText) : null;
     } catch (error) {
-      console.error("Failed to parse ElevenLabs transcription response JSON", {
-        error,
-        rawText,
+      console.error("Failed to parse ElevenLabs transcription response", {
         status: response.status,
       });
+      if (__DEV__) {
+        console.error("ElevenLabs parse debug", {
+          error,
+          rawText: rawText.slice(0, 1000),
+        });
+      }
       data = null;
     }
 

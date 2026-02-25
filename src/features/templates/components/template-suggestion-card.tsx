@@ -27,6 +27,7 @@ interface TemplateSuggestionCardProps {
   suggestion: LearningCandidate;
   onSave: () => void;
   onDismiss: (forever: boolean) => void;
+  onUndo?: () => void;
   visible: boolean;
 }
 
@@ -34,6 +35,7 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
   suggestion,
   onSave,
   onDismiss,
+  onUndo,
   visible,
 }) => {
   const colorScheme = useTheme();
@@ -131,7 +133,7 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
       undoTimeoutRef.current = null;
     }
     setShowUndo(false);
-    onDismiss(false);
+    onUndo?.();
   };
 
   if (!shouldRender) return null;
@@ -196,7 +198,12 @@ export const TemplateSuggestionCard: React.FC<TemplateSuggestionCardProps> = ({
         </View>
       </View>
 
-      <View style={styles.details}>
+      <View
+        style={[
+          styles.details,
+          { backgroundColor: withAlpha(colors.text, colorScheme === "dark" ? 0.08 : 0.02) },
+        ]}
+      >
         <View style={styles.detailRow}>
           <Text style={[styles.detailLabel, { color: colors.textSecondary }]}> 
             {t.templates.typicalQuantity}:
@@ -314,7 +321,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   details: {
-    backgroundColor: "rgba(0,0,0,0.02)",
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,

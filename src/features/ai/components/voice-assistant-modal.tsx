@@ -69,7 +69,7 @@ interface VoiceTranscriptFormValues {
 }
 
 const AUDIO_SAMPLE_RATE = 16000;
-const isAudioRecordAvailable = () => AudioRecord.isAvailable();
+const isAudioRecordAvailable = async () => AudioRecord.isAvailable();
 
 const normalizeSpeechText = (value: string) =>
   value.replace(/\s+/g, " ").trim();
@@ -349,7 +349,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
     if (isListeningRef.current) {
       isListeningRef.current = false;
       try {
-        if (isAudioRecordAvailable()) {
+        if (await isAudioRecordAvailable()) {
           await AudioRecord.stop();
         }
       } catch (error) {
@@ -420,7 +420,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
       return;
     }
 
-    if (!isAudioRecordAvailable()) {
+    if (!(await isAudioRecordAvailable())) {
       setErrorMessage(t.voice.missingRecorder);
       voiceInputModeRef.current = "mic";
       voiceInputStartedAtMsRef.current = Date.now();
@@ -462,7 +462,6 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
         sampleRate: AUDIO_SAMPLE_RATE,
         channels: 1,
         bitsPerSample: 16,
-        audioSource: 6,
         wavFile: "ai-voice.wav",
       });
 
@@ -788,6 +787,8 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
               options={languageOptions}
               value={languageMode}
               onChange={setLanguageMode}
+              selectedSuffix={t.voice.languageSelectedSuffix}
+              accessibilityHint={t.voice.languageAccessibilityHint}
               colors={colors}
             />
 

@@ -6,6 +6,7 @@
 import PostHog from "posthog-react-native";
 import type { PostHogEventProperties } from "@posthog/core";
 import { AnalyticsEventName } from "./events";
+import { sanitizeErrorStack } from "@/types/analytics";
 
 // PostHog configuration from environment variables
 // Validated at startup - analytics will be disabled if missing
@@ -42,6 +43,12 @@ type QueuedScreen = {
   queuedAt: string;
 };
 
+type QueuedError = {
+  error: Error;
+  properties: PostHogEventProperties;
+  queuedAt: string;
+};
+
 // Singleton instance - will be set by PostHogProvider integration
 let posthogClient: PostHog | null = null;
 
@@ -56,6 +63,9 @@ const MAX_IDENTITY_QUEUE = 10;
 // Queue for screen events before client is ready
 let screenQueue: QueuedScreen[] = [];
 const MAX_SCREEN_QUEUE = 50;
+
+let errorQueue: QueuedError[] = [];
+const MAX_ERROR_QUEUE = 50;
 
 // Pending super properties to register once client is ready
 let pendingSuperProperties: PostHogEventProperties | null = null;
@@ -91,13 +101,29 @@ export const setPostHogClient = (client: PostHog | null): void => {
     // Flush event queue with original timestamps
     if (eventQueue.length > 0) {
       eventQueue.forEach(({ event, properties, queuedAt }) => {
-        client.capture(event, {
-          ...properties,
-          timestamp: queuedAt, // Use original timestamp, not current time
-          queued: true,
-        });
+        client.capture(
+          event,
+          {
+            ...properties,
+            queued: true,
+          },
+          {
+            timestamp: new Date(queuedAt),
+          },
+        );
       });
       eventQueue = [];
+    }
+
+    if (errorQueue.length > 0) {
+      errorQueue.forEach(({ error, properties, queuedAt }) => {
+        client.captureException(error, {
+          ...properties,
+          queued: true,
+          captured_at: queuedAt,
+        });
+      });
+      errorQueue = [];
     }
 
     // Flush screen queue with original timestamps
@@ -241,21 +267,10 @@ export const captureError = (
   error: Error | unknown,
   context?: PostHogEventProperties
 ): void => {
-  if (!posthogClient) {
-    // Silently skip - client not yet connected from provider
-    return;
-  }
-
-  const sanitizeStack = (value: string): string => {
-    if (!value) return "";
-    const withoutMessageLine = value.split("\n").slice(1).join("\n");
-    return withoutMessageLine.replace(/\s+$/g, "").slice(0, 2000);
-  };
-
   // Normalize unknown to Error instance for safe handling
   const normalizedError = error instanceof Error ? error : new Error("Unknown");
   const safeError = new Error(normalizedError.name || "Error");
-  safeError.stack = sanitizeStack(normalizedError.stack ?? "");
+  safeError.stack = sanitizeErrorStack(normalizedError.stack ?? "");
 
   const errorData: PostHogEventProperties = {
     error_name: normalizedError.name || "Error",
@@ -266,11 +281,24 @@ export const captureError = (
     errorData.original_error_type = typeof error;
   }
 
-  posthogClient.captureException(safeError, {
+  const payload: PostHogEventProperties = {
     ...errorData,
     ...context,
     captured_at: new Date().toISOString(),
-  });
+  };
+
+  if (!posthogClient) {
+    if (errorQueue.length < MAX_ERROR_QUEUE) {
+      errorQueue.push({
+        error: safeError,
+        properties: payload,
+        queuedAt: new Date().toISOString(),
+      });
+    }
+    return;
+  }
+
+  posthogClient.captureException(safeError, payload);
 };
 
 /**

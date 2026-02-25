@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 import Animated from "react-native-reanimated";
+import { withAlpha } from "@/utils/color";
 
 type VoiceStatus = "idle" | "listening" | "processing" | "review";
 
@@ -35,7 +36,7 @@ export const VoiceStatusIndicator: React.FC<VoiceStatusIndicatorProps> = ({
             {
               backgroundColor:
                 status === "listening"
-                  ? colors.primary + "20"
+                  ? withAlpha(colors.primary, 0.125)
                   : colors.surfaceVariant,
               borderColor: colors.outline,
             },

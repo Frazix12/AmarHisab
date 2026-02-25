@@ -200,7 +200,7 @@ export const CompleteGroceryModal: React.FC<CompleteGroceryModalProps> = ({
             ]}
           >
             {/* Header */}
-            <View style={styles.modalHeader}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.outline }]}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
                 {t.grocery?.completeItem || "Complete Item"}
               </Text>
@@ -503,7 +503,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
   },
   modalTitle: {
     fontSize: 20,

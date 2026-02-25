@@ -368,7 +368,13 @@ export const loadExpenses = async (): Promise<Expense[]> => {
 // Grocery Items
 export const saveGroceryItems = async (items: GroceryItem[]): Promise<void> => {
   try {
-    const limitedItems = items.slice(-MAX_GROCERY_ITEMS);
+    if (items.length > MAX_GROCERY_ITEMS) {
+      throw new Error(
+        `Too many grocery items: ${items.length}. Maximum allowed is ${MAX_GROCERY_ITEMS}.`,
+      );
+    }
+
+    const limitedItems = items;
     // ~250 bytes per grocery item on average (name, quantity, price, category, etc.)
     if (!isWithinStorageLimit(limitedItems.length, 250)) {
       console.error("Grocery items data too large to save");
@@ -634,9 +640,12 @@ export const clearAllData = async (): Promise<void> => {
         await tx.delete(learningTelemetryTable);
         await tx.delete(onboardingTipsTable);
         await tx.delete(aiCacheTable);
-        await tx
-          .delete(appMetaTable)
-          .where(eq(appMetaTable.key, APP_UPDATE_FINGERPRINT_KEY));
+        await tx.delete(appMetaTable).where(
+          inArray(appMetaTable.key, [
+            APP_UPDATE_FINGERPRINT_KEY,
+            ONBOARDING_COMPLETED_KEY,
+          ]),
+        );
       });
     }, "clear_all_data");
 

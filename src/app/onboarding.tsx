@@ -76,7 +76,7 @@ export default function OnboardingScreen() {
   }, [currentStep]);
 
   const handleNext = () => {
-    setCurrentStep((prev) => prev + 1);
+    setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
   };
 
   const handleSkip = async () => {

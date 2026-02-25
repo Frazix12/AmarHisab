@@ -53,7 +53,7 @@ export function LanguageStep({ isActive }: LanguageStepProps) {
                 },
               ]}
               accessibilityLabel={lang.nativeLabel}
-              accessibilityRole="button"
+              accessibilityRole="radio"
               accessibilityState={{ selected: isSelected }}
             >
               <View style={styles.cardContent}>

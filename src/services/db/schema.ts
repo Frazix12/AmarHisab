@@ -1,4 +1,5 @@
-import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
+import { check, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const expensesTable = sqliteTable("expenses", {
   id: text("id").primaryKey(),
@@ -30,14 +31,20 @@ export const groceryItemsTable = sqliteTable("grocery_items", {
   sortOrder: integer("sort_order").notNull(),
 });
 
-export const settingsTable = sqliteTable("settings", {
-  id: integer("id").primaryKey().default(1),
-  currencyCode: text("currency_code").notNull(),
-  currencySymbol: text("currency_symbol").notNull(),
-  currencyName: text("currency_name").notNull(),
-  theme: text("theme").notNull(),
-  language: text("language").notNull(),
-});
+export const settingsTable = sqliteTable(
+  "settings",
+  {
+    id: integer("id").primaryKey().default(1),
+    currencyCode: text("currency_code").notNull(),
+    currencySymbol: text("currency_symbol").notNull(),
+    currencyName: text("currency_name").notNull(),
+    theme: text("theme").notNull(),
+    language: text("language").notNull(),
+  },
+  (table) => ({
+    idCheck: check("settings_id_check", sql`${table.id} = 1`),
+  }),
+);
 
 export const templatesTable = sqliteTable("templates", {
   id: text("id").primaryKey(),
