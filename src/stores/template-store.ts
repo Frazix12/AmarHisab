@@ -1,9 +1,19 @@
 import { create } from "zustand";
-import { TemplateStorage } from "@/features/templates/services/template-storage";
 import { normalizeProductName } from "@/features/templates/services/template-utils";
 import { trackEvent, AnalyticsEvents } from "@/services/analytics";
 import { GroceryItem } from "@/types";
 import { GroceryTemplate, TemplateMatch } from "@/types/template";
+
+type TemplateStorageModule = typeof import("@/features/templates/services/template-storage");
+let templateStorageModulePromise: Promise<TemplateStorageModule> | null = null;
+
+async function getTemplateStorage(): Promise<TemplateStorageModule["TemplateStorage"]> {
+  if (!templateStorageModulePromise) {
+    templateStorageModulePromise = import("@/features/templates/services/template-storage");
+  }
+  const module = await templateStorageModulePromise;
+  return module.TemplateStorage;
+}
 
 interface TemplateState {
   templates: GroceryTemplate[];
@@ -29,6 +39,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
   },
 
   addTemplate: async (template) => {
+    const TemplateStorage = await getTemplateStorage();
     const newTemplate = await TemplateStorage.create(template);
     set((state) => ({ templates: [...state.templates, newTemplate] }));
 
@@ -44,6 +55,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
   },
 
   updateTemplate: async (id, updates) => {
+    const TemplateStorage = await getTemplateStorage();
     await TemplateStorage.update(id, updates);
     set((state) => ({
       templates: state.templates.map((t) => (t.id === id ? { ...t, ...updates } : t)),
@@ -56,6 +68,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
   },
 
   deleteTemplate: async (id) => {
+    const TemplateStorage = await getTemplateStorage();
     await TemplateStorage.delete(id);
     set((state) => ({
       templates: state.templates.filter((t) => t.id !== id),
@@ -68,10 +81,12 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
 
   findMatchingTemplates: async (input) => {
     const normalized = normalizeProductName(input);
+    const TemplateStorage = await getTemplateStorage();
     return await TemplateStorage.findMatching(normalized);
   },
 
   applyTemplate: async (templateId) => {
+    const TemplateStorage = await getTemplateStorage();
     const template = get().templates.find((t) => t.id === templateId);
     if (!template) return null;
 

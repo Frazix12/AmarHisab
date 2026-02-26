@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { CURRENCIES, Currency, UserSettings } from "@/types";
 import { setElevenLabsApiKey } from "@/services/ai/elevenlabs";
-import { setGeminiApiKey } from "@/services/ai/gemini";
 import {
   trackEvent,
   captureError,
@@ -22,6 +21,23 @@ const DEFAULT_SETTINGS: UserSettings = {
   theme: "light",
   language: "en",
 };
+
+type GeminiModule = typeof import("@/services/ai/gemini");
+let geminiModulePromise: Promise<GeminiModule> | null = null;
+
+function setGeminiApiKeyLazy(apiKey: string): void {
+  if (!geminiModulePromise) {
+    geminiModulePromise = import("@/services/ai/gemini");
+  }
+
+  void geminiModulePromise
+    .then((geminiModule) => {
+      geminiModule.setGeminiApiKey(apiKey);
+    })
+    .catch((error) => {
+    console.error("Failed to load Gemini module:", error);
+    });
+}
 
 interface SettingsState {
   settings: UserSettings;
@@ -92,7 +108,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     void saveSettings(next).catch((e) =>
       console.error("Failed to save settings:", e),
     );
-    setGeminiApiKey(apiKey);
+    setGeminiApiKeyLazy(apiKey);
     trackEvent(AnalyticsEvents.API_KEY_UPDATED, { key_type: "gemini", action });
     setSuperProperties({ has_gemini_key: action === "set" });
   },
@@ -122,7 +138,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         await LearningStorage.clear();
       }
       set({ settings: DEFAULT_SETTINGS });
-      setGeminiApiKey("");
+      setGeminiApiKeyLazy("");
       setElevenLabsApiKey("");
       trackEvent(AnalyticsEvents.DATA_CLEARED, { action: "clear_all_data" });
       await resetAnalytics();

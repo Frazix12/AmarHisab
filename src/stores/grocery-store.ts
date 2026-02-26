@@ -1,19 +1,18 @@
 import { create } from "zustand";
 import { normalizeProductName } from "@/features/templates/services/template-utils";
-import { detectExpenseCategory } from "@/services/ai/gemini";
 import {
   trackEvent,
   captureError,
   AnalyticsEvents,
 } from "@/services/analytics";
-import { ensureAnalyticsId } from "@/services/storage";
-import { TemplateLearner } from "@/features/templates/services/template-learner";
 import {
+  ensureAnalyticsId,
   upsertGroceryItem,
   updateGroceryItemById,
   deleteGroceryItemById,
   deleteGroceryItemsByIds,
 } from "@/services/storage";
+import { TemplateLearner } from "@/features/templates/services/template-learner";
 import { Expense, ExpenseCategory, GroceryItem } from "@/types";
 import { useExpenseStore } from "@/stores/expense-store";
 import { useSettingsStore } from "@/stores/settings-store";
@@ -91,7 +90,8 @@ export const useGroceryStore = create<GroceryState>((set, get) => {
   const cacheExpenseCategoryForGroceryItem = (item: GroceryItem): void => {
     const fallbackCategory = getFallbackExpenseCategory(item.category);
 
-    Promise.resolve(detectExpenseCategory(item.name))
+    void import("@/services/ai/gemini")
+      .then(({ detectExpenseCategory }) => detectExpenseCategory(item.name))
       .then((detectedCategory) => {
         if (!detectedCategory) return;
 

@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { TemplateLearner } from "@/features/templates/services/template-learner";
 import {
   trackEvent,
   setSuperProperties,
@@ -8,6 +7,17 @@ import {
 import { GroceryTemplate, LearningCandidate } from "@/types/template";
 import { useGroceryStore } from "@/stores/grocery-store";
 import { useTemplateStore } from "@/stores/template-store";
+
+type TemplateLearnerModule = typeof import("@/features/templates/services/template-learner");
+let templateLearnerModulePromise: Promise<TemplateLearnerModule> | null = null;
+
+async function getTemplateLearner(): Promise<TemplateLearnerModule["TemplateLearner"]> {
+  if (!templateLearnerModulePromise) {
+    templateLearnerModulePromise = import("@/features/templates/services/template-learner");
+  }
+  const module = await templateLearnerModulePromise;
+  return module.TemplateLearner;
+}
 
 interface LearningState {
   smartSuggestionsEnabled: boolean;
@@ -22,6 +32,7 @@ export const useLearningStore = create<LearningState>((set, get) => ({
 
   checkForSuggestions: async () => {
     if (!get().smartSuggestionsEnabled) return null;
+    const TemplateLearner = await getTemplateLearner();
     return await TemplateLearner.detectLearningCandidates(
       useGroceryStore.getState().groceryItems,
     );
@@ -38,12 +49,14 @@ export const useLearningStore = create<LearningState>((set, get) => ({
       source: "learned",
     });
 
+    const TemplateLearner = await getTemplateLearner();
     await TemplateLearner.recordSuggestion(candidate.productNameNormalized);
 
     return newTemplate;
   },
 
   dismissSuggestion: async (normalizedName, forever) => {
+    const TemplateLearner = await getTemplateLearner();
     if (forever) {
       await TemplateLearner.dismissForever(normalizedName);
     } else {
