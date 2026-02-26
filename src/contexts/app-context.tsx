@@ -2,6 +2,10 @@ import { TemplateLearner } from "@/features/templates/services/template-learner"
 import { LearningStorage } from "@/features/templates/services/learning-storage";
 import { TemplateStorage } from "@/features/templates/services/template-storage";
 import { normalizeProductName } from "@/features/templates/services/template-utils";
+import { useExpenseStore } from "@/stores/expense-store";
+import { useGroceryStore } from "@/stores/grocery-store";
+import { useSettingsStore } from "@/stores/settings-store";
+import { useTemplateStore } from "@/stores/template-store";
 import { setElevenLabsApiKey } from "@/services/ai/elevenlabs";
 import { detectExpenseCategory, setGeminiApiKey } from "@/services/ai/gemini";
 import {
@@ -388,6 +392,12 @@ export const AppProvider: React.FC<{ children: ReactNode; onReady?: () => void }
         setTemplates(loadedTemplates);
         groceryItemsRef.current = loadedGrocery;
         settingsRef.current = loadedSettings || DEFAULT_SETTINGS;
+
+        // Initialize Zustand stores from DB load
+        useExpenseStore.getState()._setExpenses(loadedExpenses);
+        useGroceryStore.getState()._setGroceryItems(loadedGrocery);
+        useSettingsStore.getState()._setSettings(loadedSettings || DEFAULT_SETTINGS);
+        useTemplateStore.getState()._setTemplates(loadedTemplates);
 
         if (loadedSettings?.geminiApiKey) {
           setGeminiApiKey(loadedSettings.geminiApiKey);
@@ -1079,6 +1089,10 @@ export const AppProvider: React.FC<{ children: ReactNode; onReady?: () => void }
       setSettings(DEFAULT_SETTINGS);
       setTemplates([]);
       setSmartSuggestionsEnabled(true);
+      useExpenseStore.getState()._setExpenses([]);
+      useGroceryStore.getState()._setGroceryItems([]);
+      useTemplateStore.getState()._setTemplates([]);
+      useSettingsStore.getState()._setSettings(DEFAULT_SETTINGS);
       groceryItemsRef.current = [];
       settingsRef.current = DEFAULT_SETTINGS;
       setGeminiApiKey("");
