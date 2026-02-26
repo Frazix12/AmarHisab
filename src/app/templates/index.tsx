@@ -13,10 +13,10 @@ import {
   PencilEdit02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
+import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
-  FlatList,
   Modal,
   StyleSheet,
   Text,
@@ -330,17 +330,14 @@ export default function TemplatesScreen() {
       </View>
 
       {/* Template List */}
-      <FlatList
+      <FlashList
         data={filteredTemplates}
         keyExtractor={(item) => item.id}
         renderItem={renderTemplateItem}
+        {...{ estimatedItemSize: 120 }}
         style={styles.list}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={renderEmptyState}
-        removeClippedSubviews
-        maxToRenderPerBatch={10}
-        initialNumToRender={8}
-        windowSize={5}
       />
 
       {/* Delete Confirmation Modal */}

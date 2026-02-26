@@ -23,13 +23,13 @@ import {
     Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
-import React, { useEffect, useRef, useState } from "react";
+import { FlashList } from "@shopify/flash-list";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
     Alert,
     BackHandler,
     Platform,
-    FlatList,
     ScrollView,
     StyleSheet,
     Text,
@@ -210,31 +210,34 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
     };
   }, [onClose, visible]);
 
-  const handleAutofill = async (templateId?: string) => {
-    const idToUse = templateId || matchingTemplates[0]?.template.id;
-    if (!idToUse) return;
+  const handleAutofill = useCallback(
+    async (templateId?: string) => {
+      const idToUse = templateId || matchingTemplates[0]?.template.id;
+      if (!idToUse) return;
 
-    const data = await applyTemplate(idToUse);
-    if (data) {
-      if (aiDetectionTimeoutRef.current) {
-        clearTimeout(aiDetectionTimeoutRef.current);
-        aiDetectionTimeoutRef.current = null;
-      }
-      aiDetectionRequestIdRef.current += 1;
-      setAiDetecting(false);
-      setAiDetectedCategory(false);
+      const data = await applyTemplate(idToUse);
+      if (data) {
+        if (aiDetectionTimeoutRef.current) {
+          clearTimeout(aiDetectionTimeoutRef.current);
+          aiDetectionTimeoutRef.current = null;
+        }
+        aiDetectionRequestIdRef.current += 1;
+        setAiDetecting(false);
+        setAiDetectedCategory(false);
 
-      if (data.name) setValue("name", data.name);
-      if (data.quantity) setValue("quantity", data.quantity);
-      if (data.price !== undefined && data.price !== null) {
-        setValue("price", data.price.toString());
+        if (data.name) setValue("name", data.name);
+        if (data.quantity) setValue("quantity", data.quantity);
+        if (data.price !== undefined && data.price !== null) {
+          setValue("price", data.price.toString());
+        }
+        if (data.category) setValue("category", data.category);
+        setAppliedTemplateId(idToUse);
+        setUserSelectedCategory(false);
       }
-      if (data.category) setValue("category", data.category);
-      setAppliedTemplateId(idToUse);
-      setUserSelectedCategory(false);
-    }
-    setShowTemplatePicker(false);
-  };
+      setShowTemplatePicker(false);
+    },
+    [applyTemplate, matchingTemplates, setValue],
+  );
 
   const handleSave = handleSubmit((values) => {
     // Rate limiting check
@@ -305,6 +308,75 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
     setAiDetectedCategory(false);
     onClose();
   });
+
+  const renderTemplateMatchItem = useCallback(
+    ({ item: match }: { item: TemplateMatch }) => (
+      <Pressable
+        haptic="medium"
+        onPress={() => handleAutofill(match.template.id)}
+        style={[
+          styles.templateOption,
+          { backgroundColor: colors.surfaceVariant },
+        ]}
+      >
+        <View style={styles.templateOptionMain}>
+          <Text
+            style={[styles.templateName, { color: colors.text }]}
+          >
+            {match.template.productNameDisplay}
+          </Text>
+          <View style={styles.templateMeta}>
+            <Text
+              style={[
+                styles.templateDetail,
+                { color: colors.textSecondary },
+              ]}
+            >
+              {match.template.defaultQuantity || "—"}
+            </Text>
+            <Text
+              style={[
+                styles.templateDetailDot,
+                { color: colors.textSecondary },
+              ]}
+            >
+              •
+            </Text>
+            <Text
+              style={[styles.templatePrice, { color: colors.text }]}
+            >
+              {settings.currency.symbol}
+              {typeof match.template.defaultPrice === "number"
+                ? formatNumber(match.template.defaultPrice.toFixed(2))
+                : "-"}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.templateOptionRight}>
+          <Text
+            style={[
+              styles.confidenceText,
+              { color: colors.primary },
+            ]}
+          >
+            {Math.round(match.confidence * 100)}% {t.templates.match}
+          </Text>
+          <Text
+            style={[
+              styles.usageText,
+              { color: colors.textSecondary },
+            ]}
+          >
+            {t.templates.usageDisplay.replace(
+              "{count}",
+              formatNumber(match.template.usageCount),
+            )}
+          </Text>
+        </View>
+      </Pressable>
+    ),
+    [colors.primary, colors.surfaceVariant, colors.text, colors.textSecondary, formatNumber, handleAutofill, settings.currency.symbol, t.templates.match, t.templates.usageDisplay],
+  );
 
   if (!shouldRender) return null;
 
@@ -591,75 +663,12 @@ export const AddGroceryModal: React.FC<AddGroceryModalProps> = ({
               <Text style={[styles.pickerTitle, { color: colors.text }]}>
                 {t.templates.selectTemplate} ({formatNumber(matchingTemplates.length)} {t.templates.matches})
               </Text>
-              <FlatList
+              <FlashList
                 data={matchingTemplates}
                 keyExtractor={(match) => match.template.id}
                 style={styles.pickerList}
-                renderItem={({ item: match }) => (
-                  <Pressable
-                    haptic="medium"
-                    onPress={() => handleAutofill(match.template.id)}
-                    style={[
-                      styles.templateOption,
-                      { backgroundColor: colors.surfaceVariant },
-                    ]}
-                  >
-                    <View style={styles.templateOptionMain}>
-                      <Text
-                        style={[styles.templateName, { color: colors.text }]}
-                      >
-                        {match.template.productNameDisplay}
-                      </Text>
-                      <View style={styles.templateMeta}>
-                        <Text
-                          style={[
-                            styles.templateDetail,
-                            { color: colors.textSecondary },
-                          ]}
-                        >
-                          {match.template.defaultQuantity || "—"}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.templateDetailDot,
-                            { color: colors.textSecondary },
-                          ]}
-                        >
-                          •
-                        </Text>
-                        <Text
-                          style={[styles.templatePrice, { color: colors.text }]}
-                        >
-                          {settings.currency.symbol}
-                          {typeof match.template.defaultPrice === "number"
-                            ? formatNumber(match.template.defaultPrice.toFixed(2))
-                            : "-"}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.templateOptionRight}>
-                      <Text
-                        style={[
-                          styles.confidenceText,
-                          { color: colors.primary },
-                        ]}
-                      >
-                        {Math.round(match.confidence * 100)}% {t.templates.match}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.usageText,
-                          { color: colors.textSecondary },
-                        ]}
-                      >
-                        {t.templates.usageDisplay.replace(
-                          "{count}",
-                          formatNumber(match.template.usageCount),
-                        )}
-                      </Text>
-                    </View>
-                  </Pressable>
-                )}
+                renderItem={renderTemplateMatchItem}
+                {...{ estimatedItemSize: 56 }}
               />
             </View>
           </Pressable>

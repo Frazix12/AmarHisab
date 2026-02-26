@@ -456,6 +456,7 @@ export default function GroceryScreen() {
         data={groceryListItems}
         keyExtractor={(item) => item.id}
         renderItem={renderListItem}
+        {...{ estimatedItemSize: 72 }}
         getItemType={(item) => item.type}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}

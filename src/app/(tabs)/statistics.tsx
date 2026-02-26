@@ -61,10 +61,19 @@ type HistoryListItem =
   | { type: "item"; id: string; expense: Expense }
   | { type: "footer"; id: string };
 
-interface CategoryPill {
+interface CategoryPillItemType {
   key: string;
   category: ExpenseCategory | null;
   label: string;
+}
+
+type StatisticsTranslation = ReturnType<typeof useI18n>["t"];
+
+interface CategoryPillProps {
+  item: CategoryPillItemType;
+  isSelected: boolean;
+  onPress: () => void;
+  t: StatisticsTranslation;
 }
 
 interface PeriodWindow {
@@ -77,6 +86,39 @@ interface MonthOption {
   value: Date;
   label: string;
 }
+
+const CategoryPill = React.memo(
+  ({ item, isSelected, onPress, t }: CategoryPillProps) => {
+    return (
+      <Pressable
+        haptic="light"
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.categoryPill,
+          isSelected && styles.categoryPillActive,
+          pressed && styles.pressedScale,
+        ]}
+        accessibilityRole="button"
+        accessibilityState={{ selected: isSelected }}
+        accessibilityLabel={`${t.statistics?.byCategory || "By Category"}: ${item.label}`}
+      >
+        <Text
+          style={[
+            styles.categoryPillText,
+            isSelected && styles.categoryPillTextActive,
+          ]}
+        >
+          {item.label}
+        </Text>
+      </Pressable>
+    );
+  },
+  (prev, next) =>
+    prev.item.key === next.item.key &&
+    prev.isSelected === next.isSelected,
+);
+
+CategoryPill.displayName = "CategoryPill";
 
 const getLocale = (language: string): string =>
   language === "bn" ? "bn-BD" : "en-US";
@@ -267,7 +309,7 @@ export default function StatisticsScreen() {
     [filteredSortedExpenses],
   );
 
-  const categoryPills = useMemo<CategoryPill[]>(
+  const categoryPills = useMemo<CategoryPillItemType[]>(
     () => [
       {
         key: "all",
@@ -538,6 +580,18 @@ export default function StatisticsScreen() {
     t.statistics,
   ]);
 
+  const renderCategoryPill = useCallback(
+    ({ item }: { item: CategoryPillItemType }) => (
+      <CategoryPill
+        item={item}
+        isSelected={selectedCategory === item.category}
+        onPress={() => setSelectedCategory(item.category)}
+        t={t}
+      />
+    ),
+    [selectedCategory, t],
+  );
+
   const listHeader = useMemo(
     () => (
       <View>
@@ -625,35 +679,10 @@ export default function StatisticsScreen() {
               data={categoryPills}
               horizontal
               keyExtractor={(item) => item.key}
+              {...{ estimatedItemSize: 100 }}
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.categoryPillsRow}
-              renderItem={({ item }) => {
-                const isSelected = selectedCategory === item.category;
-
-                return (
-                  <Pressable
-                    haptic="light"
-                    onPress={() => setSelectedCategory(item.category)}
-                    style={({ pressed }) => [
-                      styles.categoryPill,
-                      isSelected && styles.categoryPillActive,
-                      pressed && styles.pressedScale,
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: isSelected }}
-                    accessibilityLabel={`${t.statistics?.byCategory || "By Category"}: ${item.label}`}
-                  >
-                    <Text
-                      style={[
-                        styles.categoryPillText,
-                        isSelected && styles.categoryPillTextActive,
-                      ]}
-                    >
-                      {item.label}
-                    </Text>
-                  </Pressable>
-                );
-              }}
+              renderItem={renderCategoryPill}
             />
           ) : (
             <Text style={styles.noCategoryDataText}>
@@ -686,7 +715,7 @@ export default function StatisticsScreen() {
       periodCategoryBreakdown.length,
       periodItemLabel,
       periodLabel,
-      selectedCategory,
+      renderCategoryPill,
       selectedCategoryBreakdown,
       t,
     ],
@@ -706,6 +735,7 @@ export default function StatisticsScreen() {
             data={historyListItems}
             keyExtractor={(item) => item.id}
             renderItem={renderHistoryItem}
+            {...{ estimatedItemSize: 80 }}
             getItemType={(item) => item.type}
             style={styles.scrollView}
             contentContainerStyle={[

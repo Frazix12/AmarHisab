@@ -200,6 +200,7 @@ export default function ExpensesScreen() {
         data={sortedExpenses}
         keyExtractor={(item) => item.id}
         renderItem={renderExpenseItem}
+        {...{ estimatedItemSize: 88 }}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         ListHeaderComponent={listHeader}
