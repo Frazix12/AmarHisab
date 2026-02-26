@@ -73,7 +73,11 @@
     },
     "owner": "frazix",
     "extra": {
-      "router": {},
+      "router": {
+        "asyncRoutes": {
+          "default": "production"
+        }
+      },
       "eas": {
         "projectId": "2ce841f2-fa83-44d0-abf2-e356f89aa8dc"
       }

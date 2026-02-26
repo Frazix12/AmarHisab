@@ -1,11 +1,19 @@
 import { drizzle } from "drizzle-orm/expo-sqlite";
-import { openDatabaseSync } from "expo-sqlite";
+import { openDatabaseSync, type SQLiteDatabase } from "expo-sqlite";
 
 const DATABASE_NAME = "amar_hisab.db";
 const SCHEMA_VERSION = "1";
 
-const expoDb = openDatabaseSync(DATABASE_NAME);
-export const db = drizzle(expoDb);
+let _db: SQLiteDatabase | null = null;
+
+const getDb = (): SQLiteDatabase => {
+  if (!_db) {
+    _db = openDatabaseSync(DATABASE_NAME);
+  }
+  return _db;
+};
+
+export const db = drizzle(getDb());
 
 let initializationPromise: Promise<void> | null = null;
 
@@ -16,9 +24,9 @@ export const ensureDatabaseInitialized = async (): Promise<void> => {
 
   initializationPromise = (async () => {
     try {
-      await expoDb.execAsync("PRAGMA journal_mode = WAL;");
+      await getDb().execAsync("PRAGMA journal_mode = WAL;");
 
-      await expoDb.execAsync(`
+      await getDb().execAsync(`
       CREATE TABLE IF NOT EXISTS expenses (
         id TEXT PRIMARY KEY NOT NULL,
         amount REAL NOT NULL,
@@ -105,7 +113,7 @@ export const ensureDatabaseInitialized = async (): Promise<void> => {
       );
     `);
 
-      await expoDb.runAsync(
+      await getDb().runAsync(
         "INSERT OR IGNORE INTO app_meta (key, value) VALUES (?, ?)",
         ["schema_version", SCHEMA_VERSION],
       );

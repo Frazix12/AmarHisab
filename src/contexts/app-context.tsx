@@ -52,7 +52,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { useColorScheme as useNativeColorScheme } from "react-native";
+import { useColorScheme as useNativeColorScheme, InteractionManager } from "react-native";
 
 interface AppContextType {
   // Expenses
@@ -191,7 +191,10 @@ interface TemplateSliceContextType {
       "id" | "createdAt" | "lastUsedAt" | "usageCount"
     >,
   ) => Promise<GroceryTemplate>;
-  updateTemplate: (id: string, updates: Partial<GroceryTemplate>) => Promise<void>;
+  updateTemplate: (
+    id: string,
+    updates: Partial<GroceryTemplate>,
+  ) => Promise<void>;
   deleteTemplate: (id: string) => Promise<void>;
   findMatchingTemplates: (input: string) => Promise<TemplateMatch[]>;
   applyTemplate: (templateId: string) => Promise<Partial<GroceryItem> | null>;
@@ -200,7 +203,10 @@ interface TemplateSliceContextType {
 interface LearningSliceContextType {
   checkForSuggestions: () => Promise<LearningCandidate | null>;
   acceptSuggestion: (candidate: LearningCandidate) => Promise<GroceryTemplate>;
-  dismissSuggestion: (normalizedName: string, forever: boolean) => Promise<void>;
+  dismissSuggestion: (
+    normalizedName: string,
+    forever: boolean,
+  ) => Promise<void>;
   smartSuggestionsEnabled: boolean;
   toggleSmartSuggestions: () => void;
 }
@@ -393,7 +399,7 @@ export const AppProvider: React.FC<{ children: ReactNode; onReady?: () => void }
 
         // Defer analytics identification to avoid blocking render
         const effectiveSettings = loadedSettings || DEFAULT_SETTINGS;
-        queueMicrotask(() => {
+        InteractionManager.runAfterInteractions(() => {
           if (!isMountedRef.current) return;
 
           const hasGeminiKey = !!loadedSettings?.geminiApiKey;

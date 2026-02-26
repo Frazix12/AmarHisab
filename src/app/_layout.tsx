@@ -11,7 +11,7 @@ import * as SplashScreen from "expo-splash-screen";
 import * as Updates from "expo-updates";
 import "react-native-reanimated";
 import React, { useEffect, useMemo, useState } from "react";
-import { AppState, AppStateStatus, Platform } from "react-native";
+import { AppState, AppStateStatus, InteractionManager, Platform } from "react-native";
 import { PostHogProvider, usePostHog } from "posthog-react-native";
 
 import { Toast } from "@/components/ui/toast";
@@ -60,14 +60,11 @@ const RootLayoutContent = () => {
   useEffect(() => {
     resetTextMetrics();
     ensureTextMetricsPatched();
+    setTextMetricsLanguage(settings.language);
 
     return () => {
       resetTextMetrics();
     };
-  }, []);
-
-  useEffect(() => {
-    setTextMetricsLanguage(settings.language);
   }, [settings.language]);
 
   useEffect(() => {
@@ -86,10 +83,14 @@ const RootLayoutContent = () => {
 
   // Connect PostHog client to analytics service
   useEffect(() => {
-    if (posthog) {
-      setPostHogClient(posthog);
-    }
+    const task = InteractionManager.runAfterInteractions(() => {
+      if (posthog) {
+        setPostHogClient(posthog);
+      }
+    });
+
     return () => {
+      task.cancel();
       setPostHogClient(null);
     };
   }, [posthog]);
@@ -142,32 +143,35 @@ const RootLayoutContent = () => {
   useEffect(() => {
     let isActive = true;
 
-    const checkForUpdatedAppVersion = async () => {
-      const currentFingerprint = [
-        Application.nativeApplicationVersion || "unknown",
-        Application.nativeBuildVersion || "unknown",
-        Updates.updateId || "embedded",
-      ].join(":");
+    const task = InteractionManager.runAfterInteractions(() => {
+      const checkForUpdatedAppVersion = async () => {
+        const currentFingerprint = [
+          Application.nativeApplicationVersion || "unknown",
+          Application.nativeBuildVersion || "unknown",
+          Updates.updateId || "embedded",
+        ].join(":");
 
-      const previousFingerprint = await loadAppUpdateFingerprint();
-      if (!isActive) {
-        return;
-      }
+        const previousFingerprint = await loadAppUpdateFingerprint();
+        if (!isActive) {
+          return;
+        }
 
-      if (previousFingerprint && previousFingerprint !== currentFingerprint) {
-        showNotification(t.alerts.appUpdated, {
-          type: "success",
-          dedupeKey: "app-updated",
-        });
-      }
+        if (previousFingerprint && previousFingerprint !== currentFingerprint) {
+          showNotification(t.alerts.appUpdated, {
+            type: "success",
+            dedupeKey: "app-updated",
+          });
+        }
 
-      await saveAppUpdateFingerprint(currentFingerprint);
-    };
+        await saveAppUpdateFingerprint(currentFingerprint);
+      };
 
-    void checkForUpdatedAppVersion();
+      void checkForUpdatedAppVersion();
+    });
 
     return () => {
       isActive = false;
+      task.cancel();
     };
   }, [t.alerts.appUpdated]);
 
