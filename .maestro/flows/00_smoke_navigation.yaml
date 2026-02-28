@@ -9,6 +9,10 @@ tags:
 - killApp
 - launchApp:
     clearState: true
+- runFlow:
+    when:
+      visible: "(Skip|এড়িয়ে যান)"
+    file: ../subflows/complete-onboarding.yaml
 - runFlow: ../subflows/ensure-english.yaml
 - runFlow: ../subflows/go-expenses-tab.yaml
 - assertVisible: "Today's Total"
@@ -17,8 +21,10 @@ tags:
 - runFlow: ../subflows/go-statistics-tab.yaml
 - assertVisible: "By Category"
 - runFlow: ../subflows/go-settings-tab.yaml
-- assertVisible: "Developer Tools"
-- tapOn: "AI Voice"
-- assertVisible: "Speak naturally to add expenses and groceries"
-- tapOn: "Close"
-- assertVisible: "Settings"
+- scrollUntilVisible:
+    element: "(AI|এআই)"
+    direction: DOWN
+- tapOn: "(AI|এআই)"
+- assertVisible: "(AI & Smart Features|AI ফিচার)"
+- tapOn: "(Back|ফেরত|ফিরে|ফিরত)"
+- assertVisible: "(Settings|সেটিং)"

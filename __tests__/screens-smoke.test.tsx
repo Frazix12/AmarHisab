@@ -27,6 +27,10 @@ jest.mock("@/features/templates/services/learning-storage", () => ({
   },
 }));
 
+jest.mock("@/services/storage", () => ({
+  resetOnboardingCompleted: jest.fn(async () => {}),
+}));
+
 jest.mock("@/contexts/app-context", () => {
   const useApp = jest.fn();
 
@@ -119,14 +123,6 @@ jest.mock("@/components/shared/summary-card", () => ({
 jest.mock("@/components/ui/toast", () => ({
   Toast: () => null,
   showToast: jest.fn(),
-}));
-
-jest.mock("@/features/expenses/components/add-expense-modal", () => ({
-  AddExpenseModal: () => null,
-}));
-
-jest.mock("@/features/expenses/components/edit-expense-modal", () => ({
-  EditExpenseModal: () => null,
 }));
 
 jest.mock("@/features/expenses/components/expense-card", () => ({

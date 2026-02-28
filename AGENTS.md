@@ -7,10 +7,10 @@ It captures commands, structure, and conventions that are visible in the code.
 ## Quick Facts
 - Expo Router app (Expo SDK 54) using TypeScript + React Native.
 - Strict TS config with path alias `@/*` (see `tsconfig.json`).
-- State via React Context (`contexts/app-context.tsx`).
-- Local storage via Drizzle ORM + Expo SQLite + SecureStore (`services/storage`).
-- i18n via `services/i18n/index.ts` (en + bn).
-- AI integrations live in `services/ai/*`.
+- State via React Context (`src/contexts/app-context.tsx`).
+- Local storage via Drizzle ORM + Expo SQLite + SecureStore (`src/services/storage`).
+- i18n via `src/services/i18n/index.ts` (en + bn).
+- AI integrations live in `src/services/ai/*`.
 
 ## Commands
 ### Install
@@ -45,21 +45,21 @@ It captures commands, structure, and conventions that are visible in the code.
 - Hermes is used; avoid `eval` and non-Hermes-safe patterns.
 
 ## Project Layout
-- `app/` Expo Router screens and layouts.
-- `components/` reusable UI, navigation, shared widgets.
-- `features/` domain modules (expenses, grocery, templates, settings, ai).
-- `services/` integrations (ai, storage, i18n).
-- `contexts/` React context providers.
-- `constants/` theme and app constants.
-- `utils/` formatting + helper utilities.
-- `types/` shared TypeScript types + enums.
+- `src/app/` Expo Router screens and layouts.
+- `src/components/` reusable UI, navigation, shared widgets.
+- `src/features/` domain modules (expenses, grocery, templates, settings, ai).
+- `src/services/` integrations (ai, storage, i18n).
+- `src/contexts/` React context providers.
+- `src/constants/` theme and app constants.
+- `src/utils/` formatting + helper utilities.
+- `src/types/` shared TypeScript types + enums.
 
 ## Code Style
 ### TypeScript + React
 - Use `.ts` for logic and `.tsx` for components.
 - Prefer `interface` for object shapes; use `type` for unions.
 - Keep components functional; hooks for state/effects.
-- Screens in `app/` typically `export default function ...` for Expo Router.
+- Screens in `src/app/` typically `export default function ...` for Expo Router.
 - Keep props typed; avoid `any` unless bridging native modules.
 
 ### Formatting
@@ -82,7 +82,7 @@ It captures commands, structure, and conventions that are visible in the code.
 - Constants: `UPPER_SNAKE_CASE` for module constants.
 
 ## UI + UX Conventions
-- Theme via `Colors[colorScheme]` from `constants/theme.ts`.
+- Theme via `Colors[colorScheme]` from `src/constants/theme.ts`.
 - Use `useApp()` to access `colorScheme`, `t`, and data actions.
 - Use `useModalAnimation` for modal transitions.
 - Use `SafeAreaView` or `useSafeAreaInsets` where needed.
@@ -90,24 +90,24 @@ It captures commands, structure, and conventions that are visible in the code.
 - Provide `accessibilityLabel`/`accessibilityRole` on key buttons.
 
 ## Navigation
-- File-based routing via Expo Router (`app/`).
-- Tabs are defined in `app/(tabs)/_layout.tsx`.
-- Custom tab UI is in `components/navigation/custom-tab-bar.tsx`.
+- File-based routing via Expo Router (`src/app/`).
+- Tabs are defined in `src/app/(tabs)/_layout.tsx`.
+- Custom tab UI is in `src/components/navigation/custom-tab-bar.tsx`.
 
 ## Data + State
 - Use context functions (`addExpense`, `addGroceryItem`, etc.) to mutate data.
 - Keep state updates immutable; use functional `setState` patterns.
-- Do not access SQLite directly from features; use `services/storage` and template storage helpers.
+- Do not access SQLite directly from features; use `src/services/storage` and template storage helpers.
 - Link related entities through IDs (see grocery ↔ expenses).
 
 ## i18n + Numbers
 - All user-facing strings should use `t` from `useApp()`.
-- Update both `en` and `bn` in `services/i18n/index.ts`.
+- Update both `en` and `bn` in `src/services/i18n/index.ts`.
 - Use `formatNumber` for display; use `parseBanglaNumber` for input.
 - Keep translation keys consistent across languages.
 
 ## AI + Networking
-- AI helpers live in `services/ai/*` (Gemini, ElevenLabs).
+- AI helpers live in `src/services/ai/*` (Gemini, ElevenLabs).
 - Handle timeouts with `Promise.race` where appropriate.
 - Never log or hardcode API keys; use `.env.local` with `EXPO_PUBLIC_*`.
 - Show user-friendly errors via `Alert` or toast.

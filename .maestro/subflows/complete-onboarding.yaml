@@ -1,0 +1,5 @@
+appId: com.frazix.amarisab
+
+---
+- tapOn: "(Skip|এড়িয়ে যান)"
+- assertVisible: "(Expenses|খরচ)"

@@ -8,8 +8,11 @@ tags:
 - killApp
 - launchApp:
     clearState: true
+- runFlow:
+    when:
+      visible: "(Skip|এড়িয়ে যান)"
+    file: ../subflows/complete-onboarding.yaml
 - runFlow: ../subflows/ensure-english.yaml
-- runFlow: ../subflows/reset-data.yaml
 - runFlow: ../subflows/go-expenses-tab.yaml
 - tapOn: "Add Expense"
 - tapOn: "Take Photo"

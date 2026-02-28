@@ -8,23 +8,28 @@ tags:
 - killApp
 - launchApp:
     clearState: true
+- runFlow:
+    when:
+      visible: "(Skip|এড়িয়ে যান)"
+    file: ../subflows/complete-onboarding.yaml
 - runFlow: ../subflows/ensure-english.yaml
-- runFlow: ../subflows/reset-data.yaml
 - runFlow: ../subflows/go-expenses-tab.yaml
 - tapOn: "Add Expense"
-- tapOn: "0.00"
+- assertVisible: "(Add Transaction|লেনদেন যোগ করুন)"
+- assertVisible: "(Save Transaction|লেনদেন সংরক্ষণ করুন)"
+- tapOn: "(0|০)(\\.00)?"
 - inputText: "125"
 - tapOn: "Optional description..."
 - inputText: "E2E Expense Lunch"
 - tapOn: "Transport"
-- tapOn: "Save"
+- tapOn: "(Save Transaction|Save|লেনদেন সংরক্ষণ করুন|সংরক্ষণ)"
 - assertVisible: "E2E Expense Lunch"
 - longPressOn: "E2E Expense Lunch"
 - tapOn: "Edit"
 - tapOn: "E2E Expense Lunch"
 - eraseText
 - inputText: "E2E Expense Lunch Updated"
-- tapOn: "Save"
+- tapOn: "(Save Transaction|Save|লেনদেন সংরক্ষণ করুন|সংরক্ষণ)"
 - assertVisible: "E2E Expense Lunch Updated"
 - longPressOn: "E2E Expense Lunch Updated"
 - tapOn: "Delete"
