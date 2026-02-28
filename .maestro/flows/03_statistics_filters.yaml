@@ -8,13 +8,21 @@ tags:
 - killApp
 - launchApp:
     clearState: true
+- runFlow:
+    when:
+      visible: "(Skip|এড়িয়ে যান)"
+    file: ../subflows/complete-onboarding.yaml
 - runFlow: ../subflows/ensure-english.yaml
-- runFlow: ../subflows/reset-data.yaml
-- runFlow: ../subflows/go-settings-tab.yaml
-- scrollUntilVisible:
-    element: "Add Sample Data"
-    direction: DOWN
-- tapOn: "Add Sample Data"
+- runFlow: ../subflows/go-expenses-tab.yaml
+- tapOn: "Add Expense"
+- assertVisible: "Add Transaction"
+- tapOn: "(0|০)(\\.00)?"
+- inputText: "50"
+- tapOn: "Optional description..."
+- inputText: "E2E Stats Expense"
+- tapOn: "Transport"
+- tapOn: "(Save Transaction|Save|লেনদেন সংরক্ষণ করুন|সংরক্ষণ)"
+- assertVisible: "(Amar Hisab|আমার খরচ)"
 - runFlow: ../subflows/go-statistics-tab.yaml
 - assertVisible: "Statistics"
 - assertVisible: "By Category"
@@ -25,4 +33,3 @@ tags:
 - assertNotVisible: "Start month"
 - tapOn: "Next date range"
 - tapOn: "Previous date range"
-- tapOn: "All"

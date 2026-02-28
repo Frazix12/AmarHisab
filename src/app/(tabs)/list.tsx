@@ -407,6 +407,7 @@ export default function GroceryScreen() {
 
   return (
     <SafeAreaView
+      edges={["top", "left", "right"]}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <Animated.View style={[styles.screenTransition, pageTransitionStyle]}>

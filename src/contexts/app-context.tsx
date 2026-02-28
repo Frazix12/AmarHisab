@@ -269,6 +269,7 @@ export const AppProvider: React.FC<{ children: ReactNode; onReady?: () => void }
   const isMountedRef = useRef(true);
   const groceryItemsRef = useRef<GroceryItem[]>([]);
   const settingsRef = useRef<UserSettings>(DEFAULT_SETTINGS);
+  const hasLocalSettingsEditsRef = useRef(false);
 
   useEffect(() => {
     groceryItemsRef.current = groceryItems;
@@ -386,17 +387,29 @@ export const AppProvider: React.FC<{ children: ReactNode; onReady?: () => void }
           return;
         }
 
+        const resolvedSettings = hasLocalSettingsEditsRef.current
+          ? {
+              ...(loadedSettings ?? DEFAULT_SETTINGS),
+              ...settingsRef.current,
+              geminiApiKey:
+                settingsRef.current.geminiApiKey ?? loadedSettings?.geminiApiKey,
+              elevenLabsApiKey:
+                settingsRef.current.elevenLabsApiKey ??
+                loadedSettings?.elevenLabsApiKey,
+            }
+          : loadedSettings || DEFAULT_SETTINGS;
+
         setExpenses(loadedExpenses);
         setGroceryItems(loadedGrocery);
-        setSettings(loadedSettings || DEFAULT_SETTINGS);
+        setSettings(resolvedSettings);
         setTemplates(loadedTemplates);
         groceryItemsRef.current = loadedGrocery;
-        settingsRef.current = loadedSettings || DEFAULT_SETTINGS;
+        settingsRef.current = resolvedSettings;
 
         // Initialize Zustand stores from DB load
         useExpenseStore.getState()._setExpenses(loadedExpenses);
         useGroceryStore.getState()._setGroceryItems(loadedGrocery);
-        useSettingsStore.getState()._setSettings(loadedSettings || DEFAULT_SETTINGS);
+        useSettingsStore.getState()._setSettings(resolvedSettings);
         useTemplateStore.getState()._setTemplates(loadedTemplates);
 
         if (loadedSettings?.geminiApiKey) {
@@ -408,7 +421,7 @@ export const AppProvider: React.FC<{ children: ReactNode; onReady?: () => void }
         }
 
         // Defer analytics identification to avoid blocking render
-        const effectiveSettings = loadedSettings || DEFAULT_SETTINGS;
+        const effectiveSettings = resolvedSettings;
         InteractionManager.runAfterInteractions(() => {
           if (!isMountedRef.current) return;
 
@@ -838,6 +851,7 @@ export const AppProvider: React.FC<{ children: ReactNode; onReady?: () => void }
 
   // Settings functions
   const updateCurrency = useCallback((currency: Currency) => {
+    hasLocalSettingsEditsRef.current = true;
     const previousSettings = settingsRef.current;
     const nextSettings: UserSettings = { ...previousSettings, currency };
     settingsRef.current = nextSettings;
@@ -857,6 +871,7 @@ export const AppProvider: React.FC<{ children: ReactNode; onReady?: () => void }
   }, [persistSettings]);
 
   const updateTheme = useCallback((theme: "light" | "dark" | "system") => {
+    hasLocalSettingsEditsRef.current = true;
     const previousSettings = settingsRef.current;
     const nextSettings: UserSettings = { ...previousSettings, theme };
     settingsRef.current = nextSettings;
@@ -876,6 +891,7 @@ export const AppProvider: React.FC<{ children: ReactNode; onReady?: () => void }
   }, [persistSettings]);
 
   const updateLanguage = useCallback((language: string) => {
+    hasLocalSettingsEditsRef.current = true;
     const previousSettings = settingsRef.current;
     const nextSettings: UserSettings = { ...previousSettings, language };
     settingsRef.current = nextSettings;

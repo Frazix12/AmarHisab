@@ -592,6 +592,7 @@ export const saveSettings = async (settings: UserSettings): Promise<void> => {
 
 export const loadSettings = async (): Promise<UserSettings | null> => {
   try {
+    await writeQueue;
     await ensureDatabaseInitialized();
     const rows = await db
       .select()

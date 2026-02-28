@@ -10,6 +10,7 @@ import {
   loadGroceryItems,
   loadSettings,
   ensureAnalyticsId,
+  saveSettings,
 } from "@/services/storage";
 import { setElevenLabsApiKey } from "@/services/ai/elevenlabs";
 import { setGeminiApiKey } from "@/services/ai/gemini";
@@ -125,6 +126,47 @@ describe("AppProvider", () => {
     expect(setElevenLabsApiKey).not.toHaveBeenCalled();
 
     jest.useRealTimers();
+  });
+
+  it("keeps the latest local currency when hydration returns stale saved settings", async () => {
+    const bdt = CURRENCIES.find((currency) => currency.code === "BDT");
+    const inr = CURRENCIES.find((currency) => currency.code === "INR");
+
+    if (!bdt || !inr) {
+      throw new Error("Expected BDT and INR currencies to exist in test fixtures");
+    }
+
+    let resolveSettings: (value: UserSettings | null) => void = () => {};
+    const pendingSettings = new Promise<UserSettings | null>((resolve) => {
+      resolveSettings = resolve;
+    });
+
+    (loadSettings as jest.Mock).mockReturnValueOnce(pendingSettings);
+
+    const { result } = renderHook(() => useApp(), { wrapper });
+
+    await waitFor(() => expect(loadSettings).toHaveBeenCalled());
+
+    act(() => {
+      result.current.updateCurrency(inr);
+    });
+
+    act(() => {
+      resolveSettings({
+        ...defaultSettings,
+        currency: bdt,
+      });
+    });
+
+    await waitFor(() => {
+      expect(result.current.settings.currency.code).toBe("INR");
+    });
+
+    expect(saveSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        currency: expect.objectContaining({ code: "INR" }),
+      }),
+    );
   });
 
   it("adds expenses and updates totals", async () => {

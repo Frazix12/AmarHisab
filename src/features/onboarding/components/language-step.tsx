@@ -119,11 +119,13 @@ const styles = StyleSheet.create({
   cardContent: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    minWidth: 0,
   },
   cardLabel: {
     fontSize: 18,
     fontWeight: "600",
+    flex: 1,
+    paddingRight: 12,
   },
   radioOuter: {
     width: 22,
@@ -132,6 +134,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
   radioInner: {
     width: 12,

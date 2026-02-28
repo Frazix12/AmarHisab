@@ -57,7 +57,12 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
 
   const variantColors = getVariantColors();
 
-  const displayAmount = formatNumber(amount);
+  const roundedAmount = Math.round((amount + Number.EPSILON) * 100) / 100;
+  const normalizedAmount = roundedAmount
+    .toFixed(2)
+    .replace(/\.00$/, "")
+    .replace(/(\.\d)0$/, "$1");
+  const displayAmount = formatNumber(normalizedAmount);
 
   return (
     <View

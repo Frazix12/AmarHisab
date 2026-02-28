@@ -150,7 +150,6 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     borderTopWidth: 1,
-    paddingTop: 8,
   },
   voiceButtonWrapper: {
     flex: 1,

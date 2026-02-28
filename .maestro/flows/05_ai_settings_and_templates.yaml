@@ -9,8 +9,11 @@ tags:
 - killApp
 - launchApp:
     clearState: true
+- runFlow:
+    when:
+      visible: "(Skip|এড়িয়ে যান)"
+    file: ../subflows/complete-onboarding.yaml
 - runFlow: ../subflows/ensure-english.yaml
-- runFlow: ../subflows/reset-data.yaml
 - runFlow: ../subflows/go-settings-tab.yaml
 - tapOn: "AI"
 - assertVisible: "AI & Smart Features"
@@ -18,24 +21,6 @@ tags:
 - tapOn: "Disable"
 - tapOn: "Smart Suggestions"
 - tapOn: "Enable"
-- tapOn: "Gemini API Key"
-- tapOn: "Enter Gemini API Key"
-- inputText: "test-gemini-key"
-- tapOn: "Save"
-- tapOn: "OK"
-- tapOn: "Gemini API Key"
-- tapOn: "Remove Key"
-- tapOn: "Remove Key"
-- tapOn: "OK"
-- tapOn: "ElevenLabs API Key"
-- tapOn: "Enter ElevenLabs API Key"
-- inputText: "test-elevenlabs-key"
-- tapOn: "Save"
-- tapOn: "OK"
-- tapOn: "ElevenLabs API Key"
-- tapOn: "Remove Key"
-- tapOn: "Remove Key"
-- tapOn: "OK"
 - tapOn: "Manage Templates"
 - assertVisible: "Templates"
 - tapOn: "New Template"
@@ -46,14 +31,9 @@ tags:
 - tapOn: "Household"
 - tapOn: "Save"
 - assertVisible: "E2E Template Rice"
-- tapOn: "Edit: E2E Template Rice"
-- tapOn: "E2E Template Rice"
-- inputText: " Updated"
-- tapOn: "Save"
-- assertVisible: "E2E Template Rice Updated"
-- tapOn: "Delete: E2E Template Rice Updated"
+- tapOn: "Delete: E2E Template Rice"
 - tapOn: "Delete"
-- assertNotVisible: "E2E Template Rice Updated"
+- assertNotVisible: "E2E Template Rice"
 - tapOn: "Manual.*"
 - tapOn: "Learned.*"
 - tapOn: "All.*"

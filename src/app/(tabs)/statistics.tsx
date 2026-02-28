@@ -724,7 +724,10 @@ export default function StatisticsScreen() {
   const pageTransitionStyle = usePageTransition();
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      edges={["top", "left", "right"]}
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       <Animated.View style={[styles.screenTransition, pageTransitionStyle]}>
         <View style={[styles.contentFrame, { maxWidth: maxContentWidth }]}>
           <View style={styles.header}>
