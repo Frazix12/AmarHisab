@@ -27,14 +27,12 @@ import {
 import { flushEvents, setPostHogClient } from "@/services/analytics";
 import { showNotification } from "@/services/notifications";
 import {
+  isOnboardingCompletedSync,
   loadAppUpdateFingerprint,
   saveAppUpdateFingerprint,
   loadOnboardingCompleted,
+  subscribeToOnboardingCompleted,
 } from "@/services/storage";
-
-export const unstable_settings = {
-  anchor: "(tabs)",
-};
 
 // Keep native splash screen visible until onboarding flag is loaded
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -184,6 +182,14 @@ const RootLayoutContent = () => {
           gestureEnabled: true,
         }}
       >
+        <Stack.Screen
+          name="index"
+          options={{
+            headerShown: false,
+            animation: "none",
+            gestureEnabled: false,
+          }}
+        />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="onboarding"
@@ -227,6 +233,7 @@ const RootLayoutContent = () => {
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const pathname = usePathname();
 
   // Load onboarding flag OUTSIDE AppProvider — independent check before any context loads
   useEffect(() => {
@@ -252,8 +259,20 @@ export default function RootLayout() {
     };
   }, []);
 
+  useEffect(() => {
+    return subscribeToOnboardingCompleted((completed) => {
+      setNeedsOnboarding(!completed);
+    });
+  }, []);
+
   // Keep splash visible until onboarding check is done
   if (!isReady) return null;
+
+  const shouldShowOnboarding = needsOnboarding && !isOnboardingCompletedSync();
+
+  if (shouldShowOnboarding && pathname !== "/onboarding") {
+    return <Redirect href="/onboarding" />;
+  }
 
   // Validate PostHog environment variables before rendering provider
   const apiKey = process.env.EXPO_PUBLIC_POSTHOG_API_KEY;
@@ -269,7 +288,6 @@ export default function RootLayout() {
     return (
       <ErrorBoundary>
         <AppProvider>
-          {needsOnboarding && <Redirect href="/onboarding" />}
           <RootLayoutContent />
         </AppProvider>
       </ErrorBoundary>
@@ -308,7 +326,6 @@ export default function RootLayout() {
         }}
       >
         <AppProvider>
-          {needsOnboarding && <Redirect href="/onboarding" />}
           <RootLayoutContent />
         </AppProvider>
       </PostHogProvider>

@@ -32,6 +32,11 @@ const DEFAULT_REQUEST_TIMEOUT_MS =
 
 let elevenLabsApiKey = ENV_API_KEY;
 
+const logTranscriptionDebug = (stage: string, details?: Record<string, unknown>) => {
+  if (!__DEV__) return;
+  console.log(`[ElevenLabsSTT] ${stage}`, details || {});
+};
+
 const getFileName = (uri: string) => {
   const normalized = uri.split("?")[0];
   const parts = normalized.split("/");
@@ -55,10 +60,10 @@ const normalizeFileUri = (uri: string) => {
 const getMimeType = (fileName: string) => {
   const lower = fileName.toLowerCase();
   if (lower.endsWith(".wav")) return "audio/wav";
-  if (lower.endsWith(".m4a")) return "audio/m4a";
+  if (lower.endsWith(".m4a")) return "audio/mp4";
   if (lower.endsWith(".mp3")) return "audio/mpeg";
   if (lower.endsWith(".aac")) return "audio/aac";
-  return "audio/wav";
+  return "audio/mp4";
 };
 
 const extractTranscriptText = (data: any): string => {
@@ -94,13 +99,22 @@ export const transcribeAudioFile = async (
 
   try {
     const apiKey = options.apiKey?.trim() || elevenLabsApiKey.trim();
+    const mimeType = getMimeType(fileName);
+
+    logTranscriptionDebug("request_start", {
+      fileName,
+      mimeType,
+      modelId,
+      timeoutMs,
+      languageCode: options.languageCode || "auto",
+      hasApiKey: !!apiKey,
+    });
 
     if (!apiKey) {
       throw new Error("Voice transcription is unavailable right now.");
     }
 
     const form = new FormData();
-    const mimeType = getMimeType(fileName);
 
     form.append("file", {
       uri: normalizeFileUri(options.fileUri),
@@ -142,6 +156,14 @@ export const transcribeAudioFile = async (
 
     const rawText = await response.text();
     let data: any = null;
+
+    logTranscriptionDebug("response_received", {
+      status: response.status,
+      ok: response.ok,
+      bodyLength: rawText.length,
+      bodyPreview: rawText.slice(0, 200),
+    });
+
     try {
       data = rawText ? JSON.parse(rawText) : null;
     } catch (error) {
@@ -166,6 +188,12 @@ export const transcribeAudioFile = async (
     const transcript = extractTranscriptText(data);
     const language = extractLanguage(data);
 
+    logTranscriptionDebug("response_parsed", {
+      transcriptLength: transcript.length,
+      transcriptPreview: transcript.slice(0, 120),
+      language: language || null,
+    });
+
     trackLlmGeneration({
       traceId,
       spanName: "transcribe_audio",
@@ -188,6 +216,17 @@ export const transcribeAudioFile = async (
       raw: data,
     };
   } catch (error) {
+    logTranscriptionDebug("request_failed", {
+      error:
+        error instanceof Error
+          ? {
+              name: error.name,
+              message: error.message,
+            }
+          : String(error),
+      httpStatus: extractHttpStatusCode(error),
+    });
+
     trackLlmGeneration({
       traceId,
       spanName: "transcribe_audio",

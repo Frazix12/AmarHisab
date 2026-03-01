@@ -74,6 +74,11 @@ const isAudioRecordAvailable = async () => AudioRecord.isAvailable();
 const normalizeSpeechText = (value: string) =>
   value.replace(/\s+/g, " ").trim();
 
+const logVoiceDebug = (stage: string, details?: Record<string, unknown>) => {
+  if (!__DEV__) return;
+  console.log(`[VoiceMode] ${stage}`, details || {});
+};
+
 const resolveLanguageCode = (languageCode: string | null) => {
   if (!languageCode) return "";
   const normalized = languageCode.toLowerCase();
@@ -410,6 +415,12 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
   };
 
   const startListening = async () => {
+    logVoiceDebug("start_listening_requested", {
+      platform: Platform.OS,
+      languageMode,
+      settingsLanguage: settings.language,
+    });
+
     if (Platform.OS === "web") {
       setErrorMessage(t.voice.webNotSupported);
       voiceInputModeRef.current = "mic";
@@ -462,11 +473,19 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
         sampleRate: AUDIO_SAMPLE_RATE,
         channels: 1,
         bitsPerSample: 16,
-        wavFile: "ai-voice.wav",
+        wavFile: "ai-voice.m4a",
+      });
+
+      logVoiceDebug("record_init_complete", {
+        sampleRate: AUDIO_SAMPLE_RATE,
+        channels: 1,
+        bitsPerSample: 16,
+        fileName: "ai-voice.m4a",
       });
 
       await AudioRecord.start();
       isListeningRef.current = true;
+      logVoiceDebug("record_start_success");
     } catch (error) {
       console.error("Failed to start audio recording", error);
       isListeningRef.current = false;
@@ -482,10 +501,16 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
   };
 
   const processTranscript = async (transcript: string) => {
+    logVoiceDebug("process_transcript_enter", {
+      transcriptLength: transcript.length,
+      transcriptPreview: transcript.slice(0, 120),
+    });
+
     if (!transcript) {
       setErrorMessage(t.voice.noSpeechDetected);
       setStatus("idle");
       trackVoiceInputFailed("empty_transcript");
+      logVoiceDebug("process_transcript_empty");
       return;
     }
 
@@ -498,6 +523,13 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
     const parsed = await parseVoiceInput(transcript, {
       currencyCode: settings.currency.code,
       language: parsingLanguage,
+    });
+
+    logVoiceDebug("parse_voice_input_response", {
+      parsingLanguage,
+      hasParsedResult: !!parsed,
+      expenseCount: parsed?.expenses?.length ?? 0,
+      groceryCount: parsed?.groceries?.length ?? 0,
     });
 
     if (!parsed) {
@@ -535,26 +567,88 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
     isListeningRef.current = false;
     setStatus("processing");
 
+    logVoiceDebug("stop_listening_requested");
+
     try {
       const audioFileUri = await AudioRecord.stop();
+      logVoiceDebug("record_stop_result", {
+        audioFileUri,
+        hasFile: !!audioFileUri,
+      });
+
       if (!audioFileUri) {
         setErrorMessage(t.voice.noSpeechDetected);
         setStatus("idle");
         trackVoiceInputFailed("record_stop_no_file");
+        logVoiceDebug("record_stop_no_file");
         return;
       }
 
       const apiKey = getElevenLabsApiKey();
-      const result = await transcribeAudioFile({
-        fileUri: audioFileUri,
-        apiKey,
-        languageCode: languageMode === "auto" ? undefined : languageMode,
+      const preferredLanguageCode = languageMode === "auto" ? undefined : languageMode;
+      logVoiceDebug("transcribe_request_primary", {
+        hasApiKey: !!apiKey,
+        preferredLanguageCode: preferredLanguageCode || "auto",
       });
 
+      let result = await transcribeAudioFile({
+        fileUri: audioFileUri,
+        apiKey,
+        languageCode: preferredLanguageCode,
+      });
+
+      let normalized = normalizeSpeechText(result.text || "");
+      logVoiceDebug("transcribe_response_primary", {
+        detectedLanguage: result.language || null,
+        transcriptLength: normalized.length,
+        transcriptPreview: normalized.slice(0, 120),
+      });
+
+      if (!normalized && preferredLanguageCode) {
+        logVoiceDebug("transcribe_fallback_start", {
+          previousLanguageHint: preferredLanguageCode,
+        });
+
+        try {
+          const fallbackResult = await transcribeAudioFile({
+            fileUri: audioFileUri,
+            apiKey,
+          });
+          const fallbackTranscript = normalizeSpeechText(fallbackResult.text || "");
+
+          logVoiceDebug("transcribe_fallback_response", {
+            detectedLanguage: fallbackResult.language || null,
+            transcriptLength: fallbackTranscript.length,
+            transcriptPreview: fallbackTranscript.slice(0, 120),
+          });
+
+          if (fallbackTranscript) {
+            result = fallbackResult;
+            normalized = fallbackTranscript;
+            logVoiceDebug("transcribe_fallback_used");
+          }
+        } catch (fallbackError) {
+          console.warn("Fallback transcription without language hint failed", fallbackError);
+          logVoiceDebug("transcribe_fallback_failed", {
+            error:
+              fallbackError instanceof Error
+                ? {
+                    name: fallbackError.name,
+                    message: fallbackError.message,
+                  }
+                : String(fallbackError),
+          });
+        }
+      }
+
       setDetectedLanguage(result.language || null);
-      const normalized = normalizeSpeechText(result.text || "");
       setTranscriptValue("transcript", normalized);
       await processTranscript(normalized);
+
+      logVoiceDebug("stop_listening_complete", {
+        finalDetectedLanguage: result.language || null,
+        finalTranscriptLength: normalized.length,
+      });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to transcribe audio";
@@ -562,6 +656,16 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
       setStatus("idle");
 
       trackVoiceInputFailed("mic_transcribe_or_parse", error);
+      logVoiceDebug("stop_listening_failed", {
+        message,
+        error:
+          error instanceof Error
+            ? {
+                name: error.name,
+                message: error.message,
+              }
+            : String(error),
+      });
     }
   };
 

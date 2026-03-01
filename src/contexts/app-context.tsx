@@ -856,6 +856,7 @@ export const AppProvider: React.FC<{ children: ReactNode; onReady?: () => void }
     const nextSettings: UserSettings = { ...previousSettings, currency };
     settingsRef.current = nextSettings;
     setSettings(nextSettings);
+    useSettingsStore.getState()._setSettings(nextSettings);
 
     persistSettings(nextSettings);
 
@@ -876,6 +877,7 @@ export const AppProvider: React.FC<{ children: ReactNode; onReady?: () => void }
     const nextSettings: UserSettings = { ...previousSettings, theme };
     settingsRef.current = nextSettings;
     setSettings(nextSettings);
+    useSettingsStore.getState()._setSettings(nextSettings);
 
     persistSettings(nextSettings);
 
@@ -896,6 +898,7 @@ export const AppProvider: React.FC<{ children: ReactNode; onReady?: () => void }
     const nextSettings: UserSettings = { ...previousSettings, language };
     settingsRef.current = nextSettings;
     setSettings(nextSettings);
+    useSettingsStore.getState()._setSettings(nextSettings);
 
     persistSettings(nextSettings);
 
@@ -919,6 +922,7 @@ export const AppProvider: React.FC<{ children: ReactNode; onReady?: () => void }
     };
     settingsRef.current = nextSettings;
     setSettings(nextSettings);
+    useSettingsStore.getState()._setSettings(nextSettings);
 
     persistSettings(nextSettings);
     setGeminiApiKey(apiKey);
@@ -942,6 +946,7 @@ export const AppProvider: React.FC<{ children: ReactNode; onReady?: () => void }
     };
     settingsRef.current = nextSettings;
     setSettings(nextSettings);
+    useSettingsStore.getState()._setSettings(nextSettings);
 
     persistSettings(nextSettings);
     setElevenLabsApiKey(apiKey);
