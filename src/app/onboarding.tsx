@@ -43,6 +43,7 @@ export default function OnboardingScreen() {
   const [currentStep, setCurrentStep] = useState(0);
   const startTimeRef = useRef(Date.now());
   const trackedStepsRef = useRef<Set<number>>(new Set());
+  const completionInFlightRef = useRef(false);
 
   // Track onboarding start on mount
   useEffect(() => {
@@ -80,20 +81,40 @@ export default function OnboardingScreen() {
   };
 
   const handleSkip = async () => {
+    if (completionInFlightRef.current) {
+      return;
+    }
+    completionInFlightRef.current = true;
+
     trackEvent(AnalyticsEvents.ONBOARDING_SKIPPED, {
       skipped_at_step: STEPS[currentStep],
       step_index: currentStep,
     });
-    await saveOnboardingCompleted();
-    router.replace("/(tabs)");
+
+    try {
+      await saveOnboardingCompleted();
+      router.replace("/(tabs)");
+    } finally {
+      completionInFlightRef.current = false;
+    }
   };
 
   const handleComplete = async () => {
+    if (completionInFlightRef.current) {
+      return;
+    }
+    completionInFlightRef.current = true;
+
     trackEvent(AnalyticsEvents.ONBOARDING_COMPLETED, {
       total_duration_ms: Date.now() - startTimeRef.current,
     });
-    await saveOnboardingCompleted();
-    router.replace("/(tabs)");
+
+    try {
+      await saveOnboardingCompleted();
+      router.replace("/(tabs)");
+    } finally {
+      completionInFlightRef.current = false;
+    }
   };
 
   const isLastStep = currentStep === STEPS.length - 1;

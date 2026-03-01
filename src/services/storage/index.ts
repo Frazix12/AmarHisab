@@ -1,4 +1,5 @@
 import { db, ensureDatabaseInitialized } from "@/services/db/client";
+import { createMMKV } from "react-native-mmkv";
 import {
   aiCacheTable,
   appMetaTable,
@@ -17,6 +18,19 @@ const GEMINI_API_KEY_STORAGE_KEY = "amar_hisab_gemini_api_key";
 const ELEVENLABS_API_KEY_STORAGE_KEY = "amar_hisab_elevenlabs_api_key";
 const APP_UPDATE_FINGERPRINT_KEY = "app_update_fingerprint";
 const ANALYTICS_ID_STORAGE_KEY = "amar_hisab_analytics_id";
+const ONBOARDING_COMPLETED_KEY = "has_completed_onboarding";
+const SETTINGS_MMKV_KEY = "settings";
+const ONBOARDING_TIP_DISMISSED_PREFIX = "onboarding_tip_dismissed";
+
+const configStorage = createMMKV({
+  id: "amar_hisab_config",
+});
+
+const getOnboardingTipDismissedKey = (
+  screenKey: "expenses" | "grocery",
+): string => {
+  return `${ONBOARDING_TIP_DISMISSED_PREFIX}:${screenKey}`;
+};
 
 // Maximum storage sizes to prevent abuse
 const MAX_EXPENSES = 10000;
@@ -130,6 +144,51 @@ const deleteSecureItem = async (key: string) => {
   } catch (error) {
     console.error("Error deleting from SecureStore:", error);
   }
+};
+
+const loadSettingsFromMmkv = (): UserSettings | null => {
+  const rawSettings = configStorage.getString(SETTINGS_MMKV_KEY);
+  if (!rawSettings) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(rawSettings) as UserSettings;
+    if (
+      !parsed ||
+      !parsed.currency ||
+      typeof parsed.currency.code !== "string" ||
+      typeof parsed.currency.symbol !== "string" ||
+      typeof parsed.currency.name !== "string" ||
+      typeof parsed.theme !== "string" ||
+      typeof parsed.language !== "string"
+    ) {
+      return null;
+    }
+
+    return {
+      currency: {
+        code: parsed.currency.code,
+        symbol: parsed.currency.symbol,
+        name: parsed.currency.name,
+      },
+      theme: parsed.theme,
+      language: parsed.language,
+    };
+  } catch (error) {
+    console.error("Error parsing MMKV settings:", error);
+    return null;
+  }
+};
+
+const saveSettingsToMmkv = (settings: UserSettings): void => {
+  const publicSettings: UserSettings = {
+    currency: settings.currency,
+    theme: settings.theme,
+    language: settings.language,
+  };
+
+  configStorage.set(SETTINGS_MMKV_KEY, JSON.stringify(publicSettings));
 };
 
 const generateAnalyticsId = (): string => {
@@ -553,6 +612,8 @@ export const saveSettings = async (settings: UserSettings): Promise<void> => {
   try {
     const { geminiApiKey, elevenLabsApiKey, ...publicSettings } = settings;
 
+    saveSettingsToMmkv(publicSettings);
+
     await runQueuedWrite(async () => {
       await ensureDatabaseInitialized();
       await db.insert(settingsTable).values({
@@ -592,14 +653,18 @@ export const saveSettings = async (settings: UserSettings): Promise<void> => {
 
 export const loadSettings = async (): Promise<UserSettings | null> => {
   try {
+    const mmkvSettings = loadSettingsFromMmkv();
+
     await writeQueue;
     await ensureDatabaseInitialized();
-    const rows = await db
-      .select()
-      .from(settingsTable)
-      .where(eq(settingsTable.id, 1));
+    const rows = mmkvSettings
+      ? []
+      : await db
+          .select()
+          .from(settingsTable)
+          .where(eq(settingsTable.id, 1));
 
-    if (rows.length === 0) {
+    if (!mmkvSettings && rows.length === 0) {
       return null;
     }
 
@@ -608,15 +673,23 @@ export const loadSettings = async (): Promise<UserSettings | null> => {
       getSecureItem(ELEVENLABS_API_KEY_STORAGE_KEY),
     ]);
 
-    const publicSettings = rows[0];
+    const publicSettings = mmkvSettings ?? {
+      currency: {
+        code: rows[0].currencyCode,
+        symbol: rows[0].currencySymbol,
+        name: rows[0].currencyName,
+      },
+      theme: rows[0].theme as UserSettings["theme"],
+      language: rows[0].language,
+    };
+
+    if (!mmkvSettings) {
+      saveSettingsToMmkv(publicSettings);
+    }
 
     return {
-      currency: {
-        code: publicSettings.currencyCode,
-        symbol: publicSettings.currencySymbol,
-        name: publicSettings.currencyName,
-      },
-      theme: publicSettings.theme as UserSettings["theme"],
+      currency: publicSettings.currency,
+      theme: publicSettings.theme,
       language: publicSettings.language,
       geminiApiKey: geminiApiKey || undefined,
       elevenLabsApiKey: elevenLabsApiKey || undefined,
@@ -655,6 +728,16 @@ export const clearAllData = async (): Promise<void> => {
       deleteSecureItem(ELEVENLABS_API_KEY_STORAGE_KEY),
       deleteSecureItem(ANALYTICS_ID_STORAGE_KEY),
     ]);
+
+    configStorage.remove(SETTINGS_MMKV_KEY);
+    configStorage.remove(APP_UPDATE_FINGERPRINT_KEY);
+    configStorage.remove(ONBOARDING_COMPLETED_KEY);
+    const allKeys = configStorage.getAllKeys();
+    for (const key of allKeys) {
+      if (key.startsWith(`${ONBOARDING_TIP_DISMISSED_PREFIX}:`)) {
+        configStorage.remove(key);
+      }
+    }
   } catch (error) {
     console.error("Error clearing data:", error);
   }
@@ -662,12 +745,21 @@ export const clearAllData = async (): Promise<void> => {
 
 export const loadAppUpdateFingerprint = async (): Promise<string | null> => {
   try {
+    const mmkvFingerprint = configStorage.getString(APP_UPDATE_FINGERPRINT_KEY);
+    if (mmkvFingerprint) {
+      return mmkvFingerprint;
+    }
+
     await ensureDatabaseInitialized();
     const rows = await db
       .select({ value: appMetaTable.value })
       .from(appMetaTable)
       .where(eq(appMetaTable.key, APP_UPDATE_FINGERPRINT_KEY));
-    return rows[0]?.value ?? null;
+    const fallback = rows[0]?.value ?? null;
+    if (fallback) {
+      configStorage.set(APP_UPDATE_FINGERPRINT_KEY, fallback);
+    }
+    return fallback;
   } catch (error) {
     console.error("Error loading app update fingerprint:", error);
     return null;
@@ -678,6 +770,8 @@ export const saveAppUpdateFingerprint = async (
   fingerprint: string,
 ): Promise<void> => {
   try {
+    configStorage.set(APP_UPDATE_FINGERPRINT_KEY, fingerprint);
+
     await runQueuedWrite(async () => {
       await ensureDatabaseInitialized();
       await db.insert(appMetaTable).values({
@@ -699,12 +793,23 @@ export const loadOnboardingTipDismissed = async (
   screenKey: "expenses" | "grocery",
 ): Promise<boolean> => {
   try {
+    const mmkvDismissed = configStorage.getBoolean(
+      getOnboardingTipDismissedKey(screenKey),
+    );
+    if (typeof mmkvDismissed === "boolean") {
+      return mmkvDismissed;
+    }
+
     await ensureDatabaseInitialized();
     const rows = await db
       .select({ dismissed: onboardingTipsTable.dismissed })
       .from(onboardingTipsTable)
       .where(eq(onboardingTipsTable.screenKey, screenKey));
-    return !!rows[0]?.dismissed;
+    const fallback = !!rows[0]?.dismissed;
+    if (fallback) {
+      configStorage.set(getOnboardingTipDismissedKey(screenKey), true);
+    }
+    return fallback;
   } catch (error) {
     console.error("Error loading onboarding tip dismissal:", error);
     return false;
@@ -715,6 +820,8 @@ export const saveOnboardingTipDismissed = async (
   screenKey: "expenses" | "grocery",
 ): Promise<void> => {
   try {
+    configStorage.set(getOnboardingTipDismissedKey(screenKey), true);
+
     await runQueuedWrite(async () => {
       await ensureDatabaseInitialized();
       await db.insert(onboardingTipsTable).values({
@@ -732,24 +839,37 @@ export const saveOnboardingTipDismissed = async (
   }
 };
 
-const ONBOARDING_COMPLETED_KEY = "has_completed_onboarding";
-
 export async function loadOnboardingCompleted(): Promise<boolean> {
   try {
+    const mmkvValue = configStorage.getBoolean(ONBOARDING_COMPLETED_KEY);
+    if (typeof mmkvValue === "boolean") {
+      return mmkvValue;
+    }
+
     await ensureDatabaseInitialized();
     const rows = await db
       .select({ value: appMetaTable.value })
       .from(appMetaTable)
       .where(eq(appMetaTable.key, ONBOARDING_COMPLETED_KEY));
-    return rows[0]?.value === "true";
+    const fallback = rows[0]?.value === "true";
+    if (fallback) {
+      configStorage.set(ONBOARDING_COMPLETED_KEY, true);
+    }
+    return fallback;
   } catch (error) {
     console.error("Error loading onboarding completed:", error);
     return false;
   }
 }
 
+export const isOnboardingCompletedSync = (): boolean => {
+  return configStorage.getBoolean(ONBOARDING_COMPLETED_KEY) === true;
+};
+
 export async function saveOnboardingCompleted(): Promise<void> {
   try {
+    configStorage.set(ONBOARDING_COMPLETED_KEY, true);
+
     await runQueuedWrite(async () => {
       await ensureDatabaseInitialized();
       await db
@@ -767,6 +887,8 @@ export async function saveOnboardingCompleted(): Promise<void> {
 
 export async function resetOnboardingCompleted(): Promise<void> {
   try {
+    configStorage.remove(ONBOARDING_COMPLETED_KEY);
+
     await runQueuedWrite(async () => {
       await ensureDatabaseInitialized();
       await db
@@ -777,3 +899,17 @@ export async function resetOnboardingCompleted(): Promise<void> {
     console.error("Error resetting onboarding completed:", error);
   }
 }
+
+export const subscribeToOnboardingCompleted = (
+  callback: (completed: boolean) => void,
+): (() => void) => {
+  const listener = configStorage.addOnValueChangedListener((changedKey) => {
+    if (changedKey === ONBOARDING_COMPLETED_KEY) {
+      callback(configStorage.getBoolean(ONBOARDING_COMPLETED_KEY) === true);
+    }
+  });
+
+  return () => {
+    listener.remove();
+  };
+};

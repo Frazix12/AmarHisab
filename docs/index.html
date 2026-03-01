@@ -7,25 +7,32 @@
   The page will be live at: https://frazix.is-a.dev/AmarHisab/
 -->
 <html lang="en" data-theme="light">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Amar Hisab - A beautiful, privacy-first expense tracker with integrated grocery list management for Android.">
+  <meta name="description"
+    content="Amar Hisab - A beautiful, privacy-first expense tracker with integrated grocery list management for Android.">
   <meta name="theme-color" content="#00B171">
   <!-- UPDATE VERSION: Currently 1.3.0 -->
 
   <meta property="og:title" content="Amar Hisab (আমার হিসাব) - Your Personal Expense Tracker">
-  <meta property="og:description" content="A beautiful, minimalistic expense tracker with integrated grocery list management. Offline-first, privacy-focused, Android app.">
+  <meta property="og:description"
+    content="A beautiful, minimalistic expense tracker with integrated grocery list management. Offline-first, privacy-focused, Android app.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://frazix.is-a.dev/AmarHisab/">
   <meta property="og:image" content="https://frazix.is-a.dev/AmarHisab/screenshots/Expence.png">
 
   <title>Amar Hisab (আমার হিসাব) - Product & Documentation</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Poppins:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <style>
     :root,
     [data-theme="light"] {
@@ -58,6 +65,22 @@
 
     html {
       scroll-padding-top: 88px;
+    }
+
+    /* Performance optimization for animations */
+    .hero h1,
+    .hero .subtitle,
+    .hero .description,
+    .hero .badges,
+    .hero .actions,
+    .section-title,
+    .shot,
+    .feature-card,
+    article,
+    details,
+    .download,
+    footer {
+      will-change: transform, opacity;
     }
 
     body {
@@ -118,6 +141,13 @@
       gap: 0.75rem;
     }
 
+    .nav-area {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      position: relative;
+    }
+
     .brand {
       display: inline-flex;
       align-items: center;
@@ -137,30 +167,80 @@
       background: var(--surface);
       color: var(--text);
       border-radius: 10px;
-      padding: 0.45rem 0.6rem;
       cursor: pointer;
       transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 44px;
+      padding: 0.5rem;
+      font-size: 1.25rem;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    .menu-btn {
-      display: inline-flex;
+    .menu-btn:active,
+    .theme-toggle:active {
+      background: var(--surface-variant);
     }
 
     .nav-links {
       display: none;
+      position: absolute;
+      top: calc(100% + 0.5rem);
+      right: 0;
+      min-width: 200px;
+      background: var(--surface);
+      border: 1px solid var(--divider);
+      border-radius: 12px;
+      padding: 0.75rem;
       flex-direction: column;
-      gap: 0.5rem;
-      padding: 0 0 0.9rem;
+      gap: 0.25rem;
+      box-shadow: 0 10px 40px var(--shadow);
+      z-index: 100;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .nav-links::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      right: 1rem;
+      width: 12px;
+      height: 12px;
+      background: var(--surface);
+      border-left: 1px solid var(--divider);
+      border-top: 1px solid var(--divider);
+      transform: rotate(45deg);
     }
 
     .nav-links a {
+      display: block;
       color: var(--text-secondary);
       font-weight: 600;
-      padding: 0.2rem 0;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      transition: background-color 0.2s ease, color 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .nav-links a:hover,
+    .nav-links a:focus {
+      background: var(--surface-variant);
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .nav-links a:active {
+      background: var(--divider);
     }
 
     .nav-links.active {
       display: flex;
+      opacity: 1;
+      transform: translateY(0);
     }
 
     .hero {
@@ -170,7 +250,10 @@
     }
 
     .hero h1 {
-      font-size: clamp(2rem, 7vw, 3rem);
+      font-size: clamp(1.5rem, 6vw, 3rem);
+      white-space: nowrap;
+      overflow-wrap: normal;
+      word-break: keep-all;
     }
 
     .subtitle {
@@ -232,41 +315,108 @@
     }
 
     .section-title {
-      margin-bottom: 0.8rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+      font-size: 1.75rem;
+      position: relative;
+      display: inline-block;
+      width: 100%;
+    }
+
+    .section-title::after {
+      content: '';
+      display: block;
+      width: 60px;
+      height: 3px;
+      background: var(--primary);
+      border-radius: 2px;
+      margin: 0.5rem auto 0;
+    }
+
+    #screenshots {
+      background: linear-gradient(180deg,
+          var(--bg) 0%,
+          var(--surface-variant) 50%,
+          var(--bg) 100%);
+      padding: 3rem 0;
     }
 
     .shots {
-      display: grid;
-      grid-auto-flow: column;
-      grid-auto-columns: 75%;
-      gap: 0.9rem;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      padding-bottom: 0.35rem;
+      display: flex;
+      gap: 1.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      padding: 1rem 0;
     }
 
     .shot {
-      scroll-snap-align: start;
+      flex: 0 0 auto;
+      width: min(100%, 280px);
       background: var(--surface);
       border: 1px solid var(--divider);
-      border-radius: 14px;
-      padding: 0.65rem;
-      box-shadow: 0 12px 24px var(--shadow);
-      transition: background-color 0.3s ease, border-color 0.3s ease;
+      border-radius: 20px;
+      padding: 0.85rem;
+      box-shadow:
+        0 4px 6px -1px var(--shadow),
+        0 10px 20px -5px var(--shadow),
+        0 25px 50px -12px var(--shadow);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        background-color 0.3s ease,
+        border-color 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .shot::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), transparent);
+      opacity: 0.5;
+      transition: opacity 0.3s ease;
+    }
+
+    .shot:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow:
+        0 10px 15px -3px var(--shadow),
+        0 20px 40px -8px var(--shadow),
+        0 40px 60px -15px var(--shadow);
+    }
+
+    .shot:hover::before {
+      opacity: 1;
     }
 
     .shot img {
       width: 100%;
       height: auto;
       display: block;
-      border-radius: 12px;
+      border-radius: 14px;
+      aspect-ratio: 9 / 19;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .shot:hover img {
+      transform: scale(1.03);
     }
 
     .shot p {
-      margin: 0.5rem 0 0;
-      font-size: 0.92rem;
+      margin: 0.85rem 0 0.3rem;
+      font-size: 0.95rem;
+      font-weight: 600;
       text-align: center;
-      color: var(--text-tertiary);
+      color: var(--text);
+      transition: color 0.3s ease;
+    }
+
+    .shot:hover p {
+      color: var(--primary);
     }
 
     .features-grid {
@@ -398,13 +548,37 @@
 
       .nav-links {
         display: flex;
+        position: static;
         flex-direction: row;
         align-items: center;
         padding: 0;
+        min-width: auto;
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+        opacity: 1;
+        transform: none;
+        gap: 1rem;
       }
 
-      .shots {
-        grid-auto-columns: 42%;
+      .nav-links::before {
+        display: none;
+      }
+
+      .nav-links a {
+        padding: 0.5rem 0;
+        border-radius: 0;
+      }
+
+      .nav-links a:hover,
+      .nav-links a:focus {
+        background: transparent;
+        text-decoration: underline;
+      }
+
+      .shot {
+        width: min(100%, 320px);
       }
     }
 
@@ -413,13 +587,13 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
 
-      .shots {
-        grid-auto-flow: column;
-        grid-auto-columns: 24%;
+      .shot {
+        width: min(100%, 260px);
       }
     }
   </style>
 </head>
+
 <body>
   <header class="site-header">
     <div class="container nav-wrap">
@@ -428,7 +602,8 @@
         <span class="brand-text">Amar Hisab</span>
       </a>
       <div class="nav-area">
-        <button id="menu-toggle" class="menu-btn" aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav-links">☰</button>
+        <button id="menu-toggle" class="menu-btn" aria-label="Toggle navigation" aria-expanded="false"
+          aria-controls="nav-links">☰</button>
         <nav aria-label="Main navigation">
           <div id="nav-links" class="nav-links">
             <a href="#features">Features</a>
@@ -446,17 +621,20 @@
       <div class="container">
         <h1>Amar Hisab (আমার হিসাব)</h1>
         <p class="subtitle">Your Personal Expense Tracker</p>
-        <p class="description">A beautiful, minimalistic expense tracker with integrated grocery list management. Privacy-first, offline, Android.</p>
-        <!-- UPDATE VERSION: Currently 1.3.0 -->
+        <p class="description">A beautiful, minimalistic expense tracker with integrated grocery list management.
+          Privacy-first, offline, Android.</p>
+        <!-- UPDATE VERSION: Currently 1.3.1 -->
         <div class="badges" aria-label="App badges">
           <span class="badge">Android</span>
-          <span class="badge">v1.3.0</span>
+          <span class="badge">v1.3.1</span>
           <span class="badge">MIT License</span>
           <span class="badge">Offline-First</span>
         </div>
         <div class="actions">
-          <a class="btn btn-primary" href="https://github.com/Frazix12/AmarHisab/releases" target="_blank" rel="noopener noreferrer">Download APK</a>
-          <a class="btn btn-secondary" href="https://github.com/Frazix12/AmarHisab" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+          <a class="btn btn-primary" href="https://github.com/Frazix12/AmarHisab/releases" target="_blank"
+            rel="noopener noreferrer">Download APK</a>
+          <a class="btn btn-secondary" href="https://github.com/Frazix12/AmarHisab" target="_blank"
+            rel="noopener noreferrer">View on GitHub</a>
         </div>
       </div>
     </section>
@@ -493,7 +671,8 @@
           <article class="feature-card">
             <div class="feature-icon" aria-hidden="true">💰</div>
             <h3>Expense Tracking</h3>
-            <p>Track daily expenses with categories, descriptions, and photo attachments. Long-press to edit or delete.</p>
+            <p>Track daily expenses with categories, descriptions, and photo attachments. Long-press to edit or delete.
+            </p>
           </article>
           <article class="feature-card">
             <div class="feature-icon" aria-hidden="true">🛒</div>
@@ -704,7 +883,8 @@
           </ol>
           <h4>Edit modal special option</h4>
           <ul>
-            <li>If item was created from a template, you can tick: <strong>Update this template with new values</strong>.</li>
+            <li>If item was created from a template, you can tick: <strong>Update this template with new
+                values</strong>.</li>
           </ul>
           <h4>Clear completed items</h4>
           <ol>
@@ -954,14 +1134,16 @@
               <li>API keys: secure device storage (SecureStore)</li>
             </ul>
             <h4>Reset behavior</h4>
-            <p><strong>Clear All Data</strong> removes local app data and saved API keys. This action is destructive and cannot be undone.</p>
+            <p><strong>Clear All Data</strong> removes local app data and saved API keys. This action is destructive and
+              cannot be undone.</p>
             <h4>Offline behavior</h4>
             <ul>
               <li>Core tracking works offline.</li>
               <li>AI-dependent features need internet and configured keys.</li>
             </ul>
             <h4>AI/privacy behavior</h4>
-            <p>When you use AI features, your input (text/transcript) is sent to configured AI providers to process results.</p>
+            <p>When you use AI features, your input (text/transcript) is sent to configured AI providers to process
+              results.</p>
           </article>
         </details>
 
@@ -1087,8 +1269,10 @@
           <h2>Get Amar Hisab</h2>
           <p>Download the latest APK from GitHub Releases</p>
           <div class="actions">
-            <a class="btn btn-primary" href="https://github.com/Frazix12/AmarHisab/releases" target="_blank" rel="noopener noreferrer">Download from GitHub</a>
-            <a class="btn btn-secondary" href="https://github.com/Frazix12/AmarHisab" target="_blank" rel="noopener noreferrer">View Source Code</a>
+            <a class="btn btn-primary" href="https://github.com/Frazix12/AmarHisab/releases" target="_blank"
+              rel="noopener noreferrer">Download from GitHub</a>
+            <a class="btn btn-secondary" href="https://github.com/Frazix12/AmarHisab" target="_blank"
+              rel="noopener noreferrer">View Source Code</a>
           </div>
         </div>
       </div>
@@ -1135,9 +1319,19 @@
         setTheme(next);
       });
 
-      menuToggle.addEventListener("click", function () {
+      menuToggle.addEventListener("click", function (e) {
+        e.stopPropagation();
         var open = navLinks.classList.toggle("active");
         menuToggle.setAttribute("aria-expanded", open ? "true" : "false");
+        menuToggle.textContent = open ? "✕" : "☰";
+      });
+
+      document.addEventListener("click", function (e) {
+        if (navLinks.classList.contains("active") && !navLinks.contains(e.target) && !menuToggle.contains(e.target)) {
+          navLinks.classList.remove("active");
+          menuToggle.setAttribute("aria-expanded", "false");
+          menuToggle.textContent = "☰";
+        }
       });
 
       document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
@@ -1151,9 +1345,127 @@
           target.scrollIntoView({ behavior: "smooth", block: "start" });
           navLinks.classList.remove("active");
           menuToggle.setAttribute("aria-expanded", "false");
+          menuToggle.textContent = "☰";
         });
       });
+
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && navLinks.classList.contains("active")) {
+          navLinks.classList.remove("active");
+          menuToggle.setAttribute("aria-expanded", "false");
+          menuToggle.textContent = "☰";
+        }
+      });
     })();
+
+    // GSAP ScrollTrigger Animations - Optimized
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Hero elements animation - faster and smoother
+    var heroTl = gsap.timeline({ defaults: { ease: "power2.out" } });
+    heroTl
+      .from(".hero h1", { y: -40, opacity: 0, duration: 0.6 }, 0)
+      .from(".hero .subtitle", { y: -25, opacity: 0, duration: 0.5 }, 0.15)
+      .from(".hero .description", { y: -20, opacity: 0, duration: 0.5 }, 0.25)
+      .from(".hero .badges", { scale: 0.9, opacity: 0, duration: 0.4 }, 0.35)
+      .from(".hero .actions", { y: 20, opacity: 0, duration: 0.5 }, 0.45);
+
+    // Batch animations for better performance
+    ScrollTrigger.batch(".section-title", {
+      start: "top 90%",
+      onEnter: function (elements) {
+        gsap.from(elements, { y: 30, opacity: 0, duration: 0.5, stagger: 0.1, ease: "power2.out" });
+      },
+      once: true
+    });
+
+    // Screenshot cards - simple fade and slide
+    ScrollTrigger.batch(".shot", {
+      start: "top 90%",
+      onEnter: function (elements) {
+        gsap.from(elements, {
+          y: 40,
+          opacity: 0,
+          duration: 0.5,
+          stagger: 0.08,
+          ease: "power2.out"
+        });
+      },
+      once: true
+    });
+
+    // Feature cards - staggered fade up
+    ScrollTrigger.batch(".feature-card", {
+      start: "top 90%",
+      onEnter: function (elements) {
+        gsap.from(elements, {
+          y: 30,
+          opacity: 0,
+          duration: 0.4,
+          stagger: 0.06,
+          ease: "power2.out"
+        });
+      },
+      once: true
+    });
+
+    // Documentation articles - staggered fade up
+    ScrollTrigger.batch("#docs article", {
+      start: "top 90%",
+      onEnter: function (elements) {
+        gsap.from(elements, {
+          y: 25,
+          opacity: 0,
+          duration: 0.4,
+          stagger: 0.05,
+          ease: "power2.out"
+        });
+      },
+      once: true
+    });
+
+    // Details elements - staggered fade up
+    ScrollTrigger.batch("details", {
+      start: "top 90%",
+      onEnter: function (elements) {
+        gsap.from(elements, {
+          y: 20,
+          opacity: 0,
+          duration: 0.4,
+          stagger: 0.05,
+          ease: "power2.out"
+        });
+      },
+      once: true
+    });
+
+    // Download section - simple scale
+    gsap.from(".download", {
+      scrollTrigger: {
+        trigger: ".download",
+        start: "top 85%",
+        once: true
+      },
+      scale: 0.95,
+      opacity: 0,
+      y: 30,
+      duration: 0.6,
+      ease: "power2.out"
+    });
+
+    // Footer - simple fade
+    gsap.from("footer", {
+      scrollTrigger: {
+        trigger: "footer",
+        start: "top 95%",
+        once: true
+      },
+      y: 20,
+      opacity: 0,
+      duration: 0.5,
+      ease: "power2.out"
+    });
   </script>
 </body>
+
 </html>
