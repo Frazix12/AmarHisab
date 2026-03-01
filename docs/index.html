@@ -1,1471 +1,383 @@
 <!DOCTYPE html>
-<!--
-  GITHUB PAGES SETUP:
-  To enable this page, go to:
-  GitHub Repo -> Settings -> Pages -> Source: "Deploy from a branch"
-  Branch: main / folder: /docs
-  The page will be live at: https://frazix.is-a.dev/AmarHisab/
--->
-<html lang="en" data-theme="light">
+<html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description"
-    content="Amar Hisab - A beautiful, privacy-first expense tracker with integrated grocery list management for Android.">
-  <meta name="theme-color" content="#00B171">
-  <!-- UPDATE VERSION: Currently 1.3.0 -->
-
-  <meta property="og:title" content="Amar Hisab (আমার হিসাব) - Your Personal Expense Tracker">
-  <meta property="og:description"
-    content="A beautiful, minimalistic expense tracker with integrated grocery list management. Offline-first, privacy-focused, Android app.">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://frazix.is-a.dev/AmarHisab/">
-  <meta property="og:image" content="https://frazix.is-a.dev/AmarHisab/screenshots/Expence.png">
-
-  <title>Amar Hisab (আমার হিসাব) - Product & Documentation</title>
-  <link rel="icon"
-    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Poppins:wght@400;500;600;700&display=swap"
-    rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-  <style>
-    :root,
-    [data-theme="light"] {
-      --primary: #00B171;
-      --bg: #F8FAFC;
-      --surface: #FFFFFF;
-      --surface-variant: #F1F5F9;
-      --text: #0F172A;
-      --text-secondary: #334155;
-      --text-tertiary: #64748B;
-      --divider: #E2E8F0;
-      --shadow: rgba(15, 23, 42, 0.08);
-    }
-
-    [data-theme="dark"] {
-      --primary: #00D287;
-      --bg: #1C1B1F;
-      --surface: #252329;
-      --surface-variant: #1E293B;
-      --text: #F8FAFC;
-      --text-secondary: #CBD5E1;
-      --text-tertiary: #94A3B8;
-      --divider: #1E293B;
-      --shadow: rgba(0, 0, 0, 0.35);
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html {
-      scroll-padding-top: 88px;
-    }
-
-    /* Performance optimization for animations */
-    .hero h1,
-    .hero .subtitle,
-    .hero .description,
-    .hero .badges,
-    .hero .actions,
-    .section-title,
-    .shot,
-    .feature-card,
-    article,
-    details,
-    .download,
-    footer {
-      will-change: transform, opacity;
-    }
-
-    body {
-      margin: 0;
-      font-family: "Poppins", sans-serif;
-      font-size: 16px;
-      line-height: 1.6;
-      background: var(--bg);
-      color: var(--text);
-      transition: background-color 0.3s ease, color 0.3s ease;
-    }
-
-    h1,
-    h2,
-    h3,
-    h4 {
-      font-family: "Poppins", sans-serif;
-      color: var(--text);
-      margin: 0 0 0.6rem;
-      line-height: 1.25;
-    }
-
-    p,
-    li {
-      color: var(--text-secondary);
-    }
-
-    a {
-      color: var(--primary);
-      text-decoration: none;
-    }
-
-    a:hover {
-      text-decoration: underline;
-    }
-
-    .container {
-      width: min(100%, 1100px);
-      margin: 0 auto;
-      padding: 0 1rem;
-    }
-
-    .site-header {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      background: color-mix(in srgb, var(--surface) 88%, transparent);
-      border-bottom: 1px solid var(--divider);
-      backdrop-filter: blur(10px);
-      transition: background-color 0.3s ease, border-color 0.3s ease;
-    }
-
-    .nav-wrap {
-      min-height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-    }
-
-    .nav-area {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      position: relative;
-    }
-
-    .brand {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-weight: 700;
-      color: var(--primary);
-    }
-
-    .brand-text {
-      color: var(--text);
-      font-weight: 700;
-    }
-
-    .menu-btn,
-    .theme-toggle {
-      border: 1px solid var(--divider);
-      background: var(--surface);
-      color: var(--text);
-      border-radius: 10px;
-      cursor: pointer;
-      transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 44px;
-      min-height: 44px;
-      padding: 0.5rem;
-      font-size: 1.25rem;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .menu-btn:active,
-    .theme-toggle:active {
-      background: var(--surface-variant);
-    }
-
-    .nav-links {
-      display: none;
-      position: absolute;
-      top: calc(100% + 0.5rem);
-      right: 0;
-      min-width: 200px;
-      background: var(--surface);
-      border: 1px solid var(--divider);
-      border-radius: 12px;
-      padding: 0.75rem;
-      flex-direction: column;
-      gap: 0.25rem;
-      box-shadow: 0 10px 40px var(--shadow);
-      z-index: 100;
-      opacity: 0;
-      transform: translateY(-10px);
-      transition: opacity 0.2s ease, transform 0.2s ease;
-    }
-
-    .nav-links::before {
-      content: '';
-      position: absolute;
-      top: -6px;
-      right: 1rem;
-      width: 12px;
-      height: 12px;
-      background: var(--surface);
-      border-left: 1px solid var(--divider);
-      border-top: 1px solid var(--divider);
-      transform: rotate(45deg);
-    }
-
-    .nav-links a {
-      display: block;
-      color: var(--text-secondary);
-      font-weight: 600;
-      padding: 0.75rem 1rem;
-      border-radius: 8px;
-      transition: background-color 0.2s ease, color 0.2s ease;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .nav-links a:hover,
-    .nav-links a:focus {
-      background: var(--surface-variant);
-      color: var(--text);
-      text-decoration: none;
-    }
-
-    .nav-links a:active {
-      background: var(--divider);
-    }
-
-    .nav-links.active {
-      display: flex;
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .hero {
-      padding: 4rem 0 2.5rem;
-      text-align: center;
-      background: radial-gradient(circle at top, color-mix(in srgb, var(--primary) 18%, transparent), transparent 60%);
-    }
-
-    .hero h1 {
-      font-size: clamp(1.5rem, 6vw, 3rem);
-      white-space: nowrap;
-      overflow-wrap: normal;
-      word-break: keep-all;
-    }
-
-    .subtitle {
-      margin: 0 0 0.75rem;
-      font-weight: 700;
-      color: var(--text);
-    }
-
-    .description {
-      max-width: 760px;
-      margin: 0 auto 1rem;
-    }
-
-    .badges {
-      display: inline-flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 0.45rem;
-      margin-bottom: 1.25rem;
-    }
-
-    .badge {
-      background: var(--surface);
-      border: 1px solid var(--divider);
-      border-radius: 999px;
-      font-size: 0.9rem;
-      padding: 0.25rem 0.7rem;
-      color: var(--text-secondary);
-    }
-
-    .actions {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 0.6rem;
-    }
-
-    .btn {
-      display: inline-block;
-      padding: 0.65rem 1rem;
-      border-radius: 10px;
-      font-weight: 700;
-      border: 1px solid var(--primary);
-    }
-
-    .btn-primary {
-      background: var(--primary);
-      color: #FFFFFF;
-    }
-
-    .btn-secondary {
-      color: var(--primary);
-      background: transparent;
-    }
-
-    section {
-      padding: 2.2rem 0;
-      border-top: 1px solid var(--divider);
-    }
-
-    .section-title {
-      margin-bottom: 1.5rem;
-      text-align: center;
-      font-size: 1.75rem;
-      position: relative;
-      display: inline-block;
-      width: 100%;
-    }
-
-    .section-title::after {
-      content: '';
-      display: block;
-      width: 60px;
-      height: 3px;
-      background: var(--primary);
-      border-radius: 2px;
-      margin: 0.5rem auto 0;
-    }
-
-    #screenshots {
-      background: linear-gradient(180deg,
-          var(--bg) 0%,
-          var(--surface-variant) 50%,
-          var(--bg) 100%);
-      padding: 3rem 0;
-    }
-
-    .shots {
-      display: flex;
-      gap: 1.5rem;
-      justify-content: center;
-      flex-wrap: wrap;
-      padding: 1rem 0;
-    }
-
-    .shot {
-      flex: 0 0 auto;
-      width: min(100%, 280px);
-      background: var(--surface);
-      border: 1px solid var(--divider);
-      border-radius: 20px;
-      padding: 0.85rem;
-      box-shadow:
-        0 4px 6px -1px var(--shadow),
-        0 10px 20px -5px var(--shadow),
-        0 25px 50px -12px var(--shadow);
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-        box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-        background-color 0.3s ease,
-        border-color 0.3s ease;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .shot::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, var(--primary), transparent);
-      opacity: 0.5;
-      transition: opacity 0.3s ease;
-    }
-
-    .shot:hover {
-      transform: translateY(-8px) scale(1.02);
-      box-shadow:
-        0 10px 15px -3px var(--shadow),
-        0 20px 40px -8px var(--shadow),
-        0 40px 60px -15px var(--shadow);
-    }
-
-    .shot:hover::before {
-      opacity: 1;
-    }
-
-    .shot img {
-      width: 100%;
-      height: auto;
-      display: block;
-      border-radius: 14px;
-      aspect-ratio: 9 / 19;
-      object-fit: cover;
-      transition: transform 0.3s ease;
-    }
-
-    .shot:hover img {
-      transform: scale(1.03);
-    }
-
-    .shot p {
-      margin: 0.85rem 0 0.3rem;
-      font-size: 0.95rem;
-      font-weight: 600;
-      text-align: center;
-      color: var(--text);
-      transition: color 0.3s ease;
-    }
-
-    .shot:hover p {
-      color: var(--primary);
-    }
-
-    .features-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 0.8rem;
-    }
-
-    .feature-card {
-      background: var(--surface-variant);
-      border: 1px solid var(--divider);
-      border-radius: 14px;
-      padding: 1rem;
-      box-shadow: 0 8px 20px var(--shadow);
-      transition: transform 0.2s ease, background-color 0.3s ease, border-color 0.3s ease;
-    }
-
-    .feature-card:hover {
-      transform: translateY(-3px);
-    }
-
-    .feature-icon {
-      font-size: 1.2rem;
-    }
-
-    .toc {
-      margin: 0 0 1rem;
-      padding: 1rem;
-      background: var(--surface);
-      border: 1px solid var(--divider);
-      border-radius: 12px;
-    }
-
-    .toc ol {
-      margin: 0;
-      padding-left: 1.15rem;
-      columns: 1;
-    }
-
-    article {
-      background: var(--surface);
-      border: 1px solid var(--divider);
-      border-radius: 12px;
-      padding: 1rem;
-      margin-bottom: 0.8rem;
-      transition: background-color 0.3s ease, border-color 0.3s ease;
-    }
-
-    article h3 {
-      margin-top: 0;
-    }
-
-    details {
-      background: var(--surface);
-      border: 1px solid var(--divider);
-      border-radius: 12px;
-      padding: 0.85rem 1rem;
-      margin-bottom: 0.8rem;
-      transition: background-color 0.3s ease, border-color 0.3s ease;
-    }
-
-    summary {
-      cursor: pointer;
-      font-family: "Poppins", sans-serif;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 0.5rem;
-    }
-
-    .download {
-      background: var(--primary);
-      border-radius: 16px;
-      border: 1px solid color-mix(in srgb, var(--primary) 75%, #000000 25%);
-      color: #FFFFFF;
-      text-align: center;
-      padding: 2rem 1rem;
-    }
-
-    .download h2,
-    .download p,
-    .download a {
-      color: #FFFFFF;
-    }
-
-    .download .btn-primary {
-      background: #FFFFFF;
-      color: var(--primary);
-      border-color: #FFFFFF;
-    }
-
-    .download .btn-secondary {
-      border-color: #FFFFFF;
-      color: #FFFFFF;
-    }
-
-    footer {
-      padding: 1.4rem 0 2rem;
-      color: var(--text-tertiary);
-      font-size: 0.95rem;
-    }
-
-    .footer-links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.7rem;
-      margin-bottom: 0.45rem;
-    }
-
-    @media (min-width: 640px) {
-      .features-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .toc ol {
-        columns: 2;
-      }
-    }
-
-    @media (min-width: 768px) {
-      .menu-btn {
-        display: none;
-      }
-
-      .nav-area {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-      }
-
-      .nav-links {
-        display: flex;
-        position: static;
-        flex-direction: row;
-        align-items: center;
-        padding: 0;
-        min-width: auto;
-        background: transparent;
-        border: none;
-        border-radius: 0;
-        box-shadow: none;
-        opacity: 1;
-        transform: none;
-        gap: 1rem;
-      }
-
-      .nav-links::before {
-        display: none;
-      }
-
-      .nav-links a {
-        padding: 0.5rem 0;
-        border-radius: 0;
-      }
-
-      .nav-links a:hover,
-      .nav-links a:focus {
-        background: transparent;
-        text-decoration: underline;
-      }
-
-      .shot {
-        width: min(100%, 320px);
-      }
-    }
-
-    @media (min-width: 1024px) {
-      .features-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
-
-      .shot {
-        width: min(100%, 260px);
-      }
-    }
-  </style>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Amar Hisab - Offline Expense & Grocery Tracker</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link href="https://use.hugeicons.com/font/icons.css" rel="stylesheet" />
+    <style type="text/tailwindcss">
+        :root {
+            --primary-color: #00b271;
+            --primary-hover: #009961;
+            --bg-soft: #f8fafc;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--text-main);
+            background-color: #ffffff;
+        }
+        .hero-gradient {
+            background: radial-gradient(circle at top center, #e7f9f2 0%, #ffffff 60%);
+        }
+        .card-shadow {
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-shadow:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .mockup-shadow {
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.15);
+        }
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+    </style>
 </head>
 
-<body>
-  <header class="site-header">
-    <div class="container nav-wrap">
-      <a href="#hero" class="brand" aria-label="Go to hero section">
-        <span aria-hidden="true">💰</span>
-        <span class="brand-text">Amar Hisab</span>
-      </a>
-      <div class="nav-area">
-        <button id="menu-toggle" class="menu-btn" aria-label="Toggle navigation" aria-expanded="false"
-          aria-controls="nav-links">☰</button>
-        <nav aria-label="Main navigation">
-          <div id="nav-links" class="nav-links">
-            <a href="#features">Features</a>
-            <a href="#docs">Documentation</a>
-            <a href="#download">Download</a>
-          </div>
-        </nav>
-        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">🌙</button>
-      </div>
-    </div>
-  </header>
+<body class="antialiased selection:bg-emerald-100 selection:text-emerald-900">
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-2">
+                    <i class="hgi-stroke hgi-wallet-01 text-emerald-600 text-3xl"></i>
+                    <span class="font-bold text-xl tracking-tight text-gray-900">Amar Hisab</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a class="text-gray-600 hover:text-emerald-600 font-medium transition" href="#features">Features</a>
+                    <a class="text-gray-600 hover:text-emerald-600 font-medium transition"
+                        href="#screenshots">Screenshots</a>
+                    <a class="text-gray-600 hover:text-emerald-600 font-medium transition" href="#download">Download</a>
+                </div>
+                <a class="bg-gray-900 text-white px-5 py-2 rounded-full font-medium hover:bg-gray-800 transition text-sm"
+                    href="#download">Download App</a>
+            </div>
+        </div>
+    </nav>
 
-  <main>
-    <section id="hero" class="hero">
-      <div class="container">
-        <h1>Amar Hisab (আমার হিসাব)</h1>
-        <p class="subtitle">Your Personal Expense Tracker</p>
-        <p class="description">A beautiful, minimalistic expense tracker with integrated grocery list management.
-          Privacy-first, offline, Android.</p>
-        <!-- UPDATE VERSION: Currently 1.3.1 -->
-        <div class="badges" aria-label="App badges">
-          <span class="badge">Android</span>
-          <span class="badge">v1.3.1</span>
-          <span class="badge">MIT License</span>
-          <span class="badge">Offline-First</span>
+    <!-- Hero Section -->
+    <header class="pt-32 pb-20 lg:pt-48 lg:pb-32 hero-gradient overflow-hidden">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div class="text-left">
+                <h1
+                    class="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-gray-900 mb-6 leading-[1.1]">
+                    A budgeting app you'll <span
+                        class="inline-block whitespace-nowrap leading-[1.2] pb-1 text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600">love using</span>
+                </h1>
+                <p class="text-xl md:text-2xl text-gray-500 mb-10 max-w-2xl leading-relaxed">
+                    A simple and powerful offline-first expense and grocery tracker for Android. No ads, no paywalls.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="#download"
+                        class="flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-full font-semibold text-lg transition shadow-lg shadow-emerald-200">
+                        <i class="hgi-stroke hgi-android text-2xl"></i>
+                        Download on Android
+                    </a>
+                    <div class="flex items-center justify-start gap-2 text-sm text-gray-400 mt-2 sm:mt-0">
+                        <i class="hgi-stroke hgi-flash text-base"></i>
+                        Offline First
+                    </div>
+                </div>
+            </div>
+
+            <!-- Screenshot Showcase -->
+            <div class="relative w-full max-w-sm mx-auto lg:ml-auto">
+                <div class="rounded-3xl overflow-hidden border-4 border-gray-200 shadow-2xl">
+                    <img src="screenshots/expenceTracking.jpg" alt="Amar Hisab App" class="w-full h-auto">
+                </div>
+            </div>
         </div>
-        <div class="actions">
-          <a class="btn btn-primary" href="https://github.com/Frazix12/AmarHisab/releases" target="_blank"
-            rel="noopener noreferrer">Download APK</a>
-          <a class="btn btn-secondary" href="https://github.com/Frazix12/AmarHisab" target="_blank"
-            rel="noopener noreferrer">View on GitHub</a>
+    </header>
+
+    <!-- Detailed Features -->
+    <section class="py-24 bg-slate-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Simple, but powerful 😤</h2>
+                <p class="text-xl text-gray-500 max-w-2xl mx-auto">Advanced features are tucked away until you need
+                    them, keeping the interface clean for beginners.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- AI Voice Entry -->
+                <div
+                    class="bg-white rounded-3xl p-6 hover:shadow-xl transition-shadow duration-300 border border-gray-100 flex flex-col">
+                    <div class="h-48 bg-gray-100 rounded-2xl mb-6 overflow-hidden relative">
+                        <img src="screenshots/AIVoiceEntry.jpg" alt="AI Voice Entry" class="w-full h-full object-cover">
+                    </div>
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+                            <i class="hgi-stroke hgi-mic-01 text-emerald-600 text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900">AI Voice Entry</h3>
+                    </div>
+                    <p class="text-gray-500 text-sm">Add expenses or grocery items just by speaking naturally.</p>
+                </div>
+
+                <!-- Spending Statistics -->
+                <div
+                    class="bg-white rounded-3xl p-6 hover:shadow-xl transition-shadow duration-300 border border-gray-100 flex flex-col">
+                    <div class="h-48 bg-gray-100 rounded-2xl mb-6 overflow-hidden relative">
+                        <img src="screenshots/SpendingStatistics.jpg" alt="Spending Statistics"
+                            class="w-full h-full object-contain bg-white p-2">
+                    </div>
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                            <i class="hgi-stroke hgi-chart-histogram text-blue-600 text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900">Spending Statistics</h3>
+                    </div>
+                    <p class="text-gray-500 text-sm">Visualize where your money goes with detailed charts.</p>
+                </div>
+
+                <!-- Custom Templates -->
+                <div
+                    class="bg-white rounded-3xl p-6 hover:shadow-xl transition-shadow duration-300 border border-gray-100 flex flex-col">
+                    <div class="h-48 bg-gray-100 rounded-2xl mb-6 overflow-hidden relative">
+                        <img src="screenshots/CustomTemplates.jpg" alt="Custom Templates"
+                            class="w-full h-full object-cover">
+                    </div>
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                            <i class="hgi-stroke hgi-bookmark-01 text-purple-600 text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900">Custom Templates</h3>
+                    </div>
+                    <p class="text-gray-500 text-sm">Save reusable items for faster entry next time.</p>
+                </div>
+
+                <!-- Multi-language -->
+                <div
+                    class="bg-white rounded-3xl p-6 hover:shadow-xl transition-shadow duration-300 border border-gray-100 flex flex-col">
+                    <div
+                        class="h-48 bg-gray-100 rounded-2xl mb-6 overflow-hidden relative flex items-center justify-center gap-4">
+                        <div class="text-center">
+                            <span class="text-2xl">🇺🇸</span>
+                            <p class="text-xs font-bold mt-1">English</p>
+                        </div>
+                        <div class="w-[1px] h-10 bg-gray-300"></div>
+                        <div class="text-center">
+                            <span class="text-2xl">🇧🇩</span>
+                            <p class="text-xs font-bold mt-1">Bangla</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center">
+                            <i class="hgi-stroke hgi-translate text-yellow-600 text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900">Multi-language</h3>
+                    </div>
+                    <p class="text-gray-500 text-sm">Fully localized for both English and Bangla speakers.</p>
+                </div>
+
+                <!-- Image Attachments -->
+                <div
+                    class="bg-white rounded-3xl p-6 hover:shadow-xl transition-shadow duration-300 border border-gray-100 flex flex-col">
+                    <div class="h-48 bg-gray-100 rounded-2xl mb-6 overflow-hidden relative">
+                        <img src="screenshots/ImageAttachments.jpg" alt="Image Attachments"
+                            class="w-full h-full object-contain bg-white p-2">
+                    </div>
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 bg-pink-100 rounded-xl flex items-center justify-center">
+                            <i class="hgi-stroke hgi-camera-01 text-pink-600 text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900">Image Attachments</h3>
+                    </div>
+                    <p class="text-gray-500 text-sm">Snap a photo of your receipt or product to keep records.</p>
+                </div>
+
+                <!-- Privacy & Security -->
+                <div
+                    class="bg-white rounded-3xl p-6 hover:shadow-xl transition-shadow duration-300 border border-gray-100 flex flex-col">
+                    <div
+                        class="h-48 bg-gradient-to-br from-slate-50 via-white to-emerald-50 rounded-2xl mb-6 overflow-hidden relative flex items-center justify-center p-6">
+                        <svg viewBox="0 0 400 220" aria-hidden="true" class="w-full h-full">
+                            <defs>
+                                <linearGradient id="shieldGrad" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0%" stop-color="#10b981" />
+                                    <stop offset="100%" stop-color="#059669" />
+                                </linearGradient>
+                                <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0%" stop-color="#cbd5e1" />
+                                    <stop offset="100%" stop-color="#94a3b8" />
+                                </linearGradient>
+                            </defs>
+                            <circle cx="320" cy="40" r="24" fill="#d1fae5" />
+                            <circle cx="80" cy="185" r="18" fill="#e2e8f0" />
+                            <rect x="65" y="48" width="270" height="124" rx="16" fill="#ffffff" stroke="#dbeafe" stroke-width="2" />
+                            <rect x="84" y="70" width="232" height="18" rx="9" fill="#f1f5f9" />
+                            <rect x="84" y="98" width="170" height="12" rx="6" fill="#e2e8f0" />
+                            <rect x="84" y="118" width="140" height="12" rx="6" fill="#e2e8f0" />
+                            <circle cx="290" cy="132" r="34" fill="url(#ringGrad)" opacity="0.25" />
+                            <path d="M200 30 L248 48 V96 C248 132 224 157 200 168 C176 157 152 132 152 96 V48 Z" fill="url(#shieldGrad)" />
+                            <path d="M184 96 L196 108 L220 84" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
+                            <i class="hgi-stroke hgi-lock text-red-600 text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900">Privacy & Security</h3>
+                    </div>
+                    <p class="text-gray-500 text-sm">Local storage means your financial data never leaves your phone.
+                    </p>
+                </div>
+            </div>
         </div>
-      </div>
     </section>
 
-    <section id="screenshots">
-      <div class="container">
-        <h2 class="section-title">Screenshots</h2>
-        <div class="shots" aria-label="App screenshots">
-          <figure class="shot">
-            <!-- Note: filename has repo typo by design: Expence.png -->
-            <img src="screenshots/Expence.png" alt="Expense tracking screen" loading="lazy">
-            <p>Expense Tracking</p>
-          </figure>
-          <figure class="shot">
-            <img src="screenshots/grocery.png" alt="Grocery list screen" loading="lazy">
-            <p>Grocery List</p>
-          </figure>
-          <figure class="shot">
-            <img src="screenshots/stats.png" alt="Statistics screen" loading="lazy">
-            <p>Statistics</p>
-          </figure>
-          <figure class="shot">
-            <img src="screenshots/aivoice.png" alt="AI Voice assistant screen" loading="lazy">
-            <p>AI Voice</p>
-          </figure>
+    <!-- Screenshots Section -->
+    <section id="screenshots" class="py-24 bg-white">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">App Screenshots 📱</h2>
+                <p class="text-xl text-gray-500">See Amar Hisab in action</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="rounded-2xl overflow-hidden border-2 border-gray-200 shadow-lg mx-auto max-w-[240px]">
+                        <img src="screenshots/Expence.png" alt="Expense Tracking" class="w-full h-full object-cover">
+                    </div>
+                    <p class="mt-4 font-semibold text-gray-900">Expense Tracking</p>
+                    <p class="text-sm text-gray-500">Track daily expenses with categories</p>
+                </div>
+                <div class="text-center">
+                    <div class="rounded-2xl overflow-hidden border-2 border-gray-200 shadow-lg mx-auto max-w-[240px]">
+                        <img src="screenshots/grocery.png" alt="Grocery List" class="w-full h-full object-cover">
+                    </div>
+                    <p class="mt-4 font-semibold text-gray-900">Grocery List</p>
+                    <p class="text-sm text-gray-500">Smart shopping with auto-complete</p>
+                </div>
+                <div class="text-center">
+                    <div class="rounded-2xl overflow-hidden border-2 border-gray-200 shadow-lg mx-auto max-w-[240px]">
+                        <img src="screenshots/stats.png" alt="Statistics" class="w-full h-full object-cover">
+                    </div>
+                    <p class="mt-4 font-semibold text-gray-900">Statistics</p>
+                    <p class="text-sm text-gray-500">Visualize your spending habits</p>
+                </div>
+                <div class="text-center">
+                    <div class="rounded-2xl overflow-hidden border-2 border-gray-200 shadow-lg mx-auto max-w-[240px]">
+                        <img src="screenshots/aivoice.png" alt="AI Voice" class="w-full h-full object-cover">
+                    </div>
+                    <p class="mt-4 font-semibold text-gray-900">AI Voice Entry</p>
+                    <p class="text-sm text-gray-500">Add items by speaking naturally</p>
+                </div>
+            </div>
         </div>
-      </div>
     </section>
 
-    <section id="features">
-      <div class="container">
-        <h2 class="section-title">Features</h2>
-        <div class="features-grid">
-          <article class="feature-card">
-            <div class="feature-icon" aria-hidden="true">💰</div>
-            <h3>Expense Tracking</h3>
-            <p>Track daily expenses with categories, descriptions, and photo attachments. Long-press to edit or delete.
-            </p>
-          </article>
-          <article class="feature-card">
-            <div class="feature-icon" aria-hidden="true">🛒</div>
-            <h3>Smart Grocery List</h3>
-            <p>Manage shopping lists grouped by category. Complete items to auto-convert to expenses.</p>
-          </article>
-          <article class="feature-card">
-            <div class="feature-icon" aria-hidden="true">📊</div>
-            <h3>Statistics &amp; Insights</h3>
-            <p>View spending by period with custom date ranges and category filters. Navigate through history.</p>
-          </article>
-          <article class="feature-card">
-            <div class="feature-icon" aria-hidden="true">🎙️</div>
-            <h3>AI Voice Entry</h3>
-            <p>Add expenses or grocery items by voice or text. Powered by Gemini AI and ElevenLabs.</p>
-          </article>
-          <article class="feature-card">
-            <div class="feature-icon" aria-hidden="true">🔒</div>
-            <h3>Privacy-First &amp; Offline</h3>
-            <p>All data stored locally on device. No account needed. No cloud sync. Works without internet.</p>
-          </article>
-          <article class="feature-card">
-            <div class="feature-icon" aria-hidden="true">🌐</div>
-            <h3>Multi-Language &amp; Currency</h3>
-            <p>English and Bangla UI. Support for USD, EUR, GBP, BDT, INR currencies.</p>
-          </article>
+    <!-- Founder Section -->
+    <section class="py-24 bg-white">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-gray-50 rounded-[3rem] p-10 md:p-16 flex flex-col md:flex-row items-start gap-10">
+                <div class="flex-1">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-2">Hi, I'm the Founder 👋</h2>
+                    <p class="text-lg text-gray-600 mt-6 leading-relaxed">
+                        I built Amar Hisab because I needed a way to track my grocery spending without the complexity of
+                        full accounting software.
+                    </p>
+                    <p class="text-lg text-gray-600 mt-4 leading-relaxed">
+                        I wanted something <strong>offline-first</strong> so I wasn't dependent on a server, and
+                        flexible enough to handle both quick grocery lists and serious expense tracking.
+                    </p>
+                    <p class="text-lg text-gray-600 mt-4 leading-relaxed">
+                        Hopefully you feel that care and attention to detail when you use the app to manage your daily
+                        life :)
+                    </p>
+                    <div class="mt-8 pt-8 border-t border-gray-200 flex items-center gap-4">
+                        <div
+                            class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-xl">
+                            I</div>
+                        <div>
+                            <p class="font-bold text-gray-900">Irfan Hossain</p>
+                            <p class="text-xs text-gray-500 uppercase tracking-wide">Developer & Designer</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="hidden md:block">
+                    <div
+                        class="w-32 h-32 md:w-48 md:h-48 bg-gray-200 rounded-full border-4 border-white shadow-xl overflow-hidden flex items-center justify-center">
+                        <i class="hgi-stroke hgi-user text-6xl text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
     </section>
 
-    <section id="docs">
-      <div class="container">
-        <h2 class="section-title">Documentation</h2>
-        <article class="toc">
-          <h3>Table of Contents</h3>
-          <ol>
-            <li><a href="#doc-overview">What This App Does</a></li>
-            <li><a href="#doc-first-use">First-Time Use</a></li>
-            <li><a href="#doc-navigation">Navigation Overview</a></li>
-            <li><a href="#doc-expenses">Expenses Tab</a></li>
-            <li><a href="#doc-grocery">Grocery Tab</a></li>
-            <li><a href="#doc-statistics">Statistics Tab</a></li>
-            <li><a href="#doc-ai-voice">AI Voice (Center Tab Bar Button)</a></li>
-            <li><a href="#doc-settings">Settings Tab</a></li>
-            <li><a href="#doc-display">Display / Customization Screen</a></li>
-            <li><a href="#doc-ai-settings">AI Settings Screen</a></li>
-            <li><a href="#doc-templates">Templates (Manage / Add / Edit)</a></li>
-            <li><a href="#doc-permissions">Permissions and Conditional Features</a></li>
-            <li><a href="#doc-privacy">Data Storage, Privacy, and Safety</a></li>
-            <li><a href="#doc-validation">Validation and Error Handling</a></li>
-            <li><a href="#doc-notifications">Notifications and In-App Messages</a></li>
-            <li><a href="#doc-quick-tasks">Step-by-Step Quick Tasks</a></li>
-            <li><a href="#doc-troubleshooting">Troubleshooting</a></li>
-            <li><a href="#doc-summary">Feature Summary Checklist</a></li>
-          </ol>
-        </article>
-
-        <article id="doc-overview">
-          <h3>1) What This App Does</h3>
-          <p>Amar Hisab helps you:</p>
-          <ul>
-            <li>Track daily expenses</li>
-            <li>Manage a grocery list</li>
-            <li>Convert grocery purchases into expenses</li>
-            <li>Review spending in statistics</li>
-            <li>Use AI-assisted entry (voice or typed) if configured</li>
-            <li>Save reusable item templates</li>
-          </ul>
-          <h4>Important basics</h4>
-          <ul>
-            <li><strong>No login/account is required</strong></li>
-            <li><strong>Your data is stored locally on your device</strong></li>
-            <li><strong>No premium/paywall flow is implemented</strong></li>
-            <li>You can use the app without AI features</li>
-            <li>AI features require internet + API setup</li>
-          </ul>
-        </article>
-
-        <article id="doc-first-use">
-          <h3>2) First-Time Use</h3>
-          <p>When you open the app for the first time:</p>
-          <ol>
-            <li>You land on the main tabs area.</li>
-            <li>You can immediately add expenses or grocery items.</li>
-            <li>You may see a one-time onboarding hint: "Long-press any item to edit or delete it quickly."</li>
-          </ol>
-          <p>If no data exists yet, you will see empty-state messages and prompts to add your first item.</p>
-        </article>
-
-        <article id="doc-navigation">
-          <h3>3) Navigation Overview</h3>
-          <p>The app uses a bottom tab bar with <strong>4 tabs</strong> and a center AI voice button.</p>
-          <h4>Tabs</h4>
-          <ul>
-            <li><strong>Expenses</strong></li>
-            <li><strong>Grocery</strong></li>
-            <li><strong>Statistics</strong></li>
-            <li><strong>Settings</strong></li>
-          </ul>
-          <h4>Center button (floating in tab bar)</h4>
-          <ul>
-            <li>Opens <strong>AI Voice</strong> assistant modal.</li>
-          </ul>
-        </article>
-
-        <article id="doc-expenses">
-          <h3>4) Expenses Tab</h3>
-          <p>The Expenses tab is your daily expense hub.</p>
-          <h4>What you see</h4>
-          <ul>
-            <li>Screen title</li>
-            <li>Today's total summary</li>
-            <li>Number of today's expense items</li>
-            <li>Expense list (newest first)</li>
-            <li>Floating <strong>+</strong> button to add expense</li>
-          </ul>
-          <h4>Add a new expense (using + button)</h4>
-          <ol>
-            <li>Tap <strong>+</strong>.</li>
-            <li>Fill in:
-              <ul>
-                <li><strong>Amount</strong> (required)</li>
-                <li><strong>Description</strong> (optional)</li>
-                <li><strong>Category</strong></li>
-                <li><strong>Attachment photo</strong> (optional: camera or gallery)</li>
-              </ul>
-            </li>
-            <li>Tap <strong>Save</strong>.</li>
-          </ol>
-          <h4>While typing description</h4>
-          <ul>
-            <li>AI may auto-detect a category and show detection state.</li>
-            <li>You can still manually change the category anytime.</li>
-          </ul>
-          <h4>Edit or delete an expense</h4>
-          <ol>
-            <li><strong>Long-press</strong> an expense card.</li>
-            <li>Action menu appears: <strong>Edit</strong> or <strong>Delete</strong>.</li>
-            <li>Delete asks for confirmation.</li>
-            <li>Edit opens full edit form (same fields as add).</li>
-          </ol>
-          <h4>Expense image interactions</h4>
-          <ul>
-            <li>If an expense has a photo thumbnail:
-              <ul>
-                <li>Tap thumbnail to open full-screen viewer.</li>
-                <li>Tap close icon or outside to dismiss.</li>
-              </ul>
-            </li>
-          </ul>
-          <h4>Pull to refresh</h4>
-          <ul>
-            <li>You can pull down to refresh list UI.</li>
-          </ul>
-        </article>
-
-        <article id="doc-grocery">
-          <h3>5) Grocery Tab</h3>
-          <p>The Grocery tab manages shopping items and completion flow.</p>
-          <h4>What you see</h4>
-          <ul>
-            <li>Grocery list grouped by category</li>
-            <li><strong>Clear Completed</strong> button (appears when completed items exist)</li>
-            <li>Floating <strong>+</strong> button to add item</li>
-            <li>Optional AI template suggestion card</li>
-          </ul>
-          <h4>Add grocery item (using + button)</h4>
-          <ol>
-            <li>Tap <strong>+</strong>.</li>
-            <li>Fill in:
-              <ul>
-                <li><strong>Name</strong> (required)</li>
-                <li><strong>Quantity</strong> (optional)</li>
-                <li><strong>Price</strong> (optional at add time)</li>
-                <li><strong>Category</strong></li>
-              </ul>
-            </li>
-            <li>Tap <strong>Save</strong>.</li>
-          </ol>
-          <h4>Smart autofill while typing name</h4>
-          <ul>
-            <li>Matching templates may appear.</li>
-            <li>You can:
-              <ul>
-                <li>Quick autofill with best match</li>
-                <li>Choose from multiple matches in picker</li>
-              </ul>
-            </li>
-            <li>AI may also auto-suggest category if no template is applied.</li>
-          </ul>
-          <h4>Marking an item complete</h4>
-          <ul>
-            <li>Tap item checkbox or row action.</li>
-            <li>If item has no valid price, completion prompts a <strong>Complete Item</strong> modal.</li>
-            <li>In completion modal:
-              <ul>
-                <li>Price is required</li>
-                <li>You can attach photo (camera/gallery, optional)</li>
-                <li>Tap <strong>Complete</strong> to finish</li>
-              </ul>
-            </li>
-          </ul>
-          <p>When completed, grocery can create/link to an expense entry.</p>
-          <h4>Edit or delete a grocery item</h4>
-          <ol>
-            <li>Long-press item.</li>
-            <li>Choose <strong>Edit</strong> or <strong>Delete</strong>.</li>
-          </ol>
-          <h4>Edit modal special option</h4>
-          <ul>
-            <li>If item was created from a template, you can tick: <strong>Update this template with new
-                values</strong>.</li>
-          </ul>
-          <h4>Clear completed items</h4>
-          <ol>
-            <li>Tap <strong>Clear Completed</strong>.</li>
-            <li>Confirm destructive action.</li>
-            <li>All completed grocery items are removed.</li>
-          </ol>
-        </article>
-
-        <article id="doc-statistics">
-          <h3>6) Statistics Tab</h3>
-          <p>Statistics shows your spending history and filters.</p>
-          <h4>Main sections</h4>
-          <ul>
-            <li>Total amount for selected period</li>
-            <li>Item count</li>
-            <li>Date range controls</li>
-            <li>Category filter pills</li>
-            <li>Expense history grouped by time (Today, Yesterday, This Week, This Month, Older)</li>
-          </ul>
-          <h4>Change period</h4>
-          <ul>
-            <li>Tap left/right arrows to move period window.</li>
-            <li>Tap center date pill to open <strong>custom month range</strong> selector.</li>
-            <li>Choose start month and end month, then tap <strong>Apply</strong>.</li>
-          </ul>
-          <h4>Filter by category</h4>
-          <ul>
-            <li>Tap category pills (including "All").</li>
-            <li>List and totals update accordingly.</li>
-          </ul>
-          <h4>Reset filters</h4>
-          <ul>
-            <li>If filters/range are active and no data appears, use <strong>Reset filters</strong>.</li>
-          </ul>
-          <h4>Item actions in history</h4>
-          <ul>
-            <li>Long-press an expense in history for <strong>Edit/Delete</strong> menu.</li>
-          </ul>
-        </article>
-
-        <article id="doc-ai-voice">
-          <h3>7) AI Voice (Center Tab Bar Button)</h3>
-          <p>AI Voice lets you add expenses/grocery from speech or typed text.</p>
-          <h4>Entry methods</h4>
-          <ul>
-            <li><strong>Microphone mode</strong> (record speech)</li>
-            <li><strong>Typed transcript mode</strong> (manual text input)</li>
-          </ul>
-          <h4>Language options</h4>
-          <ul>
-            <li>Auto</li>
-            <li>English</li>
-            <li>Bangla</li>
-          </ul>
-          <h4>Voice flow</h4>
-          <ol>
-            <li>Open AI Voice modal.</li>
-            <li>Choose language mode.</li>
-            <li>Tap mic to start listening.</li>
-            <li>Tap again to stop and process.</li>
-            <li>App transcribes + parses content.</li>
-            <li>Review detected expenses/grocery.</li>
-            <li>Edit any parsed item if needed.</li>
-            <li>Tap <strong>Confirm &amp; Add</strong> to save all.</li>
-          </ol>
-          <p>Nothing is saved until confirm.</p>
-          <h4>Typed flow</h4>
-          <ol>
-            <li>Type transcript in input.</li>
-            <li>Tap send.</li>
-            <li>Review parsed items.</li>
-            <li>Confirm and add.</li>
-          </ol>
-          <h4>Review screen actions</h4>
-          <ul>
-            <li>Edit parsed expense</li>
-            <li>Edit parsed grocery</li>
-            <li>Try again</li>
-            <li>Confirm add</li>
-          </ul>
-          <h4>Possible AI errors</h4>
-          <ul>
-            <li>No speech detected</li>
-            <li>Parse failed</li>
-            <li>Missing/invalid AI key</li>
-            <li>Network/timeout issue</li>
-          </ul>
-          <p>You can always fall back to manual entry via Expenses/Grocery forms.</p>
-        </article>
-
-        <article id="doc-settings">
-          <h3>8) Settings Tab</h3>
-          <p>Settings includes preferences, AI configuration, and data tools.</p>
-          <h4>Main Settings sections</h4>
-          <ul>
-            <li>Preferences</li>
-            <li>About</li>
-            <li>Developer Tools</li>
-          </ul>
-          <h4>Preferences</h4>
-          <ul>
-            <li><strong>Display</strong> (Customization screen)</li>
-            <li><strong>AI</strong> (AI settings screen)</li>
-          </ul>
-          <h4>About</h4>
-          <ul>
-            <li>Version info</li>
-          </ul>
-          <h4>Developer Tools</h4>
-          <ul>
-            <li><strong>Add Sample Data</strong></li>
-            <li><strong>Clear All Data</strong> (destructive, confirmed)</li>
-          </ul>
-        </article>
-
-        <article id="doc-display">
-          <h3>9) Display / Customization Screen</h3>
-          <p>Access path: <strong>Settings -&gt; Display</strong></p>
-          <p>You can change:</p>
-          <ul>
-            <li><strong>Currency</strong></li>
-            <li><strong>Theme</strong> (Light / Dark / System)</li>
-            <li><strong>Language</strong> (English / Bangla)</li>
-          </ul>
-          <p>Each opens a selection modal. Tap an option to apply immediately.</p>
-        </article>
-
-        <article id="doc-ai-settings">
-          <h3>10) AI Settings Screen</h3>
-          <p>Access path: <strong>Settings -&gt; AI</strong></p>
-          <h4>Available options</h4>
-          <ul>
-            <li>Manage Templates</li>
-            <li>Gemini API Key</li>
-            <li>ElevenLabs API Key</li>
-            <li>Smart Suggestions toggle</li>
-          </ul>
-          <h4>API key management</h4>
-          <p>For each key:</p>
-          <ol>
-            <li>Open key modal.</li>
-            <li>Enter key.</li>
-            <li>Save (or remove existing key).</li>
-          </ol>
-          <p>Key states in UI:</p>
-          <ul>
-            <li>Masked value if present</li>
-            <li>Off if not set</li>
-          </ul>
-          <h4>What each key does</h4>
-          <ul>
-            <li><strong>Gemini</strong>: AI understanding/parsing/category detection</li>
-            <li><strong>ElevenLabs</strong>: Voice transcription</li>
-          </ul>
-          <h4>Smart Suggestions</h4>
-          <ul>
-            <li>Toggle with confirmation dialog.</li>
-            <li>When enabled, app can suggest saving frequent grocery patterns as templates.</li>
-          </ul>
-        </article>
-
-        <article id="doc-templates">
-          <h3>11) Templates (Manage / Add / Edit)</h3>
-          <p>Access path: <strong>Settings -&gt; AI -&gt; Manage Templates</strong></p>
-          <h4>Templates list screen</h4>
-          <p>Features:</p>
-          <ul>
-            <li>Filter tabs: <strong>All / Manual / Learned</strong></li>
-            <li>Add new template (+)</li>
-            <li>Edit existing template</li>
-            <li>Delete template (with confirmation)</li>
-          </ul>
-          <p>Each template card shows:</p>
-          <ul>
-            <li>Name</li>
-            <li>Source badge (Manual / AI Learned)</li>
-            <li>Usage count</li>
-            <li>Category</li>
-            <li>Default quantity/price</li>
-            <li>Last used date</li>
-          </ul>
-          <h4>Add template</h4>
-          <p>Fields:</p>
-          <ul>
-            <li>Product name (required)</li>
-            <li>Default quantity (optional)</li>
-            <li>Default price (required valid number)</li>
-            <li>Category (required selection)</li>
-          </ul>
-          <p>Save via top-right check action.</p>
-          <h4>Edit template</h4>
-          <p>Same core fields as add, plus:</p>
-          <ul>
-            <li>Source badge</li>
-            <li>Usage info</li>
-            <li>Handles "template not found" state if invalid ID</li>
-          </ul>
-        </article>
-
-        <details id="doc-permissions">
-          <summary>12) Permissions and Conditional Features</summary>
-          <article>
-            <p>Certain features only work after permission is granted.</p>
-            <h4>Microphone permission</h4>
-            <p>Needed for:</p>
-            <ul>
-              <li>AI Voice recording</li>
-            </ul>
-            <p>If denied:</p>
-            <ul>
-              <li>Voice recording won't work</li>
-              <li>Typed transcript still works</li>
-            </ul>
-            <h4>Camera permission</h4>
-            <p>Needed for:</p>
-            <ul>
-              <li>Taking photos in expense/grocery completion flows</li>
-            </ul>
-            <p>If denied:</p>
-            <ul>
-              <li>Camera capture unavailable</li>
-              <li>You can still continue without photo or use gallery (if allowed)</li>
-            </ul>
-            <h4>Photo library permission</h4>
-            <p>Needed for:</p>
-            <ul>
-              <li>Picking an image from gallery</li>
-            </ul>
-            <p>If denied:</p>
-            <ul>
-              <li>Gallery attachment unavailable</li>
-            </ul>
-            <h4>Re-enabling denied permissions</h4>
-            <p>Go to Android:</p>
-            <p><strong>Settings -&gt; Apps -&gt; Amar Hisab -&gt; Permissions</strong></p>
-            <p>Enable needed permission(s), then return to app.</p>
-          </article>
-        </details>
-
-        <details id="doc-privacy">
-          <summary>13) Data Storage, Privacy, and Safety</summary>
-          <article>
-            <h4>Where data is stored</h4>
-            <ul>
-              <li>Expenses, grocery items, templates, settings: local SQLite</li>
-              <li>API keys: secure device storage (SecureStore)</li>
-            </ul>
-            <h4>Reset behavior</h4>
-            <p><strong>Clear All Data</strong> removes local app data and saved API keys. This action is destructive and
-              cannot be undone.</p>
-            <h4>Offline behavior</h4>
-            <ul>
-              <li>Core tracking works offline.</li>
-              <li>AI-dependent features need internet and configured keys.</li>
-            </ul>
-            <h4>AI/privacy behavior</h4>
-            <p>When you use AI features, your input (text/transcript) is sent to configured AI providers to process
-              results.</p>
-          </article>
-        </details>
-
-        <details id="doc-validation">
-          <summary>14) Validation and Error Handling</summary>
-          <article>
-            <p>The app validates key inputs before saving.</p>
-            <h4>Common validation rules</h4>
-            <ul>
-              <li>Amount must be a valid positive number</li>
-              <li>Name cannot be empty</li>
-              <li>Price must be valid when required</li>
-              <li>Description/name/quantity sanitization is applied</li>
-            </ul>
-            <h4>Rate limit behavior (anti-spam)</h4>
-            <p>If you submit too quickly, you may see:</p>
-            <ul>
-              <li>"Too many requests. Please wait a moment."</li>
-            </ul>
-            <h4>Error UI patterns</h4>
-            <ul>
-              <li>Alert dialogs for blocking errors</li>
-              <li>Toast notifications for success/info/warning/hints</li>
-              <li>Global fallback error screen with <strong>Try Again</strong> if unexpected crash occurs</li>
-            </ul>
-          </article>
-        </details>
-
-        <details id="doc-notifications">
-          <summary>15) Notifications and In-App Messages</summary>
-          <article>
-            <p>The app uses in-app notifications/toasts for:</p>
-            <ul>
-              <li>Success messages (saved/updated/deleted)</li>
-              <li>Warnings</li>
-              <li>Errors</li>
-              <li>Hints (including onboarding tips)</li>
-            </ul>
-            <p>It may also show one-time informational notices like app update messages.</p>
-          </article>
-        </details>
-
-        <article id="doc-quick-tasks">
-          <h3>16) Step-by-Step Quick Tasks</h3>
-          <h4>Add an expense quickly</h4>
-          <ol>
-            <li>Open <strong>Expenses</strong> tab.</li>
-            <li>Tap <strong>+</strong>.</li>
-            <li>Enter amount and optional details.</li>
-            <li>Save.</li>
-          </ol>
-          <h4>Add grocery and mark purchased</h4>
-          <ol>
-            <li>Open <strong>Grocery</strong> tab.</li>
-            <li>Tap <strong>+</strong> and add item.</li>
-            <li>Tap checkbox/item to complete.</li>
-            <li>Enter price if asked.</li>
-            <li>Confirm completion.</li>
-          </ol>
-          <h4>Use voice to add multiple items</h4>
-          <ol>
-            <li>Tap center <strong>AI Voice</strong> button.</li>
-            <li>Record or type transcript.</li>
-            <li>Review parsed items.</li>
-            <li>Edit if needed.</li>
-            <li>Confirm add.</li>
-          </ol>
-          <h4>Change app language/currency/theme</h4>
-          <ol>
-            <li>Open <strong>Settings</strong> tab.</li>
-            <li>Tap <strong>Display</strong>.</li>
-            <li>Choose Language/Currency/Theme.</li>
-          </ol>
-          <h4>Configure AI keys</h4>
-          <ol>
-            <li>Open <strong>Settings -&gt; AI</strong>.</li>
-            <li>Open Gemini or ElevenLabs key.</li>
-            <li>Paste key and save.</li>
-          </ol>
-        </article>
-
-        <details id="doc-troubleshooting">
-          <summary>17) Troubleshooting</summary>
-          <article>
-            <h4>"AI feature isn't working"</h4>
-            <p>Check:</p>
-            <ul>
-              <li>Internet connection</li>
-              <li>API keys are set in <strong>Settings -&gt; AI</strong></li>
-              <li>Permission is granted (for microphone/camera flows)</li>
-            </ul>
-            <h4>"Camera or gallery not opening"</h4>
-            <p>Check Android app permissions in system settings.</p>
-            <h4>"I can't complete grocery item"</h4>
-            <p>Completion requires a valid price (&gt; 0). Enter price and retry.</p>
-            <h4>"Statistics are empty"</h4>
-            <p>You may have no entries in selected period/category. Change range/filter or add data.</p>
-            <h4>"I deleted something by mistake"</h4>
-            <p>Delete/reset actions are irreversible in current app behavior.</p>
-          </article>
-        </details>
-
-        <article id="doc-summary">
-          <h3>18) Feature Summary Checklist</h3>
-          <ul>
-            <li>Expenses: add/edit/delete, image attachments, long-press actions</li>
-            <li>Grocery: add/edit/delete, complete flow, price-required completion, clear completed</li>
-            <li>Statistics: period navigation, custom month range, category filters, history actions</li>
-            <li>Settings: display options, AI key management, sample data, clear all data</li>
-            <li>Templates: manage/add/edit/delete, manual vs learned templates</li>
-            <li>AI Voice: mic + typed modes, review/edit/confirm flow</li>
-            <li>Permissions: microphone, camera, photo library</li>
-            <li>Localization: English and Bangla</li>
-            <li>Offline-first local storage with secure key storage</li>
-          </ul>
-        </article>
-      </div>
-    </section>
-
-    <section id="download">
-      <div class="container">
-        <div class="download">
-          <h2>Get Amar Hisab</h2>
-          <p>Download the latest APK from GitHub Releases</p>
-          <div class="actions">
-            <a class="btn btn-primary" href="https://github.com/Frazix12/AmarHisab/releases" target="_blank"
-              rel="noopener noreferrer">Download from GitHub</a>
-            <a class="btn btn-secondary" href="https://github.com/Frazix12/AmarHisab" target="_blank"
-              rel="noopener noreferrer">View Source Code</a>
-          </div>
+    <!-- Download Section -->
+    <section id="download" class="py-24 bg-emerald-600">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-4xl font-bold text-white mb-4">Get Amar Hisab Today</h2>
+            <p class="text-xl text-emerald-100 mb-8">Download the latest APK from GitHub Releases</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="https://github.com/Frazix12/AmarHisab/releases" target="_blank" rel="noopener noreferrer"
+                    class="flex items-center justify-center gap-3 bg-white text-emerald-600 px-8 py-4 rounded-full font-semibold text-lg transition hover:bg-gray-100 shadow-lg">
+                    <i class="hgi-stroke hgi-download-01 text-2xl"></i>
+                    Download from GitHub
+                </a>
+                <a href="https://github.com/Frazix12/AmarHisab" target="_blank" rel="noopener noreferrer"
+                    class="flex items-center justify-center gap-3 border-2 border-white text-white px-8 py-4 rounded-full font-semibold text-lg transition hover:bg-white/10">
+                    <i class="hgi-stroke hgi-github text-2xl"></i>
+                    View Source Code
+                </a>
+            </div>
+            <div class="mt-8 flex flex-wrap justify-center gap-4 text-sm text-emerald-100">
+                <span class="flex items-center gap-1">
+                    <i class="hgi-stroke hgi-android"></i>
+                    Android
+                </span>
+                <span class="flex items-center gap-1">
+                    <i class="hgi-stroke hgi-flash"></i>
+                    Offline-First
+                </span>
+                <span class="flex items-center gap-1">
+                    <i class="hgi-stroke hgi-shield-tick"></i>
+                    Privacy Focused
+                </span>
+            </div>
         </div>
-      </div>
     </section>
-  </main>
 
-  <footer>
-    <div class="container">
-      <div class="footer-links">
-        <a href="https://github.com/Frazix12/AmarHisab" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <a href="https://github.com/Frazix12/AmarHisab/issues" target="_blank" rel="noopener noreferrer">Report Bug</a>
-        <span>MIT License</span>
-      </div>
-      <div>v1.3.0 © 2026 Frazix12</div>
-      <!-- UPDATE VERSION: Currently 1.3.0 -->
-      <div>Made with ❤️ for personal finance tracking</div>
-    </div>
-  </footer>
-
-  <script>
-    (function () {
-      var html = document.documentElement;
-      var themeToggle = document.getElementById("theme-toggle");
-      var menuToggle = document.getElementById("menu-toggle");
-      var navLinks = document.getElementById("nav-links");
-      var themeMeta = document.querySelector('meta[name="theme-color"]');
-
-      function setTheme(theme) {
-        html.setAttribute("data-theme", theme);
-        localStorage.setItem("theme", theme);
-        themeToggle.textContent = theme === "dark" ? "☀️" : "🌙";
-        if (themeMeta) {
-          themeMeta.setAttribute("content", theme === "dark" ? "#1C1B1F" : "#00B171");
-        }
-      }
-
-      var storedTheme = localStorage.getItem("theme");
-      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-      var initialTheme = storedTheme || (prefersDark ? "dark" : "light");
-      setTheme(initialTheme);
-
-      themeToggle.addEventListener("click", function () {
-        var next = html.getAttribute("data-theme") === "dark" ? "light" : "dark";
-        setTheme(next);
-      });
-
-      menuToggle.addEventListener("click", function (e) {
-        e.stopPropagation();
-        var open = navLinks.classList.toggle("active");
-        menuToggle.setAttribute("aria-expanded", open ? "true" : "false");
-        menuToggle.textContent = open ? "✕" : "☰";
-      });
-
-      document.addEventListener("click", function (e) {
-        if (navLinks.classList.contains("active") && !navLinks.contains(e.target) && !menuToggle.contains(e.target)) {
-          navLinks.classList.remove("active");
-          menuToggle.setAttribute("aria-expanded", "false");
-          menuToggle.textContent = "☰";
-        }
-      });
-
-      document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
-        anchor.addEventListener("click", function (event) {
-          var href = anchor.getAttribute("href");
-          var target = href ? document.querySelector(href) : null;
-          if (!target) {
-            return;
-          }
-          event.preventDefault();
-          target.scrollIntoView({ behavior: "smooth", block: "start" });
-          navLinks.classList.remove("active");
-          menuToggle.setAttribute("aria-expanded", "false");
-          menuToggle.textContent = "☰";
-        });
-      });
-
-      document.addEventListener("keydown", function (e) {
-        if (e.key === "Escape" && navLinks.classList.contains("active")) {
-          navLinks.classList.remove("active");
-          menuToggle.setAttribute("aria-expanded", "false");
-          menuToggle.textContent = "☰";
-        }
-      });
-    })();
-
-    // GSAP ScrollTrigger Animations - Optimized
-    gsap.registerPlugin(ScrollTrigger);
-
-    // Hero elements animation - faster and smoother
-    var heroTl = gsap.timeline({ defaults: { ease: "power2.out" } });
-    heroTl
-      .from(".hero h1", { y: -40, opacity: 0, duration: 0.6 }, 0)
-      .from(".hero .subtitle", { y: -25, opacity: 0, duration: 0.5 }, 0.15)
-      .from(".hero .description", { y: -20, opacity: 0, duration: 0.5 }, 0.25)
-      .from(".hero .badges", { scale: 0.9, opacity: 0, duration: 0.4 }, 0.35)
-      .from(".hero .actions", { y: 20, opacity: 0, duration: 0.5 }, 0.45);
-
-    // Batch animations for better performance
-    ScrollTrigger.batch(".section-title", {
-      start: "top 90%",
-      onEnter: function (elements) {
-        gsap.from(elements, { y: 30, opacity: 0, duration: 0.5, stagger: 0.1, ease: "power2.out" });
-      },
-      once: true
-    });
-
-    // Screenshot cards - simple fade and slide
-    ScrollTrigger.batch(".shot", {
-      start: "top 90%",
-      onEnter: function (elements) {
-        gsap.from(elements, {
-          y: 40,
-          opacity: 0,
-          duration: 0.5,
-          stagger: 0.08,
-          ease: "power2.out"
-        });
-      },
-      once: true
-    });
-
-    // Feature cards - staggered fade up
-    ScrollTrigger.batch(".feature-card", {
-      start: "top 90%",
-      onEnter: function (elements) {
-        gsap.from(elements, {
-          y: 30,
-          opacity: 0,
-          duration: 0.4,
-          stagger: 0.06,
-          ease: "power2.out"
-        });
-      },
-      once: true
-    });
-
-    // Documentation articles - staggered fade up
-    ScrollTrigger.batch("#docs article", {
-      start: "top 90%",
-      onEnter: function (elements) {
-        gsap.from(elements, {
-          y: 25,
-          opacity: 0,
-          duration: 0.4,
-          stagger: 0.05,
-          ease: "power2.out"
-        });
-      },
-      once: true
-    });
-
-    // Details elements - staggered fade up
-    ScrollTrigger.batch("details", {
-      start: "top 90%",
-      onEnter: function (elements) {
-        gsap.from(elements, {
-          y: 20,
-          opacity: 0,
-          duration: 0.4,
-          stagger: 0.05,
-          ease: "power2.out"
-        });
-      },
-      once: true
-    });
-
-    // Download section - simple scale
-    gsap.from(".download", {
-      scrollTrigger: {
-        trigger: ".download",
-        start: "top 85%",
-        once: true
-      },
-      scale: 0.95,
-      opacity: 0,
-      y: 30,
-      duration: 0.6,
-      ease: "power2.out"
-    });
-
-    // Footer - simple fade
-    gsap.from("footer", {
-      scrollTrigger: {
-        trigger: "footer",
-        start: "top 95%",
-        once: true
-      },
-      y: 20,
-      opacity: 0,
-      duration: 0.5,
-      ease: "power2.out"
-    });
-  </script>
+    <!-- Footer -->
+    <footer class="bg-gray-50 py-12 border-t border-gray-100">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center gap-2">
+                    <i class="hgi-stroke hgi-wallet-01 text-emerald-600 text-2xl"></i>
+                    <span class="font-bold text-xl text-gray-900">Amar Hisab</span>
+                </div>
+                <div class="flex flex-wrap justify-center gap-6 text-sm font-medium text-gray-600">
+                    <a class="hover:text-emerald-600 transition" href="#features">Features</a>
+                    <a class="hover:text-emerald-600 transition" href="#screenshots">Screenshots</a>
+                    <a class="hover:text-emerald-600 transition" href="https://github.com/Frazix12/AmarHisab">GitHub</a>
+                    <a class="hover:text-emerald-600 transition"
+                        href="https://github.com/Frazix12/AmarHisab/issues">Report Bug</a>
+                </div>
+                <div class="flex gap-4">
+                    <a class="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-emerald-600 hover:border-emerald-200 transition"
+                        href="https://github.com/Frazix12" target="_blank" rel="noopener noreferrer">
+                        <i class="hgi-stroke hgi-github text-lg"></i>
+                    </a>
+                    <a class="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-emerald-600 hover:border-emerald-200 transition"
+                        href="mailto:frazix@example.com">
+                        <i class="hgi-stroke hgi-mail-01 text-lg"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="mt-8 pt-8 border-t border-gray-200 text-center">
+                <p class="text-sm text-gray-400">© 2024 Amar Hisab. All rights reserved. Made with ❤️ for personal
+                    finance tracking.</p>
+                <p class="text-xs text-gray-400 mt-2">MIT License</p>
+            </div>
+        </div>
+    </footer>
 </body>
 
 </html>

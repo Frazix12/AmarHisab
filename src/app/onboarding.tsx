@@ -17,6 +17,7 @@ import { useApp } from "@/contexts/app-context";
 import { Colors, Fonts } from "@/constants/theme";
 import { saveOnboardingCompleted } from "@/services/storage";
 import { trackEvent, AnalyticsEvents } from "@/services/analytics";
+import { showNotification } from "@/services/notifications";
 import { WelcomeStep } from "@/features/onboarding/components/welcome-step";
 import { LanguageStep } from "@/features/onboarding/components/language-step";
 import { ThemeStep } from "@/features/onboarding/components/theme-step";
@@ -94,6 +95,8 @@ export default function OnboardingScreen() {
     try {
       await saveOnboardingCompleted();
       router.replace("/(tabs)");
+    } catch (error) {
+      showNotification("Failed to save onboarding status", { type: "error" });
     } finally {
       completionInFlightRef.current = false;
     }
@@ -112,6 +115,8 @@ export default function OnboardingScreen() {
     try {
       await saveOnboardingCompleted();
       router.replace("/(tabs)");
+    } catch (error) {
+      showNotification("Failed to save onboarding status", { type: "error" });
     } finally {
       completionInFlightRef.current = false;
     }
