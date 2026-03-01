@@ -1,0 +1,80 @@
+name: Manual EAS Build & Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'EAS build profile'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - preview
+      release_name:
+        description: 'Release name (optional)'
+        required: false
+        type: string
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: 🏗 Setup repo
+        uses: actions/checkout@v4
+
+      - name: 🏗 Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: 💾 Restore Bun and node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock', 'package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: 📦 Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: 🏗 Setup Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: 18.0.4
+          eas-cache: true
+          expo-cache: true
+          packager: bun
+          patch-watchers: false
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 🚀 Build APK
+        id: build
+        run: |
+          set -euo pipefail
+          echo "Building Android APK with profile: ${{ inputs.profile }}..."
+          BUILD_RES=$(eas build --platform android --profile ${{ inputs.profile }} --non-interactive --json)
+          ARTIFACT_URL=$(echo "$BUILD_RES" | jq -r 'if type == "array" then (.[0].artifacts.buildUrl // "") else (.artifacts.buildUrl // "") end')
+          if [ "$ARTIFACT_URL" == "null" ] || [ -z "$ARTIFACT_URL" ]; then
+            echo "Failed to extract build URL"
+            exit 1
+          fi
+          echo "artifact_url=$ARTIFACT_URL" >> $GITHUB_OUTPUT
+
+      - name: 📥 Download APK
+        run: curl -L -o app-release.apk "${{ steps.build.outputs.artifact_url }}"
+
+      - name: 📦 Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ github.run_number }}-${{ inputs.profile }}"
+          name: ${{ inputs.release_name || format('Release v{0} ({1})', github.run_number, inputs.profile) }}
+          files: app-release.apk
+          generate_release_notes: true
+          fail_on_unmatched_files: true
